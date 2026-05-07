@@ -2,51 +2,246 @@
 <html>
 <head>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
   <title>Housekeeping Login</title>
+
+  <style>
+
+    *{
+      box-sizing:border-box;
+    }
+
+    body{
+      margin:0;
+      padding:0;
+      font-family:Arial,sans-serif;
+      background:#eef2f7;
+
+      display:flex;
+      justify-content:center;
+      align-items:center;
+
+      min-height:100vh;
+    }
+
+    .card{
+      width:92%;
+      max-width:420px;
+
+      background:white;
+
+      border-radius:30px;
+
+      padding:35px 25px;
+
+      box-shadow:0 10px 30px rgba(0,0,0,0.12);
+
+      text-align:center;
+    }
+
+    .icon{
+      font-size:70px;
+      margin-bottom:10px;
+    }
+
+    h1{
+      margin:0;
+      font-size:42px;
+      color:#1847d1;
+    }
+
+    h2{
+      margin-top:10px;
+      margin-bottom:35px;
+
+      font-size:24px;
+      font-weight:normal;
+      color:#666;
+    }
+
+    .label{
+      text-align:left;
+      font-size:22px;
+      margin-bottom:12px;
+      font-weight:bold;
+    }
+
+    input{
+      width:100%;
+      padding:22px;
+
+      font-size:28px;
+
+      border-radius:18px;
+      border:2px solid #2e5cff;
+
+      outline:none;
+
+      margin-bottom:30px;
+    }
+
+    button{
+      width:100%;
+
+      padding:22px;
+
+      font-size:28px;
+      font-weight:bold;
+
+      border:none;
+      border-radius:18px;
+
+      background:#2e5cff;
+      color:white;
+
+      cursor:pointer;
+    }
+
+    button:active{
+      transform:scale(0.98);
+    }
+
+    #message{
+      margin-top:30px;
+
+      padding:25px;
+
+      border-radius:20px;
+
+      font-size:24px;
+      font-weight:bold;
+
+      background:#edf9ef;
+      color:#1c7a32;
+
+      display:none;
+    }
+
+  </style>
 </head>
 
 <body>
-  <h2>Employee Login</h2>
 
-  <label>Enter PIN</label><br>
-  <input type="password" id="pin"><br><br>
+  <div class="card">
 
-  <button onclick="login()">LOGIN</button>
+    <div class="icon">🧹</div>
 
-  <p id="message"></p>
+    <h1>Housekeeping</h1>
 
-  <script>
-    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycby4kZ1JPlMrjzvjHSQxgpuZXl2zZ9jekz8j-tasSjS84uRS5iCx0UReV0b0s4tSGea-/exec";
+    <h2>Employee Login</h2>
 
-    function login() {
-      const pin = document.getElementById("pin").value.trim();
+    <div class="label">Enter PIN</div>
 
-      fetch(SCRIPT_URL, {
-        method: "POST",
-        body: JSON.stringify({
-          action: "loginEmployee",
-          pin: pin,
-          deviceName: "Employee Web App"
-        })
-      })
-      .then(response => response.json())
-      .then(result => {
-        if (result.success) {
-          localStorage.setItem("employeePin", pin);
-          localStorage.setItem("employeeId", result.employeeId);
-          localStorage.setItem("employeeName", result.employeeName);
+    <input
+      type="password"
+      id="pin"
+      placeholder="••••"
+    >
 
-          document.getElementById("message").innerText =
-            "Logged in: " + result.employeeName;
-        } else {
-          document.getElementById("message").innerText = result.message;
-        }
-      })
-      .catch(error => {
-        document.getElementById("message").innerText =
-          "Login error. Check Apps Script deployment.";
-      });
+    <button onclick="login()">
+      LOGIN
+    </button>
+
+    <div id="message"></div>
+
+  </div>
+
+<script>
+
+const SCRIPT_URL =
+"https://script.google.com/macros/s/AKfycby4kZ1JPlMrjzvjHSQxgpuZXl2zZ9jekz8j-tasSjS84uRS5iCx0UReV0b0s4tSGea-/exec";
+
+function login() {
+
+  const pin =
+    document.getElementById("pin").value.trim();
+
+  fetch(SCRIPT_URL, {
+
+    method:"POST",
+
+    body:JSON.stringify({
+
+      action:"loginEmployee",
+
+      pin:pin,
+
+      deviceName:"Employee Web App"
+
+    })
+
+  })
+
+  .then(response => response.json())
+
+  .then(result => {
+
+    const message =
+      document.getElementById("message");
+
+    message.style.display = "block";
+
+    if(result.success){
+
+      localStorage.setItem(
+        "employeePin",
+        pin
+      );
+
+      localStorage.setItem(
+        "employeeId",
+        result.employeeId
+      );
+
+      localStorage.setItem(
+        "employeeName",
+        result.employeeName
+      );
+
+      message.style.background =
+        "#edf9ef";
+
+      message.style.color =
+        "#1c7a32";
+
+      message.innerHTML =
+        "Logged in successfully<br><br>"
+        + result.employeeName;
+
+    }else{
+
+      message.style.background =
+        "#ffecec";
+
+      message.style.color =
+        "#c62828";
+
+      message.innerHTML =
+        result.message;
     }
-  </script>
+
+  })
+
+  .catch(error => {
+
+    const message =
+      document.getElementById("message");
+
+    message.style.display = "block";
+
+    message.style.background =
+      "#ffecec";
+
+    message.style.color =
+      "#c62828";
+
+    message.innerHTML =
+      "Connection error";
+  });
+
+}
+
+</script>
+
 </body>
 </html>
