@@ -217,7 +217,8 @@ function loadSchedule() {
 }
 
 function openAssignment(areaGroup) {
-  alert("Next step: open tasks for " + areaGroup);
+  localStorage.setItem("selectedAreaGroup", areaGroup);
+  window.location.href = "tasks.html";
 }
 
 function logout() {
