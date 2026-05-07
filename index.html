@@ -4,6 +4,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
 <style>
+
 body{
   margin:0;
   font-family:Arial,sans-serif;
@@ -26,13 +27,12 @@ body{
 
 h1{
   font-size:48px;
-  margin-bottom:30px;
 }
 
 .question{
   font-size:34px;
   font-weight:bold;
-  margin-bottom:30px;
+  margin:30px 0;
 }
 
 .buttons{
@@ -49,24 +49,83 @@ button{
   font-weight:bold;
   color:white;
   background:#1976d2;
+  transition:0.2s;
 }
+
+#message{
+  margin-top:25px;
+  font-size:28px;
+  font-weight:bold;
+  color:green;
+}
+
 </style>
 </head>
 
 <body>
 
 <div class="card">
-  <h1>Room 201</h1>
 
-  <div class="question">
-    All tasks completed?
-  </div>
+<h1>Room 201</h1>
 
-  <div class="buttons">
-    <button>YES</button>
-    <button>NO</button>
-  </div>
+<div class="question">
+All tasks completed?
 </div>
+
+<div class="buttons">
+
+<button id="yesBtn" onclick="completeRoom()">
+YES
+</button>
+
+<button onclick="showIncomplete()">
+NO
+</button>
+
+</div>
+
+<div id="message"></div>
+
+</div>
+
+<script>
+
+function completeRoom(){
+
+  const btn =
+    document.getElementById("yesBtn");
+
+  btn.style.background =
+    "#2e7d32";
+
+  btn.style.transform =
+    "scale(0.96)";
+
+  document.getElementById("message").innerText =
+    "Task Submitted";
+
+  setTimeout(function(){
+
+    btn.style.background =
+      "#1976d2";
+
+    btn.style.transform =
+      "scale(1)";
+
+    document.getElementById("message").innerText =
+      "";
+
+  },1500);
+}
+
+function showIncomplete(){
+
+  alert(
+    "Incomplete task popup coming next"
+  );
+}
+
+</script>
 
 </body>
 </html>
