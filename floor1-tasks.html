@@ -1,0 +1,246 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Tasks</title>
+
+  <style>
+
+    *{
+      box-sizing:border-box;
+    }
+
+    body{
+      margin:0;
+      padding:0;
+      font-family:Arial,sans-serif;
+      background:#eef2f7;
+      min-height:100vh;
+    }
+
+    .page{
+      width:100%;
+      max-width:460px;
+      margin:0 auto;
+      padding:25px 18px;
+    }
+
+    .card{
+      background:white;
+      border-radius:28px;
+      padding:25px;
+      box-shadow:0 10px 30px rgba(0,0,0,0.12);
+      margin-bottom:20px;
+    }
+
+    h1{
+      margin:0;
+      color:#1847d1;
+      font-size:34px;
+      text-align:center;
+    }
+
+    .employee{
+      text-align:center;
+      font-size:20px;
+      color:#333;
+      margin-top:10px;
+      font-weight:bold;
+    }
+
+    .area{
+      text-align:center;
+      font-size:22px;
+      color:#666;
+      margin-top:8px;
+    }
+
+    .task{
+      background:#f9fbff;
+      border:2px solid #dce3f0;
+      border-radius:20px;
+      padding:20px;
+      margin-top:18px;
+    }
+
+    .task-name{
+      font-size:24px;
+      font-weight:bold;
+      color:#1847d1;
+      margin-bottom:18px;
+      text-align:center;
+    }
+
+    .buttons{
+      display:flex;
+      gap:15px;
+    }
+
+    button{
+      flex:1;
+      padding:18px;
+      border:none;
+      border-radius:18px;
+      font-size:22px;
+      font-weight:bold;
+      color:white;
+      cursor:pointer;
+    }
+
+    .yes{
+      background:#22aa44;
+    }
+
+    .no{
+      background:#d93025;
+    }
+
+    .back{
+      width:100%;
+      background:#333;
+      margin-top:20px;
+    }
+
+    .message{
+      margin-top:15px;
+      text-align:center;
+      font-size:18px;
+      font-weight:bold;
+      color:#1c7a32;
+    }
+
+  </style>
+</head>
+
+<body>
+
+<div class="page">
+
+  <div class="card">
+
+    <h1>Tasks</h1>
+
+    <div class="employee" id="employeeName"></div>
+
+    <div class="area" id="areaName"></div>
+
+    <button class="back" onclick="goBack()">
+      BACK
+    </button>
+
+  </div>
+
+  <div id="tasksContainer"></div>
+
+</div>
+
+<script>
+
+const employeeName =
+  localStorage.getItem("employeeName");
+
+const areaGroup =
+  localStorage.getItem("selectedAreaGroup");
+
+document.getElementById("employeeName")
+.innerText = employeeName;
+
+document.getElementById("areaName")
+.innerText = areaGroup;
+
+const tasks = [
+
+  "Clean Room",
+  "Mop Floor",
+  "Restock Supplies",
+  "Clean Bathroom",
+  "Take Trash Out"
+
+];
+
+loadTasks();
+
+function loadTasks(){
+
+  const container =
+    document.getElementById("tasksContainer");
+
+  let html = "";
+
+  tasks.forEach(function(task){
+
+    html += `
+
+      <div class="card task">
+
+        <div class="task-name">
+          ${task}
+        </div>
+
+        <div class="buttons">
+
+          <button
+            class="yes"
+            onclick="completeTask('${task}','Completed')">
+
+            YES
+
+          </button>
+
+          <button
+            class="no"
+            onclick="completeTask('${task}','Incomplete')">
+
+            NO
+
+          </button>
+
+        </div>
+
+        <div
+          class="message"
+          id="msg-${task.replaceAll(' ','')}">
+        </div>
+
+      </div>
+
+    `;
+  });
+
+  container.innerHTML = html;
+}
+
+function completeTask(task,status){
+
+  const msg =
+    document.getElementById(
+      "msg-" + task.replaceAll(" ","")
+    );
+
+  if(status === "Completed"){
+
+    msg.style.color = "#1c7a32";
+
+    msg.innerText =
+      "Task completed";
+
+  }else{
+
+    msg.style.color = "#d93025";
+
+    msg.innerText =
+      "Task marked incomplete";
+  }
+}
+
+function goBack(){
+
+  window.location.href =
+    "schedule.html";
+}
+
+</script>
+
+</body>
+</html>
