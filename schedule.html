@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Daily Schedule</title>
+
+  <style>
+    *{
+      box-sizing:border-box;
+    }
+
+    body{
+      margin:0;
+      padding:0;
+      font-family:Arial,sans-serif;
+      background:#eef2f7;
+      min-height:100vh;
+    }
+
+    .page{
+      width:100%;
+      max-width:460px;
+      margin:0 auto;
+      padding:25px 18px;
+    }
+
+    .card{
+      background:white;
+      border-radius:28px;
+      padding:25px;
+      box-shadow:0 10px 30px rgba(0,0,0,0.12);
+      margin-bottom:20px;
+    }
+
+    h1{
+      margin:0;
+      color:#1847d1;
+      font-size:34px;
+      text-align:center;
+    }
+
+    .employee{
+      text-align:center;
+      font-size:22px;
+      color:#333;
+      margin-top:10px;
+      font-weight:bold;
+    }
+
+    .date{
+      text-align:center;
+      font-size:18px;
+      color:#666;
+      margin-top:8px;
+    }
+
+    .assignment{
+      border:2px solid #dce3f0;
+      border-radius:20px;
+      padding:18px;
+      margin-top:18px;
+      background:#f9fbff;
+    }
+
+    .assignment-title{
+      font-size:24px;
+      font-weight:bold;
+      color:#1847d1;
+      margin-bottom:10px;
+    }
+
+    .row{
+      font-size:18px;
+      margin:8px 0;
+      color:#333;
+    }
+
+    .label{
+      font-weight:bold;
+    }
+
+    .button{
+      width:100%;
+      margin-top:18px;
+      padding:18px;
+      border:none;
+      border-radius:18px;
+      font-size:22px;
+      font-weight:bold;
+      background:#2e5cff;
+      color:white;
+      cursor:pointer;
+    }
+
+    .empty{
+      text-align:center;
+      font-size:22px;
+      color:#777;
+      padding:30px 10px;
+    }
+
+    .top-button{
+      width:100%;
+      padding:16px;
+      border:none;
+      border-radius:16px;
+      background:#333;
+      color:white;
+      font-size:18px;
+      font-weight:bold;
+      margin-top:15px;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="page">
+
+    <div class="card">
+      <h1>Today Schedule</h1>
+      <div class="employee" id="employeeName"></div>
+      <div class="date" id="todayDate"></div>
+
+      <button class="top-button" onclick="logout()">LOGOUT</button>
+    </div>
+
+    <div class="card" id="scheduleBox">
+      <div class="empty">Loading schedule...</div>
+    </div>
+
+  </div>
+
+<script>
+const SCRIPT_URL =
+"https://script.google.com/macros/s/AKfycby4kZ1JPlMrjzvjHSQxgpuZXl2zZ9jekz8j-tasSjS84uRS5iCx0UReV0b0s4tSGea-/exec";
+
+const pin = localStorage.getItem("employeePin");
+const employeeName = localStorage.getItem("employeeName");
+
+if (!pin || !employeeName) {
+  window.location.href = "index.html";
+}
+
+document.getElementById("employeeName").innerText = employeeName;
+
+document.getElementById("todayDate").innerText =
+  new Date().toLocaleDateString("en-US", {
+    weekday:"long",
+    year:"numeric",
+    month:"long",
+    day:"numeric"
+  });
+
+loadSchedule();
+
+function loadSchedule() {
+  fetch(SCRIPT_URL, {
+    method:"POST",
+    body:JSON.stringify({
+      action:"getEmployeeAssignments",
+      pin:pin
+    })
+  })
+  .then(response => response.json())
+  .then(result => {
+    const box = document.getElementById("scheduleBox");
+
+    if (!result.success) {
+      box.innerHTML =
+        '<div class="empty">' + result.message + '</div>';
+      return;
+    }
+
+    if (!result.assignments || result.assignments.length === 0) {
+      box.innerHTML =
+        '<div class="empty">No assignments found for today.</div>';
+      return;
+    }
+
+    let html = "";
+
+    result.assignments.forEach(function(item) {
+      html += `
+        <div class="assignment">
+          <div class="assignment-title">${item.areaGroup}</div>
+
+          <div class="row">
+            <span class="label">Department:</span> ${item.department}
+          </div>
+
+          <div class="row">
+            <span class="label">Type:</span> ${item.assignmentType}
+          </div>
+
+          <div class="row">
+            <span class="label">Floor:</span> ${item.floor}
+          </div>
+
+          <div class="row">
+            <span class="label">Start:</span> ${item.startTime}
+          </div>
+
+          <button class="button" onclick="openAssignment('${item.areaGroup}')">
+            OPEN TASKS
+          </button>
+        </div>
+      `;
+    });
+
+    box.innerHTML = html;
+  })
+  .catch(error => {
+    document.getElementById("scheduleBox").innerHTML =
+      '<div class="empty">Schedule connection error.</div>';
+  });
+}
+
+function openAssignment(areaGroup) {
+  alert("Next step: open tasks for " + areaGroup);
+}
+
+function logout() {
+  localStorage.clear();
+  window.location.href = "index.html";
+}
+</script>
+
+</body>
+</html>
