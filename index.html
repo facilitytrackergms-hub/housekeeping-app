@@ -1,238 +1,52 @@
 <!DOCTYPE html>
 <html>
 <head>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<style>
-body{
-  margin:0;
-  font-family:Arial,sans-serif;
-  background:#f2f2f2;
-  display:flex;
-  justify-content:center;
-  align-items:center;
-  height:100vh;
-}
-
-.card{
-  width:90%;
-  max-width:420px;
-  background:white;
-  border-radius:25px;
-  padding:30px;
-  box-shadow:0 5px 20px rgba(0,0,0,0.2);
-  text-align:center;
-}
-
-h1{
-  font-size:48px;
-  margin-bottom:20px;
-}
-
-.question{
-  font-size:34px;
-  font-weight:bold;
-  margin-bottom:30px;
-}
-
-.buttons{
-  display:flex;
-  gap:20px;
-}
-
-button{
-  flex:1;
-  border:none;
-  border-radius:18px;
-  padding:28px;
-  font-size:32px;
-  font-weight:bold;
-  color:white;
-}
-
-.yes{
-  background:#2e7d32;
-}
-
-.no{
-  background:#c62828;
-}
-
-.submit{
-  width:100%;
-  background:#1976d2;
-  margin-top:20px;
-}
-
-.back{
-  width:100%;
-  background:#444;
-  margin-top:15px;
-}
-
-select, textarea{
-  width:100%;
-  padding:18px;
-  margin-top:15px;
-  border-radius:15px;
-  border:1px solid #ccc;
-  font-size:24px;
-  box-sizing:border-box;
-}
-
-textarea{
-  height:120px;
-}
-</style>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Housekeeping Login</title>
 </head>
 
 <body>
+  <h2>Employee Login</h2>
 
-<div class="card" id="homeScreen">
+  <label>Enter PIN</label><br>
+  <input type="password" id="pin"><br><br>
 
-  <h1>Room 201</h1>
+  <button onclick="login()">LOGIN</button>
 
-  <div class="question">
-    All tasks completed?
-  </div>
+  <p id="message"></p>
 
-  <div class="buttons">
-    <button class="yes" onclick="submitComplete()">YES</button>
-    <button class="no" onclick="showIncomplete()">NO</button>
-  </div>
+  <script>
+    const SCRIPT_URL = "https://script.google.com/macros/s/AKfycby4kZ1JPlMrjzvjHSQxgpuZXl2zZ9jekz8j-tasSjS84uRS5iCx0UReV0b0s4tSGea-/exec";
 
-</div>
+    function login() {
+      const pin = document.getElementById("pin").value.trim();
 
-<div class="card" id="incompleteScreen" style="display:none;">
+      fetch(SCRIPT_URL, {
+        method: "POST",
+        body: JSON.stringify({
+          action: "loginEmployee",
+          pin: pin,
+          deviceName: "Employee Web App"
+        })
+      })
+      .then(response => response.json())
+      .then(result => {
+        if (result.success) {
+          localStorage.setItem("employeePin", pin);
+          localStorage.setItem("employeeId", result.employeeId);
+          localStorage.setItem("employeeName", result.employeeName);
 
-  <h1>Room 201</h1>
-
-  <div class="question">
-    What was not completed?
-  </div>
-
-  <select id="taskSelect">
-    <option value="">Choose task</option>
-    <option>Bathroom</option>
-    <option>Bed</option>
-    <option>Trash</option>
-    <option>Floor</option>
-    <option>Towels</option>
-  </select>
-
-  <select id="reasonSelect">
-    <option value="">Choose reason</option>
-    <option>Resident in room</option>
-    <option>No supplies</option>
-    <option>Maintenance issue</option>
-    <option>Ran out of time</option>
-    <option>Other</option>
-  </select>
-
-  <textarea id="note" placeholder="Optional note"></textarea>
-
-  <button class="submit" onclick="submitIncomplete()">
-    SUBMIT
-  </button>
-
-  <button class="back" onclick="goHome()">
-    BACK
-  </button>
-
-</div>
-
-<script>
-
-const WEB_APP_URL =
-"https://script.google.com/macros/s/AKfycbxLKPRClYk5xk16cT_WCwc2T8vPckwSC6pgxcv84YSMRlGVu9YJKOoGYq2BvfL0Li8d/exec";
-
-const allTasks = [
-  "Bathroom",
-  "Bed",
-  "Trash",
-  "Floor",
-  "Towels"
-];
-
-function submitComplete(){
-
-  fetch(WEB_APP_URL,{
-    method:"POST",
-    body:JSON.stringify({
-      action:"submitRoomChecklist",
-      roomId:"ROOM201",
-      roomName:"Room 201",
-      employeeName:"Test Employee",
-      allTasks:allTasks,
-      incompleteTasks:[],
-      reason:"",
-      note:""
-    })
-  })
-  .then(r=>r.json())
-  .then(data=>{
-    alert("Room 201 marked complete");
-  });
-
-}
-
-function showIncomplete(){
-
-  document.getElementById("homeScreen").style.display="none";
-  document.getElementById("incompleteScreen").style.display="block";
-
-}
-
-function submitIncomplete(){
-
-  const task =
-    document.getElementById("taskSelect").value;
-
-  const reason =
-    document.getElementById("reasonSelect").value;
-
-  const note =
-    document.getElementById("note").value;
-
-  if(task===""){
-    alert("Choose which task was not completed");
-    return;
-  }
-
-  if(reason===""){
-    alert("Choose reason");
-    return;
-  }
-
-  fetch(WEB_APP_URL,{
-    method:"POST",
-    body:JSON.stringify({
-      action:"submitRoomChecklist",
-      roomId:"ROOM201",
-      roomName:"Room 201",
-      employeeName:"Test Employee",
-      allTasks:allTasks,
-      incompleteTasks:[task],
-      reason:reason,
-      note:note
-    })
-  })
-  .then(r=>r.json())
-  .then(data=>{
-    alert("Incomplete task submitted");
-    goHome();
-  });
-
-}
-
-function goHome(){
-
-  document.getElementById("homeScreen").style.display="block";
-  document.getElementById("incompleteScreen").style.display="none";
-
-}
-
-</script>
-
+          document.getElementById("message").innerText =
+            "Logged in: " + result.employeeName;
+        } else {
+          document.getElementById("message").innerText = result.message;
+        }
+      })
+      .catch(error => {
+        document.getElementById("message").innerText =
+          "Login error. Check Apps Script deployment.";
+      });
+    }
+  </script>
 </body>
 </html>
