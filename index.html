@@ -1,12 +1,16 @@
 <!DOCTYPE html>
 <html>
+
+<!-- INDEX-A1: PAGE HEAD / PHONE SETUP -->
 <head>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <title>Housekeeping Login</title>
 
+  <!-- INDEX-B1: PAGE STYLE -->
   <style>
 
+    /* INDEX-B2: GLOBAL STYLE */
     *{
       box-sizing:border-box;
     }
@@ -24,6 +28,7 @@
       min-height:100vh;
     }
 
+    /* INDEX-B3: MAIN WHITE CARD */
     .card{
       width:92%;
       max-width:420px;
@@ -39,33 +44,31 @@
       text-align:center;
     }
 
+    /* INDEX-B4: VIEW TAG */
+    .view-tag{
+      display:inline-block;
+      background:black;
+      color:white;
+      padding:4px 10px;
+      border-radius:8px;
+      font-size:12px;
+      margin-bottom:10px;
+    }
+
+    /* INDEX-B5: BROOM ICON */
     .icon{
       font-size:70px;
       margin-bottom:10px;
     }
 
+    /* INDEX-B6: MAIN TITLE */
     h1{
-      margin:0;
+      margin:0 0 35px 0;
       font-size:42px;
       color:#1847d1;
     }
 
-    h2{
-      margin-top:10px;
-      margin-bottom:35px;
-
-      font-size:24px;
-      font-weight:normal;
-      color:#666;
-    }
-
-    .label{
-      text-align:left;
-      font-size:22px;
-      margin-bottom:12px;
-      font-weight:bold;
-    }
-
+    /* INDEX-B7: PIN INPUT BOX */
     input{
       width:100%;
       padding:22px;
@@ -80,6 +83,7 @@
       margin-bottom:30px;
     }
 
+    /* INDEX-B8: LOGIN BUTTON */
     button{
       width:100%;
 
@@ -101,6 +105,7 @@
       transform:scale(0.98);
     }
 
+    /* INDEX-B9: MESSAGE BOX */
     #message{
       margin-top:30px;
 
@@ -117,32 +122,28 @@
       display:none;
     }
 
-    .view-tag{
-      display:inline-block;
-      background:black;
-      color:white;
-      padding:4px 10px;
-      border-radius:8px;
-      font-size:12px;
-      margin-bottom:10px;
-    }
-
   </style>
 </head>
 
+<!-- INDEX-C1: PAGE BODY -->
 <body>
 
+  <!-- INDEX-C2: LOGIN CARD -->
   <div class="card">
 
+    <!-- INDEX-C3: VIEW LABEL -->
     <div class="view-tag">
       VIEW 1
     </div>
 
+    <!-- INDEX-C4: ICON -->
     <div class="icon">🧹</div>
 
+    <!-- INDEX-C5: APP TITLE -->
     <h1>Housekeeping</h1>
 
-       <input
+    <!-- INDEX-C6: PIN INPUT -->
+    <input
       type="password"
       id="pin"
       placeholder="Enter PIN"
@@ -150,71 +151,110 @@
       autocorrect="off"
       autocapitalize="off"
       spellcheck="false"
-    />
+    >
 
+    <!-- INDEX-C7: LOGIN BUTTON -->
     <button onclick="login()">
       LOGIN
     </button>
 
+    <!-- INDEX-C8: LOGIN MESSAGE -->
     <div id="message"></div>
 
   </div>
 
+<!-- INDEX-D1: JAVASCRIPT -->
 <script>
 
-const SCRIPT_URL =
-"https://script.google.com/macros/s/AKfycby4kZ1JPlMrjzvjHSQxgpuZXl2zZ9jekz8j-tasSjS84uRS5iCx0UReV0b0s4tSGea-/exec";
+  /* INDEX-D2: GOOGLE APPS SCRIPT BACKEND URL */
+  const SCRIPT_URL =
+  "https://script.google.com/macros/s/AKfycby4kZ1JPlMrjzvjHSQxgpuZXl2zZ9jekz8j-tasSjS84uRS5iCx0UReV0b0s4tSGea-/exec";
 
-function login() {
+  /* INDEX-D3: LOGIN FUNCTION */
+  function login() {
 
-  const pin =
-    document.getElementById("pin").value.trim();
+    const pin =
+      document.getElementById("pin").value.trim();
 
-  fetch(SCRIPT_URL, {
+    if (!pin) {
+      showMessage("Enter PIN", false);
+      return;
+    }
 
-    method:"POST",
+    fetch(SCRIPT_URL, {
 
-    body:JSON.stringify({
+      method:"POST",
 
-      action:"loginEmployee",
+      body:JSON.stringify({
 
-      pin:pin,
+        action:"loginEmployee",
 
-      deviceName:"Employee Web App"
+        pin:pin,
+
+        deviceName:"Employee Web App"
+
+      })
 
     })
 
-  })
+    .then(response => response.json())
 
-  .then(response => response.json())
+    .then(result => {
 
-  .then(result => {
+      if(result.success){
+
+        /* INDEX-D4: SAVE EMPLOYEE LOGIN INFO */
+        localStorage.setItem(
+          "employeePin",
+          pin
+        );
+
+        localStorage.setItem(
+          "employeeId",
+          result.employeeId
+        );
+
+        localStorage.setItem(
+          "employeeName",
+          result.employeeName
+        );
+
+        /* INDEX-D5: GO TO MAIN APP */
+        window.location.href = "schedule.html";
+
+      }else{
+
+        showMessage(result.message, false);
+
+      }
+
+    })
+
+    .catch(error => {
+
+      showMessage("Connection error", false);
+
+    });
+
+  }
+
+  /* INDEX-D6: SHOW MESSAGE FUNCTION */
+  function showMessage(text, success) {
 
     const message =
       document.getElementById("message");
 
     message.style.display = "block";
 
-    if(result.success){
+    if (success) {
 
-      localStorage.setItem(
-        "employeePin",
-        pin
-      );
+      message.style.background =
+        "#edf9ef";
 
-      localStorage.setItem(
-        "employeeId",
-        result.employeeId
-      );
+      message.style.color =
+        "#1c7a32";
 
-      localStorage.setItem(
-        "employeeName",
-        result.employeeName
-      );
-
-      window.location.href = "schedule.html";
-
-    }else{
+    } else {
 
       message.style.background =
         "#ffecec";
@@ -222,30 +262,11 @@ function login() {
       message.style.color =
         "#c62828";
 
-      message.innerHTML =
-        result.message;
     }
 
-  })
+    message.innerHTML = text;
 
-  .catch(error => {
-
-    const message =
-      document.getElementById("message");
-
-    message.style.display = "block";
-
-    message.style.background =
-      "#ffecec";
-
-    message.style.color =
-      "#c62828";
-
-    message.innerHTML =
-      "Connection error";
-  });
-
-}
+  }
 
 </script>
 
