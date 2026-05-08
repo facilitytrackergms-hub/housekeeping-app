@@ -212,6 +212,20 @@
         transform: rotate(360deg);
       }
     }
+
+    .rooms-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:12px;
+  margin-top:15px;
+}
+
+.rooms-grid button{
+  width:100%;
+  min-height:90px;
+  font-size:20px;
+  padding:14px;
+}
   </style>
 </head>
 
@@ -272,8 +286,7 @@
       COMPLETE ALL
     </button>
 
-    <div id="areaButtons"></div>
-
+<div id="areaButtons" class="rooms-grid"></div>
     <button class="back" onclick="backToCategories()">BACK</button>
   </div>
 
