@@ -117,12 +117,26 @@
       display:none;
     }
 
+.view-tag{
+  display:inline-block;
+  background:black;
+  color:white;
+  padding:4px 10px;
+  border-radius:8px;
+  font-size:12px;
+  margin-bottom:10px;
+}
+    
+
   </style>
 </head>
 
 <body>
 
-  <div class="card">
+  
+<div class="view-tag">
+  VIEW 1
+</div>
 
     <div class="icon">🧹</div>
 
@@ -208,13 +222,7 @@ function login() {
       message.style.color =
         "#1c7a32";
 
- message.innerHTML =
-  "Logged in successfully<br><br>"
-  + result.employeeName;
-
-setTimeout(function() {
-  window.location.href = "schedule.html";
-}, 1000);
+window.location.href = "schedule.html";
 
     }else{
 
