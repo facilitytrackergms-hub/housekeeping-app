@@ -5,121 +5,116 @@
 <head>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <title>Housekeeping Login</title>
+  <title>Employee Tasks</title>
 
   <!-- INDEX-B1: PAGE STYLE -->
   <style>
 
     /* INDEX-B2: GLOBAL STYLE */
-    *{
-      box-sizing:border-box;
+    * {
+      box-sizing: border-box;
     }
 
-    body{
-      margin:0;
-      padding:0;
-      font-family:Arial,sans-serif;
-      background:#eef2f7;
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: Arial, sans-serif;
+      background: #eef2f7;
 
-      display:flex;
-      justify-content:center;
-      align-items:center;
+      display: flex;
+      justify-content: center;
+      align-items: center;
 
-      min-height:100vh;
+      min-height: 100vh;
     }
 
     /* INDEX-B3: MAIN WHITE CARD */
-    .card{
-      width:92%;
-      max-width:420px;
+    .card {
+      width: 92%;
+      max-width: 420px;
 
-      background:white;
+      background: white;
 
-      border-radius:30px;
+      border-radius: 30px;
 
-      padding:35px 25px;
+      padding: 35px 25px;
 
-      box-shadow:0 10px 30px rgba(0,0,0,0.12);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.12);
 
-      text-align:center;
+      text-align: center;
     }
 
     /* INDEX-B4: VIEW TAG */
-    .view-tag{
-      display:inline-block;
-      background:black;
-      color:white;
-      padding:4px 10px;
-      border-radius:8px;
-      font-size:12px;
-      margin-bottom:10px;
+    .view-tag {
+      display: inline-block;
+      background: black;
+      color: white;
+      padding: 4px 10px;
+      border-radius: 8px;
+      font-size: 12px;
+      margin-bottom: 14px;
     }
 
-    /* INDEX-B5: BROOM ICON */
-    .icon{
-      font-size:70px;
-      margin-bottom:10px;
+    /* INDEX-B5: APP TITLE */
+    h1 {
+      margin: 0 0 35px 0;
+      font-size: 42px;
+      color: #1847d1;
     }
 
-    /* INDEX-B6: MAIN TITLE */
-    h1{
-      margin:0 0 35px 0;
-      font-size:42px;
-      color:#1847d1;
+    /* INDEX-B6: PIN INPUT BOX */
+    input {
+      width: 100%;
+      padding: 22px;
+
+      font-size: 28px;
+
+      border-radius: 18px;
+      border: 2px solid #2e5cff;
+
+      outline: none;
+
+      margin-bottom: 30px;
+      text-align: center;
     }
 
-    /* INDEX-B7: PIN INPUT BOX */
-    input{
-      width:100%;
-      padding:22px;
+    /* INDEX-B7: LOGIN BUTTON */
+    button {
+      width: 100%;
 
-      font-size:28px;
+      padding: 22px;
 
-      border-radius:18px;
-      border:2px solid #2e5cff;
+      font-size: 28px;
+      font-weight: bold;
 
-      outline:none;
+      border: none;
+      border-radius: 18px;
 
-      margin-bottom:30px;
+      background: #2e5cff;
+      color: white;
+
+      cursor: pointer;
     }
 
-    /* INDEX-B8: LOGIN BUTTON */
-    button{
-      width:100%;
-
-      padding:22px;
-
-      font-size:28px;
-      font-weight:bold;
-
-      border:none;
-      border-radius:18px;
-
-      background:#2e5cff;
-      color:white;
-
-      cursor:pointer;
+    button:active {
+      transform: scale(0.98);
     }
 
-    button:active{
-      transform:scale(0.98);
-    }
+    /* INDEX-B8: MESSAGE BOX */
+    #message {
+      margin-top: 30px;
 
-    /* INDEX-B9: MESSAGE BOX */
-    #message{
-      margin-top:30px;
+      padding: 25px;
 
-      padding:25px;
+      border-radius: 20px;
 
-      border-radius:20px;
+      font-size: 24px;
+      font-weight: bold;
 
-      font-size:24px;
-      font-weight:bold;
+      background: #edf9ef;
+      color: #1c7a32;
 
-      background:#edf9ef;
-      color:#1c7a32;
-
-      display:none;
+      display: none;
     }
 
   </style>
@@ -136,12 +131,10 @@
       VIEW 1
     </div>
 
-  
-
-    <!-- INDEX-C5: APP TITLE -->
+    <!-- INDEX-C4: APP TITLE -->
     <h1>Employee Tasks</h1>
 
-    <!-- INDEX-C6: PIN INPUT -->
+    <!-- INDEX-C5: PIN INPUT -->
     <input
       type="password"
       id="pin"
@@ -152,12 +145,12 @@
       spellcheck="false"
     >
 
-    <!-- INDEX-C7: LOGIN BUTTON -->
+    <!-- INDEX-C6: LOGIN BUTTON -->
     <button onclick="login()">
       LOGIN
     </button>
 
-    <!-- INDEX-C8: LOGIN MESSAGE -->
+    <!-- INDEX-C7: LOGIN MESSAGE -->
     <div id="message"></div>
 
   </div>
@@ -180,17 +173,19 @@
       return;
     }
 
+    showMessage("Checking PIN...", true);
+
     fetch(SCRIPT_URL, {
 
-      method:"POST",
+      method: "POST",
 
-      body:JSON.stringify({
+      body: JSON.stringify({
 
-        action:"loginEmployee",
+        action: "loginEmployee",
 
-        pin:pin,
+        pin: pin,
 
-        deviceName:"Employee Web App"
+        deviceName: "Employee Web App"
 
       })
 
@@ -200,7 +195,7 @@
 
     .then(result => {
 
-      if(result.success){
+      if (result.success) {
 
         /* INDEX-D4: SAVE EMPLOYEE LOGIN INFO */
         localStorage.setItem(
@@ -221,7 +216,7 @@
         /* INDEX-D5: GO TO MAIN APP */
         window.location.href = "schedule.html";
 
-      }else{
+      } else {
 
         showMessage(result.message, false);
 
@@ -266,6 +261,15 @@
     message.innerHTML = text;
 
   }
+
+  /* INDEX-D7: ENTER KEY LOGIN */
+  document
+    .getElementById("pin")
+    .addEventListener("keydown", function(event) {
+      if (event.key === "Enter") {
+        login();
+      }
+    });
 
 </script>
 
