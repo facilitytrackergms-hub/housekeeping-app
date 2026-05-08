@@ -117,26 +117,26 @@
       display:none;
     }
 
-.view-tag{
-  display:inline-block;
-  background:black;
-  color:white;
-  padding:4px 10px;
-  border-radius:8px;
-  font-size:12px;
-  margin-bottom:10px;
-}
-    
+    .view-tag{
+      display:inline-block;
+      background:black;
+      color:white;
+      padding:4px 10px;
+      border-radius:8px;
+      font-size:12px;
+      margin-bottom:10px;
+    }
 
   </style>
 </head>
 
 <body>
 
-  
-<div class="view-tag">
-  VIEW 1
-</div>
+  <div class="card">
+
+    <div class="view-tag">
+      VIEW 1
+    </div>
 
     <div class="icon">🧹</div>
 
@@ -144,17 +144,15 @@
 
     <h2>Employee Login</h2>
 
-  
-
-<input
-  type="password"
-  id="pin"
-  placeholder="Enter PIN"
-  autocomplete="new-password"
-  autocorrect="off"
-  autocapitalize="off"
-  spellcheck="false"
-/>
+    <input
+      type="password"
+      id="pin"
+      placeholder="Enter PIN"
+      autocomplete="new-password"
+      autocorrect="off"
+      autocapitalize="off"
+      spellcheck="false"
+    />
 
     <button onclick="login()">
       LOGIN
@@ -216,13 +214,7 @@ function login() {
         result.employeeName
       );
 
-      message.style.background =
-        "#edf9ef";
-
-      message.style.color =
-        "#1c7a32";
-
-window.location.href = "schedule.html";
+      window.location.href = "schedule.html";
 
     }else{
 
