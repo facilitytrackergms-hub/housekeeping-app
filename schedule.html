@@ -91,6 +91,14 @@
       display: none !important;
     }
 
+    .hidden-date {
+      position: absolute;
+      opacity: 0;
+      pointer-events: none;
+      width: 1px;
+      height: 1px;
+    }
+
     .date-row {
       display: flex;
       align-items: center;
@@ -210,7 +218,15 @@
 
     <div class="date-row">
       <h3 id="workDateTitle"></h3>
-      <button class="date-change-btn" onclick="backToDate()">CHANGE DATE</button>
+
+      <button class="date-change-btn" onclick="openCalendar()">CHANGE DATE</button>
+
+      <input
+        type="date"
+        id="quickDatePicker"
+        class="hidden-date"
+        onchange="changeWorkDateFromCalendar()"
+      >
     </div>
 
     <div id="categoryButtons"></div>
@@ -320,6 +336,7 @@ function chooseAssignment(assignment) {
 
   loadAssignmentTasks();
 }
+
 function setDefaultDate() {
   const input = document.getElementById("workDate");
 
@@ -366,6 +383,30 @@ function loadAssignmentTasks() {
   .catch(function() {
     alert("Connection error.");
   });
+}
+
+function openCalendar() {
+  const picker = document.getElementById("quickDatePicker");
+
+  picker.value = currentWorkDateValue;
+
+  if (picker.showPicker) {
+    picker.showPicker();
+  } else {
+    picker.click();
+  }
+}
+
+function changeWorkDateFromCalendar() {
+  const picker = document.getElementById("quickDatePicker");
+
+  if (!picker.value) return;
+
+  currentWorkDateValue = picker.value;
+
+  document.getElementById("workDate").value = picker.value;
+
+  loadAssignmentTasks();
 }
 
 function drawCategories() {
