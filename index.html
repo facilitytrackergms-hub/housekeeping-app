@@ -1,277 +1,49 @@
+<!-- Purpose: Login Interface & Connection -->
+<!-- Location: index.html -->
+
 <!DOCTYPE html>
-<html>
-
-<!-- INDEX-A1: PAGE HEAD / PHONE SETUP -->
+<html lang="en">
 <head>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-  <title>Employee Tasks</title>
-
-  <!-- INDEX-B1: PAGE STYLE -->
-  <style>
-
-    /* INDEX-B2: GLOBAL STYLE */
-    * {
-      box-sizing: border-box;
-    }
-
-    body {
-      margin: 0;
-      padding: 0;
-      font-family: Arial, sans-serif;
-      background: #eef2f7;
-
-      display: flex;
-      justify-content: center;
-      align-items: center;
-
-      min-height: 100vh;
-    }
-
-    /* INDEX-B3: MAIN WHITE CARD */
-    .card {
-      width: 92%;
-      max-width: 420px;
-
-      background: white;
-
-      border-radius: 30px;
-
-      padding: 35px 25px;
-
-      box-shadow: 0 10px 30px rgba(0,0,0,0.12);
-
-      text-align: center;
-    }
-
-    /* INDEX-B4: VIEW TAG */
-    .view-tag {
-      display: inline-block;
-      background: black;
-      color: white;
-      padding: 4px 10px;
-      border-radius: 8px;
-      font-size: 12px;
-      margin-bottom: 14px;
-    }
-
-    /* INDEX-B5: APP TITLE */
-    h1 {
-      margin: 0 0 35px 0;
-      font-size: 42px;
-      color: #1847d1;
-    }
-
-    /* INDEX-B6: PIN INPUT BOX */
-    input {
-      width: 100%;
-      padding: 22px;
-
-      font-size: 28px;
-
-      border-radius: 18px;
-      border: 2px solid #2e5cff;
-
-      outline: none;
-
-      margin-bottom: 30px;
-      text-align: center;
-    }
-
-    /* INDEX-B7: LOGIN BUTTON */
-    button {
-      width: 100%;
-
-      padding: 22px;
-
-      font-size: 28px;
-      font-weight: bold;
-
-      border: none;
-      border-radius: 18px;
-
-      background: #2e5cff;
-      color: white;
-
-      cursor: pointer;
-    }
-
-    button:active {
-      transform: scale(0.98);
-    }
-
-    /* INDEX-B8: MESSAGE BOX */
-    #message {
-      margin-top: 30px;
-
-      padding: 25px;
-
-      border-radius: 20px;
-
-      font-size: 24px;
-      font-weight: bold;
-
-      background: #edf9ef;
-      color: #1c7a32;
-
-      display: none;
-    }
-
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GMS Housekeeping Login</title>
 </head>
-
-<!-- INDEX-C1: PAGE BODY -->
 <body>
 
-  <!-- INDEX-C2: LOGIN CARD -->
-  <div class="card">
-
-    <!-- INDEX-C3: VIEW LABEL -->
-    <div class="view-tag">
-      VIEW 1
+    <div id="login-container">
+        <h2>Employee Login</h2>
+        <form id="login-form">
+            <input type="text" id="employee-id" placeholder="Employee ID (e.g. EMP001)" required>
+            <br><br>
+            <input type="password" id="pin" placeholder="4-Digit PIN" maxlength="4" required>
+            <br><br>
+            <button type="submit">Sign In</button>
+        </form>
+        <p id="login-feedback" style="color: red;"></p>
     </div>
 
-    <!-- INDEX-C4: APP TITLE -->
-    <h1>Employee Tasks</h1>
+    <!-- This script connects the HTML to your login.js logic -->
+    <script type="module">
+        import { verifyEmployee } from './src/login.js';
+        
+        const loginForm = document.getElementById('login-form');
+        const feedback = document.getElementById('login-feedback');
 
-    <!-- INDEX-C5: PIN INPUT -->
-    <input
-      type="password"
-      id="pin"
-      placeholder="Enter PIN"
-      autocomplete="new-password"
-      autocorrect="off"
-      autocapitalize="off"
-      spellcheck="false"
-    >
-
-    <!-- INDEX-C6: LOGIN BUTTON -->
-    <button onclick="login()">
-      LOGIN
-    </button>
-
-    <!-- INDEX-C7: LOGIN MESSAGE -->
-    <div id="message"></div>
-
-  </div>
-
-<!-- INDEX-D1: JAVASCRIPT -->
-<script>
-
-  /* INDEX-D2: GOOGLE APPS SCRIPT BACKEND URL */
-  const SCRIPT_URL =
-  "https://script.google.com/macros/s/AKfycby4kZ1JPlMrjzvjHSQxgpuZXl2zZ9jekz8j-tasSjS84uRS5iCx0UReV0b0s4tSGea-/exec";
-
-  /* INDEX-D3: LOGIN FUNCTION */
-  function login() {
-
-    const pin =
-      document.getElementById("pin").value.trim();
-
-    if (!pin) {
-      showMessage("Enter PIN", false);
-      return;
-    }
-
-    showMessage("Checking PIN...", true);
-
-    fetch(SCRIPT_URL, {
-
-      method: "POST",
-
-      body: JSON.stringify({
-
-        action: "loginEmployee",
-
-        pin: pin,
-
-        deviceName: "Employee Web App"
-
-      })
-
-    })
-
-    .then(response => response.json())
-
-    .then(result => {
-
-      if (result.success) {
-
-        /* INDEX-D4: SAVE EMPLOYEE LOGIN INFO */
-        localStorage.setItem(
-          "employeePin",
-          pin
-        );
-
-        localStorage.setItem(
-          "employeeId",
-          result.employeeId
-        );
-
-        localStorage.setItem(
-          "employeeName",
-          result.employeeName
-        );
-
-        /* INDEX-D5: GO TO MAIN APP */
-        window.location.href = "schedule.html";
-
-      } else {
-
-        showMessage(result.message, false);
-
-      }
-
-    })
-
-    .catch(error => {
-
-      showMessage("Connection error", false);
-
-    });
-
-  }
-
-  /* INDEX-D6: SHOW MESSAGE FUNCTION */
-  function showMessage(text, success) {
-
-    const message =
-      document.getElementById("message");
-
-    message.style.display = "block";
-
-    if (success) {
-
-      message.style.background =
-        "#edf9ef";
-
-      message.style.color =
-        "#1c7a32";
-
-    } else {
-
-      message.style.background =
-        "#ffecec";
-
-      message.style.color =
-        "#c62828";
-
-    }
-
-    message.innerHTML = text;
-
-  }
-
-  /* INDEX-D7: ENTER KEY LOGIN */
-  document
-    .getElementById("pin")
-    .addEventListener("keydown", function(event) {
-      if (event.key === "Enter") {
-        login();
-      }
-    });
-
-</script>
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const id = document.getElementById('employee-id').value;
+            const pin = document.getElementById('pin').value;
+            
+            feedback.textContent = "Verifying...";
+            
+            const success = await verifyEmployee(id, pin);
+            if (success) {
+                window.location.href = 'schedule.html';
+            } else {
+                feedback.textContent = "Invalid ID or PIN. Please try again.";
+            }
+        });
+    </script>
 
 </body>
 </html>
