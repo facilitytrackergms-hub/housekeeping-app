@@ -278,16 +278,19 @@
   </div>
 
   <div id="areaScreen" class="hidden">
-    <h2 id="areaTitle"></h2>
+  <div class="date-row">
     <h3 id="areaDateTitle"></h3>
-
-    <button id="completeAllCategoryButton" class="green" onclick="completeWholeCategory()">
-      COMPLETE ALL
-    </button>
-
-<div id="areaButtons" class="rooms-grid"></div>
-    <button class="back" onclick="backToCategories()">BACK</button>
+    <button class="date-change-btn" onclick="backToDate()">CHANGE DATE</button>
   </div>
+
+  <button id="completeAllCategoryButton" class="green" onclick="completeWholeCategory()">
+    ALL
+  </button>
+
+  <div id="areaButtons"></div>
+
+  <button class="back" onclick="backToCategories()">BACK</button>
+</div>
 
   <div id="taskScreen" class="hidden">
     <h2 id="taskTitle"></h2>
@@ -510,17 +513,14 @@ function selectCategory(category) {
   drawAreaButtons(category);
   showScreen("areaScreen");
 }
+document.getElementById("completeAllCategoryButton").innerText =
+  "ALL " + category.toUpperCase();
+  
 
-function drawAreaButtons(category) {
-  const box = document.getElementById("areaButtons");
-  box.innerHTML = "";
+document.getElementById("areaDateTitle").innerText =
+  currentWorkDateDisplay + " - " + currentWorkDayName;
 
-  document.getElementById("areaTitle").innerText = category;
-  document.getElementById("areaDateTitle").innerText =
-    currentWorkDateDisplay + " - " + currentWorkDayName;
 
-  document.getElementById("completeAllCategoryButton").innerText =
-    "COMPLETE ALL " + category.toUpperCase();
 
   const filtered = allTasks.filter(function(t) {
     return t.category === category;
