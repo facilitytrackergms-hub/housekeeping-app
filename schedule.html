@@ -189,15 +189,21 @@
     <button class="back" onclick="logout()">LOGOUT</button>
   </div>
 
-  <div id="dateScreen" class="hidden">
-    <h2 id="dateTitle"></h2>
-    <h3>Select Work Date</h3>
+<div id="dateScreen" class="hidden">
+  <h2 id="dateTitle"></h2>
 
-    <input type="date" id="workDate">
+  <h3>Select Work Date</h3>
 
-    <button onclick="loadAssignmentTasks()">CONTINUE</button>
-    <button class="back" onclick="backToAssignments()">BACK</button>
-  </div>
+  <input type="date" id="workDate">
+
+  <button onclick="loadAssignmentTasks()">
+    CONTINUE
+  </button>
+
+  <button class="back" onclick="backToCategories()">
+    BACK
+  </button>
+</div>
 
   <div id="categoryScreen" class="hidden">
     <h2 id="assignmentTitle"></h2>
@@ -310,12 +316,10 @@ function chooseAssignment(assignment) {
   currentArea = "";
   currentTaskList = [];
 
-  document.getElementById("dateTitle").innerText = assignment;
   setDefaultDate();
 
-  showScreen("dateScreen");
+  loadAssignmentTasks();
 }
-
 function setDefaultDate() {
   const input = document.getElementById("workDate");
 
