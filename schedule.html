@@ -288,17 +288,17 @@
       <div class="view-tag">VIEW 3</div>
     </div>
 
+    <input
+      type="date"
+      id="bigDatePicker"
+      onchange="changeWorkDateFromBigPicker()"
+    >
+
     <button id="completeAllCategoryButton" class="green" onclick="completeWholeCategory()">
       ALL
     </button>
 
-    <div class="date-row">
-      <h3 id="areaDateTitle"></h3>
-
-      <button class="date-change-btn" onclick="openCalendar()">
-        CHANGE DATE
-      </button>
-    </div>
+    <h3 id="areaDateTitle"></h3>
 
     <div id="areaButtons" class="rooms-grid"></div>
 
@@ -498,6 +498,21 @@
     }
   }
 
+  async function changeWorkDateFromBigPicker() {
+    const picker = document.getElementById("bigDatePicker");
+
+    if (!picker.value) return;
+
+    currentWorkDateISO = picker.value;
+
+    await loadAssignmentTasks();
+
+    if (selectedCategory) {
+      drawAreaButtons(selectedCategory);
+      showView(3);
+    }
+  }
+
   /* SCHEDULE-K1: LOAD TASKS AND PROGRESS FROM FIREBASE */
   async function chooseAssignment(assignment) {
     currentAssignment = assignment;
@@ -641,6 +656,8 @@
   function drawAreaButtons(category) {
     const box = document.getElementById("areaButtons");
     box.innerHTML = "";
+
+    document.getElementById("bigDatePicker").value = currentWorkDateISO;
 
     document.getElementById("completeAllCategoryButton").innerText =
       "ALL " + category.toUpperCase();
@@ -981,6 +998,7 @@
   window.chooseAssignment = chooseAssignment;
   window.openCalendar = openCalendar;
   window.changeWorkDateFromCalendar = changeWorkDateFromCalendar;
+  window.changeWorkDateFromBigPicker = changeWorkDateFromBigPicker;
   window.completeWholeCategory = completeWholeCategory;
   window.completeAllTasks = completeAllTasks;
   window.showIncompleteChecklist = showIncompleteChecklist;
