@@ -16,7 +16,7 @@
       min-height: 100vh;
       display: flex;
       justify-content: center;
-      align-items: center;
+      align-items: flex-start;
       padding: 15px;
     }
 
@@ -36,14 +36,9 @@
       margin-top: 0;
     }
 
-    input {
-      width: 100%;
-      padding: 20px;
-      font-size: 26px;
-      border-radius: 16px;
-      border: 2px solid #2e5cff;
-      text-align: center;
-      margin-bottom: 20px;
+    h2 {
+      font-size: 24px;
+      margin-bottom: 25px;
     }
 
     button {
@@ -59,14 +54,8 @@
       margin-bottom: 12px;
     }
 
-    .hidden {
-      display: none;
-    }
-
-    .red {
-      color: #c62828;
-      font-size: 20px;
-      font-weight: bold;
+    .gray {
+      background: #555;
     }
   </style>
 </head>
@@ -75,51 +64,33 @@
 
 <div class="card">
 
-  <div id="pinView">
-    <h1>Admin Login</h1>
+  <h1>Admin Dashboard</h1>
 
-    <input
-      type="password"
-      id="adminPin"
-      placeholder="Enter Admin PIN"
-      autocomplete="new-password"
-    >
+  <h2 id="adminName">Welcome, Admin</h2>
 
-    <button onclick="adminLogin()">LOGIN</button>
+  <button>Employees</button>
+  <button>Tasks</button>
+  <button>Task Logs</button>
+  <button>Room Labels</button>
 
-    <p id="message" class="red"></p>
-  </div>
-
-  <div id="dashboardView" class="hidden">
-    <h1>Admin Dashboard</h1>
-
-    <button>Employees</button>
-    <button>Tasks</button>
-    <button>Task Logs</button>
-    <button>Room Labels</button>
-  </div>
+  <button class="gray" onclick="logout()">LOGOUT</button>
 
 </div>
 
 <script>
-  function adminLogin() {
-    const pin = document.getElementById("adminPin").value.trim();
+  const sessionData = JSON.parse(sessionStorage.getItem("currentEmployee"));
 
-    if (pin === "4026") {
-      document.getElementById("pinView").classList.add("hidden");
-      document.getElementById("dashboardView").classList.remove("hidden");
-    } else {
-      document.getElementById("message").innerText = "Wrong admin PIN";
-    }
+  if (!sessionData || sessionData.role !== "Admin") {
+    window.location.href = "index.html";
   }
 
-  document
-    .getElementById("adminPin")
-    .addEventListener("keydown", function(event) {
-      if (event.key === "Enter") {
-        adminLogin();
-      }
-    });
+  document.getElementById("adminName").innerText =
+    "Welcome, " + (sessionData.firstName || "Admin");
+
+  function logout() {
+    sessionStorage.clear();
+    window.location.href = "index.html";
+  }
 </script>
 
 </body>
