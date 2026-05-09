@@ -182,76 +182,71 @@
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
 
-  /* INDEX-D3: LOGIN FUNCTION */
-  async function login() {
-    const pin =
-      document.getElementById("pin").value.trim();
+ /* INDEX-D3: UPDATED LOGIN FUNCTION (PIN ONLY) */
+async function login() {
+  const pinInput = document.getElementById("pin").value.trim();
 
-    if (!pin) {
-      showMessage("Enter PIN", false);
+  if (!pinInput) {
+    showMessage("Enter PIN", false);
+    return;
+  }
+
+  showMessage("Checking...", true);
+
+  try {
+    // FIX: Convert input to a Number because Firebase stores it as a number
+    const pinNumber = Number(pinInput);
+
+    const employeeQuery = query(
+      collection(db, "employees"),
+      where("pin", "==", pinNumber)
+    );
+
+    const employeeSnap = await getDocs(employeeQuery);
+
+    if (employeeSnap.empty) {
+      showMessage("Invalid PIN", false);
       return;
     }
 
-    showMessage("Checking...", true);
+    let foundEmployee = null;
 
-    try {
-      const employeeQuery = query(
-        collection(db, "employees"),
-        where("pin", "==", pin)
-      );
+    employeeSnap.docs.forEach(function(docSnap) {
+      const emp = docSnap.data();
 
-      const employeeSnap = await getDocs(employeeQuery);
+      // Check if employee is active
+      const active = String(emp.active || "Yes").trim();
 
-      if (employeeSnap.empty) {
-        showMessage("Invalid PIN", false);
-        return;
+      if (active !== "No" && active !== "false") {
+        foundEmployee = {
+          id: docSnap.id,
+          // FIX: Use firstName and the doc ID if employeeId is missing
+          firstName: emp.firstName || emp.FirstName || "Employee",
+          employeeName: emp.employeeName || emp.name || (emp.firstName || "Employee"),
+          pin: pinNumber,
+          role: emp.role || "Housekeeping"
+        };
       }
+    });
 
-      let foundEmployee = null;
-
-      employeeSnap.docs.forEach(function(docSnap) {
-        const emp = docSnap.data();
-
-        const active =
-          String(emp.active || "Yes").trim();
-
-        if (
-          active !== "No" &&
-          active !== "false"
-        ) {
-          foundEmployee = {
-            id: docSnap.id,
-            employeeId: emp.employeeId || emp.id || docSnap.id,
-            firstName: emp.firstName || emp.FirstName || "",
-            lastName: emp.lastName || emp.LastName || "",
-            employeeName:
-              emp.employeeName ||
-              emp.name ||
-              ((emp.firstName || "") + " " + (emp.lastName || "")).trim(),
-            pin: pin,
-            role: emp.role || "",
-            department: emp.department || ""
-          };
-        }
-      });
-
-      if (!foundEmployee) {
-        showMessage("Inactive employee", false);
-        return;
-      }
-
-      sessionStorage.setItem(
-        "currentEmployee",
-        JSON.stringify(foundEmployee)
-      );
-
-      window.location.href = "schedule.html";
-
-    } catch (error) {
-      showMessage("Connection error", false);
+    if (!foundEmployee) {
+      showMessage("Inactive employee", false);
+      return;
     }
-  }
 
+    // Save to session so schedule.html can see who logged in
+    sessionStorage.setItem(
+      "currentEmployee",
+      JSON.stringify(foundEmployee)
+    );
+
+    window.location.href = "schedule.html";
+
+  } catch (error) {
+    console.error("Login error details:", error);
+    showMessage("Connection error", false);
+  }
+}
   /* INDEX-D4: SHOW MESSAGE */
   function showMessage(text, success) {
     const message =
