@@ -1,69 +1,151 @@
-/* Purpose: Multi-step drill down (Category -> Area -> Tasks) */
-/* Location: GitHub -> schedule.html */
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Facility Tracker</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: Arial, sans-serif; background: #f2f2f2; padding: 18px 10px; }
+    .card { width: 100%; max-width: 430px; background: white; border-radius: 24px; padding: 24px; margin: auto; box-shadow: 0 4px 18px rgba(0,0,0,0.18); }
+    .view-tag { display: inline-block; background: black; color: white; padding: 4px 10px; border-radius: 8px; font-size: 12px; margin-bottom: 12px; text-align: center; }
+    h2, h3 { text-align: center; margin-top: 0; }
+    input[type="date"] { width: 100%; font-size: 20px; padding: 12px; margin-bottom: 20px; border-radius: 14px; border: 1px solid #ccc; text-align: center; }
+    button { width: 100%; border: none; border-radius: 14px; background: #1976d2; color: white; font-size: 20px; font-weight: bold; padding: 16px; margin: 8px 0; cursor: pointer; }
+    .back { background: #555; }
+    .hidden { display: none !important; }
+    .task-row { background: #fff; border: 1px solid #ddd; margin: 10px 0; padding: 15px; border-radius: 12px; display: flex; align-items: center; justify-content: space-between; }
+  </style>
+</head>
+<body>
 
-// Step 1: User picks Housekeeper 1 -> Show Categories
-window.chooseAssignment = function(assignment) {
-    currentAssignment = assignment;
-    document.getElementById("assignmentScreen").classList.add("hidden");
-    document.getElementById("categoryBtnScreen").classList.remove("hidden");
+<div class="card">
+  <h2 id="employeeName">Welcome</h2>
+
+  <!-- 1. DATE PICKER -->
+  <div style="text-align:center;">
+    <label style="font-weight: bold; font-size: 14px;">Work Date:</label>
+    <input type="date" id="globalWorkDate">
+  </div>
+
+  <!-- VIEW 1: ASSIGNMENTS -->
+  <div id="view1">
+    <div class="view-tag">VIEW 1</div>
+    <button onclick="navToView2('Housekeeper 1')">Housekeeper 1</button>
+    <button onclick="navToView2('Housekeeper 2')">Housekeeper 2</button>
+    <button onclick="navToView2('Laundry')">Laundry</button>
+  </div>
+
+  <!-- VIEW 2: CATEGORIES (Based on Column E) -->
+  <div id="view2" class="hidden">
+    <div class="view-tag">VIEW 2</div>
+    <h3 id="v2Title">Categories</h3>
+    <button onclick="navToView3('Common Area')">Common Area</button>
+    <button onclick="navToView3('Weekly Room')">Weekly Room</button>
+    <button onclick="navToView3('Daily Room')">Daily Room</button>
+    <button onclick="navToView3('Dehumidifier')">Dehumidifier</button>
+    <button class="back" onclick="showView(1)">BACK</button>
+  </div>
+
+  <!-- VIEW 3: AREAS (Dynamic Buttons for Room/Lobby) -->
+  <div id="view3" class="hidden">
+    <div class="view-tag">VIEW 3</div>
+    <h3 id="v3Title">Select Area</h3>
+    <div id="areaBtnContainer"></div>
+    <button class="back" onclick="showView(2)">BACK</button>
+  </div>
+
+  <!-- VIEW 4: FINAL TASK LIST -->
+  <div id="view4" class="hidden">
+    <div class="view-tag">VIEW 4</div>
+    <h3 id="v4Title">Tasks</h3>
+    <div id="taskListContainer"></div>
+    <button class="back" onclick="showView(3)">BACK</button>
+  </div>
+</div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+import { getFirestore, collection, query, where, getDocs, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+const firebaseConfig = {
+  apiKey: "AIzaSyBgq_ooBeEN4noEyIxYPLVokgM6RjCO648",
+  authDomain: "gms-task-tracker.firebaseapp.com",
+  projectId: "gms-task-tracker",
+  storageBucket: "gms-task-tracker.firebasestorage.app",
+  messagingSenderId: "790880979860",
+  appId: "1:790880979860:web:6faee2a6e56955af3c1d81"
 };
 
-// Step 2: User picks "Common Area" -> Load unique AREAS for that category
-window.loadAreas = async function(category) {
-    selectedCategory = category;
-    const areaContainer = document.getElementById("areaBtnContainer");
-    areaContainer.innerHTML = "Loading areas...";
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
+
+let currentAssignment = "";
+let selectedCategory = "";
+let currentWorkDate = new Date().toISOString().split('T')[0];
+
+document.getElementById("globalWorkDate").value = currentWorkDate;
+document.getElementById("globalWorkDate").onchange = (e) => currentWorkDate = e.target.value;
+
+// Navigation Helpers
+window.showView = (num) => {
+    [1,2,3,4].forEach(v => document.getElementById('view'+v).classList.add('hidden'));
+    document.getElementById('view'+num).classList.remove('hidden');
+};
+
+window.navToView2 = (val) => { currentAssignment = val; showView(2); };
+
+window.navToView3 = async (cat) => {
+    selectedCategory = cat;
+    const container = document.getElementById("areaBtnContainer");
+    container.innerHTML = "Loading Areas...";
+    showView(3);
+
+    const q = query(collection(db, "tasks"), 
+              where("assignment", "==", currentAssignment),
+              where("category", "==", selectedCategory));
     
-    document.getElementById("categoryBtnScreen").classList.add("hidden");
-    document.getElementById("areaScreen").classList.remove("hidden");
+    const snap = await getDocs(q);
+    const uniqueAreas = [...new Set(snap.docs.map(d => d.data().area))];
+    
+    container.innerHTML = "";
+    uniqueAreas.forEach(area => {
+        const btn = document.createElement("button");
+        btn.innerText = area;
+        btn.onclick = () => navToView4(area);
+        container.appendChild(btn);
+    });
+};
 
-    const q = query(
-        collection(db, "tasks"), 
-        where("assignment", "==", currentAssignment),
-        where("category", "==", selectedCategory)
-    );
+window.navToView4 = async (area) => {
+    const container = document.getElementById("taskListContainer");
+    container.innerHTML = "Loading Tasks...";
+    showView(4);
 
-    const snapshot = await getDocs(q);
-    const uniqueAreas = [...new Set(snapshot.docs.map(doc => doc.data().area))];
+    // Weekday Logic for your Column D
+    const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+    const selectedDay = dayNames[new Date(currentWorkDate + 'T00:00:00').getDay()];
+
+    const q = query(collection(db, "tasks"), where("area", "==", area));
+    const snap = await getDocs(q);
 
     let html = "";
-    uniqueAreas.forEach(area => {
-        html += `<button onclick="loadFinalTasks('${area}')">${area}</button>`;
-    });
-    areaContainer.innerHTML = html;
-};
-
-// Step 3: User picks "Front Lobby" -> Load TASKS for that Area + Day
-window.loadFinalTasks = async function(area) {
-    const taskContainer = document.getElementById("taskListContainer");
-    taskContainer.innerHTML = "Loading tasks...";
-    
-    document.getElementById("areaScreen").classList.add("hidden");
-    document.getElementById("taskViewScreen").classList.remove("hidden");
-
-    // Convert calendar date to Weekday (e.g., "Monday")
-    const dateObj = new Date(currentWorkDateValue + 'T00:00:00');
-    const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-    const selectedDay = dayNames[dateObj.getDay()];
-
-    const q = query(
-        collection(db, "tasks"),
-        where("assignment", "==", currentAssignment),
-        where("area", "==", area)
-    );
-
-    const snapshot = await getDocs(q);
-    let html = `<h3>${area} Tasks (${selectedDay})</h3>`;
-    
-    snapshot.forEach(docSnap => {
-        const item = docSnap.data();
-        // Filter by Daily or the specific Weekday found in your Schedule column
+    snap.forEach(d => {
+        const item = d.data();
         if (item.schedule === "Daily" || item.schedule === selectedDay) {
             html += `<div class="task-row">
-                        <span>${item.task}</span>
-                        <input type="checkbox" onchange="updateFirebase('${docSnap.id}', this.checked)" ${item.status === 'done' ? 'checked' : ''}>
-                     </div>`;
+                <div><strong>${item.task}</strong></div>
+                <input type="checkbox" style="width:25px;height:25px;" 
+                       ${item.status === 'done' ? 'checked' : ''} 
+                       onchange="updateStatus('${d.id}', this.checked)">
+            </div>`;
         }
     });
-    taskContainer.innerHTML = html;
+    container.innerHTML = html || "No tasks for today!";
 };
+
+window.updateStatus = async (id, checked) => {
+    await updateDoc(doc(db, "tasks", id), { status: checked ? "done" : "pending" });
+};
+</script>
+</body>
+</html>
