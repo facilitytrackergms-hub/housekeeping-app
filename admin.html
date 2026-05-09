@@ -118,6 +118,35 @@
       font-size: 18px;
       margin-bottom: 12px;
     }
+
+    .filter-box {
+      background: #f7f7f7;
+      padding: 12px;
+      border-radius: 14px;
+      margin: 10px 0;
+      text-align: left;
+    }
+
+    .filter-box label {
+      display: block;
+      font-size: 18px;
+      margin: 8px 0;
+    }
+
+    .filter-box input[type="checkbox"] {
+      width: auto;
+      margin-right: 8px;
+      transform: scale(1.2);
+    }
+
+    .edit-banner {
+      background: #fff3cd;
+      color: #7a5500;
+      padding: 10px;
+      border-radius: 12px;
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
   </style>
 </head>
 
@@ -145,33 +174,9 @@
 
     <button class="gray" onclick="showDashboard()">BACK</button>
 
-    <input
-      id="empFirstName"
-      placeholder="First Name"
-      autocomplete="off"
-      autocorrect="off"
-      autocapitalize="off"
-      spellcheck="false"
-    >
-
-    <input
-      id="empEmployeeId"
-      placeholder="Employee ID"
-      autocomplete="off"
-      autocorrect="off"
-      autocapitalize="off"
-      spellcheck="false"
-    >
-
-    <input
-      id="empPin"
-      placeholder="PIN"
-      type="number"
-      autocomplete="off"
-      autocorrect="off"
-      autocapitalize="off"
-      spellcheck="false"
-    >
+    <input id="empFirstName" placeholder="First Name">
+    <input id="empEmployeeId" placeholder="Employee ID">
+    <input id="empPin" placeholder="PIN" type="number">
 
     <select id="empRole">
       <option value="">Select Role</option>
@@ -194,6 +199,10 @@
 
     <button class="gray" onclick="showDashboard()">BACK</button>
 
+    <div id="taskEditBanner" class="edit-banner hidden">
+      Editing task
+    </div>
+
     <select id="taskAssignment">
       <option value="">Select Daily Task</option>
       <option value="HK Schedule 1">HK Schedule 1</option>
@@ -201,23 +210,9 @@
       <option value="Laundry">Laundry</option>
     </select>
 
-    <input
-      id="taskArea"
-      placeholder="Room / Area"
-      autocomplete="off"
-      autocorrect="off"
-      autocapitalize="off"
-      spellcheck="false"
-    >
+    <input id="taskArea" placeholder="Room / Area">
 
-    <input
-      id="taskName"
-      placeholder="Task Name"
-      autocomplete="off"
-      autocorrect="off"
-      autocapitalize="off"
-      spellcheck="false"
-    >
+    <input id="taskName" placeholder="Task Name">
 
     <select id="taskSchedule">
       <option value="">Select Schedule</option>
@@ -241,16 +236,53 @@
       <option value="Daily Laundry Check">Daily Laundry Check</option>
     </select>
 
-    <button class="green" onclick="addTask()">ADD TASK</button>
+    <button id="saveTaskButton" class="green" onclick="saveTask()">ADD TASK</button>
+    <button id="cancelTaskEditButton" class="gray hidden" onclick="cancelTaskEdit()">CANCEL EDIT</button>
 
     <h2>Task List</h2>
 
+    <input id="taskSearch" placeholder="Search room or task name" oninput="loadTasks()">
+
     <select id="taskFilter" onchange="loadTasks()">
-      <option value="ALL">Show All</option>
+      <option value="ALL">Show All Daily Tasks</option>
       <option value="HK Schedule 1">HK Schedule 1</option>
       <option value="HK Schedule 2">HK Schedule 2</option>
       <option value="Laundry">Laundry</option>
     </select>
+
+    <div class="filter-box">
+      <h3>Search Categories</h3>
+
+      <label>
+        <input type="checkbox" class="categoryFilter" value="Common Area" onchange="loadTasks()">
+        Common Area
+      </label>
+
+      <label>
+        <input type="checkbox" class="categoryFilter" value="Weekly Room" onchange="loadTasks()">
+        Weekly Room
+      </label>
+
+      <label>
+        <input type="checkbox" class="categoryFilter" value="Daily Room" onchange="loadTasks()">
+        Daily Room
+      </label>
+
+      <label>
+        <input type="checkbox" class="categoryFilter" value="Dehumidifier" onchange="loadTasks()">
+        Dehumidifier
+      </label>
+
+      <label>
+        <input type="checkbox" class="categoryFilter" value="Weekly Laundry" onchange="loadTasks()">
+        Weekly Laundry
+      </label>
+
+      <label>
+        <input type="checkbox" class="categoryFilter" value="Daily Laundry Check" onchange="loadTasks()">
+        Daily Laundry Check
+      </label>
+    </div>
 
     <div id="tasksList"></div>
 
@@ -274,14 +306,7 @@
 
     <button class="gray" onclick="showDashboard()">BACK</button>
 
-    <input
-      id="roomNumber"
-      placeholder="Room Number"
-      autocomplete="off"
-      autocorrect="off"
-      autocapitalize="off"
-      spellcheck="false"
-    >
+    <input id="roomNumber" placeholder="Room Number">
 
     <select id="occupiedStatus">
       <option value="">Select Occupancy</option>
@@ -302,14 +327,7 @@
       <option value="Smelly">Smelly</option>
     </select>
 
-    <textarea
-      id="labelNotes"
-      placeholder="Notes"
-      autocomplete="off"
-      autocorrect="off"
-      autocapitalize="off"
-      spellcheck="false"
-    ></textarea>
+    <textarea id="labelNotes" placeholder="Notes"></textarea>
 
     <button class="green" onclick="saveRoomLabel()">SAVE ROOM LABEL</button>
     <button class="yellow" onclick="resetRoomLabel()">RESET ROOM FOR NEW RESIDENT</button>
@@ -366,6 +384,9 @@
     window.location.href = "index.html";
   }
 
+  let editingTaskId = "";
+  let allLoadedTasks = [];
+
   document.getElementById("adminInfo").innerText =
     "Logged in as: " + (sessionData.firstName || "Admin");
 
@@ -398,7 +419,7 @@
   function showTasks() {
     hideAllViews();
     document.getElementById("tasksView").classList.remove("hidden");
-    clearTaskForm();
+    cancelTaskEdit();
     loadTasks();
   }
 
@@ -432,7 +453,8 @@
       pin: pin,
       role: role,
       active: "Yes",
-      createdAt: serverTimestamp()
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
     });
 
     clearEmployeeForm();
@@ -482,7 +504,8 @@
       String(currentActive).toLowerCase() === "yes" ? "No" : "Yes";
 
     await updateDoc(doc(db, "employees", id), {
-      active: newValue
+      active: newValue,
+      updatedAt: serverTimestamp()
     });
 
     loadEmployees();
@@ -496,7 +519,7 @@
     loadEmployees();
   }
 
-  async function addTask() {
+  async function saveTask() {
     const assignment = document.getElementById("taskAssignment").value;
     const area = document.getElementById("taskArea").value.trim();
     const task = document.getElementById("taskName").value.trim();
@@ -508,7 +531,19 @@
       return;
     }
 
-    await addDoc(collection(db, "tasks"), {
+    const duplicateMessage = await checkTaskConflict(
+      assignment,
+      area,
+      task,
+      editingTaskId
+    );
+
+    if (duplicateMessage) {
+      alert(duplicateMessage);
+      return;
+    }
+
+    const taskData = {
       assignment: assignment,
       area: area,
       task: task,
@@ -516,11 +551,56 @@
       category: category,
       status: "pending",
       active: "Yes",
-      createdAt: serverTimestamp()
+      updatedAt: serverTimestamp()
+    };
+
+    if (editingTaskId) {
+      await updateDoc(doc(db, "tasks", editingTaskId), taskData);
+    } else {
+      taskData.createdAt = serverTimestamp();
+      await addDoc(collection(db, "tasks"), taskData);
+    }
+
+    cancelTaskEdit();
+    loadTasks();
+  }
+
+  async function checkTaskConflict(assignment, area, taskName, currentId) {
+    const snap = await getDocs(collection(db, "tasks"));
+
+    const cleanArea = String(area).trim().toLowerCase();
+    const cleanTask = String(taskName).trim().toLowerCase();
+
+    const isHousekeeping =
+      assignment === "HK Schedule 1" ||
+      assignment === "HK Schedule 2";
+
+    let conflict = "";
+
+    snap.docs.forEach(function(docSnap) {
+      if (conflict) return;
+      if (docSnap.id === currentId) return;
+
+      const item = docSnap.data();
+
+      const itemArea = String(item.area || "").trim().toLowerCase();
+      const itemTask = String(item.task || "").trim().toLowerCase();
+      const itemAssignment = String(item.assignment || "").trim();
+
+      if (itemArea !== cleanArea || itemTask !== cleanTask) return;
+
+      const itemIsHousekeeping =
+        itemAssignment === "HK Schedule 1" ||
+        itemAssignment === "HK Schedule 2";
+
+      if (isHousekeeping && itemIsHousekeeping) {
+        conflict =
+          "This room/task already exists in " + itemAssignment +
+          ". A housekeeping task can only be in one HK Schedule.";
+      }
     });
 
-    clearTaskForm();
-    loadTasks();
+    return conflict;
   }
 
   function clearTaskForm() {
@@ -531,20 +611,112 @@
     document.getElementById("taskCategory").value = "";
   }
 
+  function cancelTaskEdit() {
+    editingTaskId = "";
+
+    clearTaskForm();
+
+    document.getElementById("saveTaskButton").innerText = "ADD TASK";
+    document.getElementById("taskEditBanner").classList.add("hidden");
+    document.getElementById("cancelTaskEditButton").classList.add("hidden");
+  }
+
+  async function startEditTask(id) {
+    const snap = await getDocs(collection(db, "tasks"));
+
+    snap.docs.forEach(function(docSnap) {
+      if (docSnap.id !== id) return;
+
+      const task = docSnap.data();
+
+      editingTaskId = id;
+
+      document.getElementById("taskAssignment").value = task.assignment || "";
+      document.getElementById("taskArea").value = task.area || "";
+      document.getElementById("taskName").value = task.task || "";
+      document.getElementById("taskSchedule").value = task.schedule || "";
+      document.getElementById("taskCategory").value = task.category || "";
+
+      document.getElementById("saveTaskButton").innerText = "SAVE TASK";
+      document.getElementById("taskEditBanner").innerText =
+        "Editing: " + (task.area || "") + " - " + (task.task || "");
+      document.getElementById("taskEditBanner").classList.remove("hidden");
+      document.getElementById("cancelTaskEditButton").classList.remove("hidden");
+
+      window.scrollTo({
+        top: 0,
+        behavior: "smooth"
+      });
+    });
+  }
+
+  function getSelectedCategoryFilters() {
+    const selected = [];
+
+    document.querySelectorAll(".categoryFilter").forEach(function(box) {
+      if (box.checked) {
+        selected.push(box.value);
+      }
+    });
+
+    return selected;
+  }
+
   async function loadTasks() {
     const box = document.getElementById("tasksList");
     const filter = document.getElementById("taskFilter").value;
+    const search = document.getElementById("taskSearch").value.trim().toLowerCase();
+    const selectedCategories = getSelectedCategoryFilters();
 
     box.innerHTML = "Loading...";
 
     const snap = await getDocs(collection(db, "tasks"));
 
-    box.innerHTML = "";
+    allLoadedTasks = [];
 
     snap.docs.forEach(function(docSnap) {
       const task = docSnap.data();
 
+      allLoadedTasks.push({
+        id: docSnap.id,
+        data: task
+      });
+    });
+
+    allLoadedTasks.sort(function(a, b) {
+      const aTime =
+        a.data.updatedAt?.seconds ||
+        a.data.createdAt?.seconds ||
+        0;
+
+      const bTime =
+        b.data.updatedAt?.seconds ||
+        b.data.createdAt?.seconds ||
+        0;
+
+      return bTime - aTime;
+    });
+
+    box.innerHTML = "";
+
+    allLoadedTasks.forEach(function(item) {
+      const task = item.data;
+
       if (filter !== "ALL" && task.assignment !== filter) return;
+
+      if (
+        selectedCategories.length > 0 &&
+        !selectedCategories.includes(task.category)
+      ) {
+        return;
+      }
+
+      const searchText =
+        String(task.area || "").toLowerCase() + " " +
+        String(task.task || "").toLowerCase() + " " +
+        String(task.category || "").toLowerCase();
+
+      if (search && !searchText.includes(search)) return;
 
       const div = document.createElement("div");
       div.className = "item-card";
@@ -555,7 +727,8 @@
         "Assignment: " + (task.assignment || "") + "<br>" +
         "Schedule: " + (task.schedule || "") + "<br>" +
         "Category: " + (task.category || "") + "<br>" +
-        '<button class="red" onclick="deleteTask(\'' + docSnap.id + '\')">DELETE TASK</button>';
+        '<button class="yellow" onclick="startEditTask(\'' + item.id + '\')">EDIT TASK</button>' +
+        '<button class="red" onclick="deleteTask(\'' + item.id + '\')">DELETE TASK</button>';
 
       box.appendChild(div);
     });
@@ -569,6 +742,10 @@
     if (!confirm("Delete this task?")) return;
 
     await deleteDoc(doc(db, "tasks", id));
+
+    if (editingTaskId === id) {
+      cancelTaskEdit();
+    }
 
     loadTasks();
   }
@@ -585,7 +762,12 @@
       logs.push(docSnap.data());
     });
 
-    logs.reverse();
+    logs.sort(function(a, b) {
+      const aTime = a.timestamp?.seconds || 0;
+      const bTime = b.timestamp?.seconds || 0;
+
+      return bTime - aTime;
+    });
 
     box.innerHTML = "";
 
@@ -670,11 +852,22 @@
 
     const snap = await getDocs(collection(db, "rooms"));
 
-    box.innerHTML = "";
+    const rooms = [];
 
     snap.docs.forEach(function(docSnap) {
-      const room = docSnap.data();
+      rooms.push(docSnap.data());
+    });
 
+    rooms.sort(function(a, b) {
+      const aRoom = Number(a.roomNumber || 0);
+      const bRoom = Number(b.roomNumber || 0);
+
+      return aRoom - bRoom;
+    });
+
+    box.innerHTML = "";
+
+    rooms.forEach(function(room) {
       const isMold =
         room.moldRisk === "Mold Watch" ||
         room.moldRisk === "High Mold Risk";
@@ -719,6 +912,11 @@
         document.getElementById("moldRisk").value = room.moldRisk || "";
         document.getElementById("smellStatus").value = room.smellStatus || "";
         document.getElementById("labelNotes").value = room.labelNotes || "";
+
+        window.scrollTo({
+          top: 0,
+          behavior: "smooth"
+        });
       }
     });
   }
@@ -756,9 +954,11 @@
   window.toggleEmployeeActive = toggleEmployeeActive;
   window.deleteEmployee = deleteEmployee;
 
-  window.addTask = addTask;
+  window.saveTask = saveTask;
   window.loadTasks = loadTasks;
   window.deleteTask = deleteTask;
+  window.startEditTask = startEditTask;
+  window.cancelTaskEdit = cancelTaskEdit;
 
   window.loadLogs = loadLogs;
 
