@@ -56,11 +56,7 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 import { getFirestore, collection, query, where, getDocs, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-// 2. YOUR FIREBASE CONFIG
-const firebaseConfig = {
-  projectId: "gms-task-tracker",
-  // Copy your full config object from Firebase Project Settings here
-};
+// 2. YOUR FIREBASE CONFIG (Duplicate removed)
 const firebaseConfig = {
   apiKey: "AIzaSyBgq_ooBeEN4noEyIxYPLVokgM6RjCO648",
   authDomain: "gms-task-tracker.firebaseapp.com",
@@ -70,6 +66,7 @@ const firebaseConfig = {
   appId: "1:790880979860:web:6faee2a6e56955af3c1d81",
   measurementId: "G-5TRHQMS039"
 };
+
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
@@ -84,22 +81,24 @@ let currentWorkDateValue = new Date().toISOString().split('T')[0];
 document.getElementById("globalWorkDate").value = currentWorkDateValue;
 document.getElementById("employeeName").innerText = "Welcome, " + currentEmployee;
 
-// Event Listeners for Module Script
+// 3. EVENT LISTENERS
 document.getElementById("globalWorkDate").onchange = (e) => {
     currentWorkDateValue = e.target.value;
     if (!document.getElementById("categoryScreen").classList.contains("hidden")) loadTasks();
 };
+
 document.getElementById("btnH1").onclick = () => chooseAssignment('Housekeeper 1');
 document.getElementById("btnH2").onclick = () => chooseAssignment('Housekeeper 2');
 document.getElementById("btnLaundry").onclick = () => chooseAssignment('Laundry');
 document.getElementById("btnLogout").onclick = () => { sessionStorage.clear(); window.location.href = "index.html"; };
 
-function chooseAssignment(assignment) {
+// 4. FUNCTIONS
+async function chooseAssignment(assignment) {
     currentAssignment = assignment;
     document.getElementById("displayAssignment").innerText = assignment;
     document.getElementById("assignmentScreen").classList.add("hidden");
     document.getElementById("categoryScreen").classList.remove("hidden");
-    loadTasks();
+    await loadTasks();
 }
 
 async function loadTasks() {
@@ -111,7 +110,7 @@ async function loadTasks() {
         const querySnapshot = await getDocs(q);
 
         if (querySnapshot.empty) {
-            taskContainer.innerHTML = "<div class='view-center'>No tasks found.</div>";
+            taskContainer.innerHTML = "<div class='view-center'>No tasks found for " + currentAssignment + ".</div>";
             return;
         }
 
@@ -129,12 +128,12 @@ async function loadTasks() {
         });
         taskContainer.innerHTML = html + '</div>';
 
-        // Attach listeners to checkboxes
         document.querySelectorAll('.task-check').forEach(cb => {
             cb.onchange = (e) => toggleTaskStatus(e.target.dataset.id, e.target.checked);
         });
 
     } catch (error) {
+        console.error("Load Error:", error);
         taskContainer.innerHTML = `<div class='view-center' style='color:red;'>Error: ${error.message}</div>`;
     }
 }
@@ -143,6 +142,7 @@ async function toggleTaskStatus(taskId, isChecked) {
     try {
         await updateDoc(doc(db, "tasks", taskId), { status: isChecked ? "done" : "pending" });
     } catch (error) {
+        console.error("Save Error:", error);
         alert("Failed to save status.");
     }
 }
