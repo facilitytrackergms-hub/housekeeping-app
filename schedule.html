@@ -88,8 +88,51 @@ function chooseAssignment(assignment) {
     loadTasks();
 }
 
+/* Purpose: Fetch tasks directly from Firebase for maximum speed */
+/* Location: schedule.html -> inside <script> tag */
+
 async function loadTasks() {
-    console.log("Loading tasks for:", currentAssignment, "Date:", currentWorkDateValue);
+    const taskContainer = document.querySelector("#categoryScreen p");
+    taskContainer.innerHTML = "<div class='view-center'>Loading your schedule...</div>";
+
+    try {
+        // 1. Point to the 'tasks' collection we just created
+        const tasksRef = db.collection("tasks");
+        
+        // 2. Filter for the current assignment (e.g., 'Housekeeper 1')
+        const q = tasksRef.where("assignment", "==", currentAssignment);
+        
+        const querySnapshot = await q.get();
+        
+        if (querySnapshot.empty) {
+            taskContainer.innerHTML = "<div class='view-center'>No tasks found.</div>";
+            return;
+        }
+
+        let html = '<div style="margin-top: 20px;">';
+        
+        querySnapshot.forEach((doc) => {
+            const item = doc.data();
+            const docId = doc.id;
+            
+            html += `
+                <div style="background: #fff; border: 1px solid #ddd; margin: 10px 0; padding: 15px; border-radius: 12px; display: flex; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
+                    <div style="flex-grow: 1;">
+                        <strong style="color: #1976d2; display: block; font-size: 14px;">${item.area}</strong>
+                        <span style="font-size: 18px;">${item.task}</span>
+                    </div>
+                    <input type="checkbox" 
+                           style="width: 30px; height: 30px; cursor: pointer;"
+                           onclick="toggleTaskStatus('${docId}', this.checked)"
+                           ${item.status === 'done' ? 'checked' : ''}>
+                </div>`;
+        });
+        
+        taskContainer.innerHTML = html + '</div>';
+    } catch (error) {
+        console.error("Firebase Error:", error);
+        taskContainer.innerHTML = "<div class='view-center' style='color:red;'>Error loading tasks.</div>";
+    }
 }
 
 function logout() {
