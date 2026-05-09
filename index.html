@@ -218,11 +218,6 @@ if (!pinInput) {
   return;
 }
 
-if (pinInput === "4026") {
-  window.location.href = "admin.html";
-  return;
-}
-
 showMessage("Checking...", true);
 
     try {
@@ -258,14 +253,24 @@ showMessage("Checking...", true);
         }
       });
 
-      if (!foundEmployee) {
-        showMessage("Inactive employee", false);
-        return;
-      }
+if (!foundEmployee) {
+  showMessage("Inactive employee", false);
+  return;
+}
 
-      document.getElementById("message").style.display = "none";
-      document.getElementById("pinView").style.display = "none";
-      document.getElementById("taskView").style.display = "block";
+if (foundEmployee.role === "Admin") {
+  sessionStorage.setItem(
+    "currentEmployee",
+    JSON.stringify(foundEmployee)
+  );
+
+  window.location.href = "admin.html";
+  return;
+}
+
+document.getElementById("message").style.display = "none";
+document.getElementById("pinView").style.display = "none";
+document.getElementById("taskView").style.display = "block";
 
       document.getElementById("welcomeName").innerHTML =
         "Welcome, " + foundEmployee.firstName;
