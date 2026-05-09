@@ -121,33 +121,46 @@ document.getElementById("globalWorkDate").onchange = (e) => {
     if (!document.getElementById("view4").classList.contains("hidden")) loadTasks();
 };
 
+/* Updated Filtering Logic for View 3 */
 async function navToView3(cat) {
     selectedCategory = cat;
     const container = document.getElementById("areaBtnContainer");
-    container.innerHTML = "Loading Areas...";
+    container.innerHTML = "Searching tasks...";
     showView(3);
 
-    // Get current weekday name
+    // Get current weekday (e.g., "Friday")
     const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
     const selectedDay = dayNames[new Date(currentWorkDate + 'T00:00:00').getDay()];
 
+    // Query for the Assignment (Housekeeper 1, etc.)
     const q = query(collection(db, "tasks"), 
-              where("assignment", "==", currentAssignment),
-              where("category", "==", selectedCategory));
+              where("assignment", "==", currentAssignment));
     
     const snap = await getDocs(q);
     
-    // Filter areas based on the Schedule Column (Daily or the selected Weekday)
+    // THE FIX: Check every field carefully and ignore capital letters
     const filteredDocs = snap.docs.filter(d => {
         const item = d.data();
-        return item.schedule === "Daily" || item.schedule === selectedDay;
+        
+        // 1. Check Category (Matches Column E)
+        const itemCat = (item.category || "").toLowerCase();
+        const targetCat = cat.toLowerCase();
+        
+        // 2. Check Schedule (Matches Column D)
+        const itemSched = (item.schedule || "").toLowerCase();
+        const targetDay = selectedDay.toLowerCase();
+
+        return itemCat === targetCat && (itemSched === targetDay || itemSched === "daily");
     });
 
     const uniqueAreas = [...new Set(filteredDocs.map(d => d.data().area))];
     
     container.innerHTML = "";
     if (uniqueAreas.length === 0) {
-        container.innerHTML = `<div style="text-align:center; padding-top:20px;">No areas found for ${selectedDay}.</div>`;
+        container.innerHTML = `<div style="text-align:center; padding-top:20px;">
+            No areas found for ${selectedDay}.<br>
+            <small style="color:gray;">(Check if Category "${cat}" matches exactly in Firebase)</small>
+        </div>`;
         return;
     }
 
