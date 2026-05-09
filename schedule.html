@@ -231,6 +231,49 @@
         transform: rotate(360deg);
       }
     }
+
+    /* SCHEDULE-B12: CUSTOM CONFIRM POPUP */
+    .custom-modal-bg {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.55);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 999999;
+    }
+
+    .custom-modal-box {
+      width: 90%;
+      max-width: 380px;
+      background: white;
+      border-radius: 22px;
+      padding: 25px;
+      text-align: center;
+      box-shadow: 0 5px 20px rgba(0,0,0,0.35);
+    }
+
+    .custom-modal-box h3 {
+      font-size: 28px;
+      margin-bottom: 15px;
+    }
+
+    .custom-modal-box p {
+      font-size: 22px;
+      margin-bottom: 20px;
+    }
+
+    .custom-modal-row {
+      display: flex;
+      gap: 10px;
+    }
+
+    .custom-modal-row button {
+      flex: 1;
+    }
   </style>
 </head>
 
@@ -285,32 +328,32 @@
 
   </div>
 
-<!-- SCHEDULE-F1: VIEW 3/4/5/6 - AREA / ROOM SCREEN -->
-<div id="view3" class="hidden">
+  <!-- SCHEDULE-F1: VIEW 3/4/5/6 - AREA / ROOM SCREEN -->
+  <div id="view3" class="hidden">
 
-  <div class="view-center">
-    <div class="view-tag" id="areaViewTag">VIEW 3</div>
+    <div class="view-center">
+      <div class="view-tag" id="areaViewTag">VIEW 3</div>
+    </div>
+
+    <div id="areaBigDatePickerBox" class="top-date-box hidden">
+      <h3 id="areaDateTitle"></h3>
+
+      <input
+        type="date"
+        id="bigDatePicker"
+        onchange="changeWorkDateFromBigPicker()"
+      >
+    </div>
+
+    <button id="completeAllCategoryButton" class="green" onclick="completeWholeCategory()">
+      ALL
+    </button>
+
+    <div id="areaButtons" class="rooms-grid"></div>
+
+    <button class="back" onclick="backToCategories()">BACK</button>
+
   </div>
-
-  <div id="areaBigDatePickerBox" class="top-date-box hidden">
-    <h3 id="areaDateTitle"></h3>
-
-    <input
-      type="date"
-      id="bigDatePicker"
-      onchange="changeWorkDateFromBigPicker()"
-    >
-  </div>
-
-  <button id="completeAllCategoryButton" class="green" onclick="completeWholeCategory()">
-    ALL
-  </button>
-
-  <div id="areaButtons" class="rooms-grid"></div>
-
-  <button class="back" onclick="backToCategories()">BACK</button>
-
-</div>
 
   <!-- SCHEDULE-G1: VIEW 7 - TASK COMPLETION SCREEN -->
   <div id="view4" class="hidden">
@@ -358,6 +401,24 @@
     <p id="message"></p>
 
     <button class="back" onclick="backToAreas()">BACK</button>
+
+  </div>
+
+</div>
+
+<!-- CUSTOM CONFIRM POPUP -->
+<div id="customConfirmModal" class="custom-modal-bg hidden">
+
+  <div class="custom-modal-box">
+
+    <h3>Confirm</h3>
+
+    <p id="customConfirmText"></p>
+
+    <div class="custom-modal-row">
+      <button class="green" onclick="customConfirmYes()">YES</button>
+      <button class="back" onclick="customConfirmNo()">CANCEL</button>
+    </div>
 
   </div>
 
@@ -432,6 +493,8 @@
   let allTasksForDay = [];
   let progressData = {};
   let currentTaskList = [];
+
+  let customConfirmResolve = null;
 
   /* SCHEDULE-J1: LOADING FUNCTIONS */
   function showLoading() {
@@ -734,18 +797,18 @@
     }
   }
 
- function setAreaDatePickerVisibility(category) {
-  const pickerBox = document.getElementById("areaBigDatePickerBox");
-  const dateTitle = document.getElementById("areaDateTitle");
+  function setAreaDatePickerVisibility(category) {
+    const pickerBox = document.getElementById("areaBigDatePickerBox");
+    const dateTitle = document.getElementById("areaDateTitle");
 
-  if (category === "Weekly Room" || category === "Weekly Laundry") {
-    pickerBox.classList.remove("hidden");
-    dateTitle.classList.remove("hidden");
-  } else {
-    pickerBox.classList.add("hidden");
-    dateTitle.classList.add("hidden");
+    if (category === "Weekly Room" || category === "Weekly Laundry") {
+      pickerBox.classList.remove("hidden");
+      dateTitle.classList.remove("hidden");
+    } else {
+      pickerBox.classList.add("hidden");
+      dateTitle.classList.add("hidden");
+    }
   }
-}
 
   /* SCHEDULE-N1: TASK COUNT AND COLOR LOGIC */
   function getTaskCounts(tasks) {
@@ -819,82 +882,85 @@
       box.appendChild(div);
     });
   }
-async function confirmEmployeePin() {
-  const enteredPin = prompt("Enter your PIN to continue:");
 
-  if (!enteredPin) {
-    return false;
-  }
+  async function confirmEmployeePin() {
+    const enteredPin = prompt("Enter your PIN to continue:");
 
-  const cleanPin = String(enteredPin).trim();
-
-  const sessionPin =
-    String(
-      sessionData.pin ||
-      sessionData.PIN ||
-      sessionData.employeePin ||
-      sessionData.password ||
-      ""
-    ).trim();
-
-  if (sessionPin && cleanPin === sessionPin) {
-    return true;
-  }
-
-  const employeeQuery = query(
-    collection(db, "employees"),
-    where("pin", "==", cleanPin)
-  );
-
-  const employeeSnap = await getDocs(employeeQuery);
-
-  let valid = false;
-
-  employeeSnap.docs.forEach(function(employeeDoc) {
-    const emp = employeeDoc.data();
-
-    const empId =
-      String(emp.employeeId || emp.id || employeeDoc.id || "").trim();
-
-    const currentId =
-      String(employeeId || "").trim();
-
-    const active =
-      String(emp.active || "Yes").trim();
-
-    if (
-      (!currentId || empId === currentId) &&
-      active !== "No" &&
-      active !== "false"
-    ) {
-      valid = true;
+    if (!enteredPin) {
+      return false;
     }
-  });
 
-  if (!valid) {
-    alert("Wrong PIN.");
+    const cleanPin = String(enteredPin).trim();
+
+    const sessionPin =
+      String(
+        sessionData.pin ||
+        sessionData.PIN ||
+        sessionData.employeePin ||
+        sessionData.password ||
+        ""
+      ).trim();
+
+    if (sessionPin && cleanPin === sessionPin) {
+      return true;
+    }
+
+    const employeeQuery = query(
+      collection(db, "employees"),
+      where("pin", "==", cleanPin)
+    );
+
+    const employeeSnap = await getDocs(employeeQuery);
+
+    let valid = false;
+
+    employeeSnap.docs.forEach(function(employeeDoc) {
+      const emp = employeeDoc.data();
+
+      const empId =
+        String(emp.employeeId || emp.id || employeeDoc.id || "").trim();
+
+      const currentId =
+        String(employeeId || "").trim();
+
+      const active =
+        String(emp.active || "Yes").trim();
+
+      if (
+        (!currentId || empId === currentId) &&
+        active !== "No" &&
+        active !== "false"
+      ) {
+        valid = true;
+      }
+    });
+
+    if (!valid) {
+      alert("Wrong PIN.");
+    }
+
+    return valid;
   }
 
-  return valid;
-}
- async function completeAllTasks() {
-  showLoading();
+  async function completeAllTasks() {
+    showLoading();
 
-  await saveTaskStatuses(
-    currentTaskList.map(function(task) {
-      return {
-        task: task,
-        status: "Completed",
-        reason: ""
-      };
-    })
-  );
+    await saveTaskStatuses(
+      currentTaskList.map(function(task) {
+        return {
+          task: task,
+          status: "Completed",
+          reason: ""
+        };
+      })
+    );
 
-  hideLoading();
+    hideLoading();
 
-  drawAreaButtons(selectedCategory);
-  showView(3);
-}
+    drawAreaButtons(selectedCategory);
+    showView(3);
+  }
+
   function showIncompleteChecklist() {
     document.getElementById("checklistBox").classList.remove("hidden");
   }
@@ -941,42 +1007,70 @@ async function confirmEmployeePin() {
     drawAreaButtons(selectedCategory);
     showView(3);
   }
-async function completeWholeCategory() {
-  const categoryTasks =
-    allTasksForDay.filter(function(task) {
-      return task.category === selectedCategory;
+
+  async function completeWholeCategory() {
+    const categoryTasks =
+      allTasksForDay.filter(function(task) {
+        return task.category === selectedCategory;
+      });
+
+    if (categoryTasks.length === 0) {
+      alert("No tasks in this category.");
+      return;
+    }
+
+    const confirmMessage =
+      "Mark ALL " + selectedCategory + " tasks completed for " +
+      currentWorkDateDisplay + "?";
+
+    const confirmed = await showCustomConfirm(confirmMessage);
+
+    if (!confirmed) {
+      return;
+    }
+
+    showLoading();
+
+    await saveTaskStatuses(
+      categoryTasks.map(function(task) {
+        return {
+          task: task,
+          status: "Completed",
+          reason: ""
+        };
+      })
+    );
+
+    hideLoading();
+
+    drawAreaButtons(selectedCategory);
+    drawCategories();
+  }
+
+  function showCustomConfirm(message) {
+    document.getElementById("customConfirmText").innerText = message;
+    document.getElementById("customConfirmModal").classList.remove("hidden");
+
+    return new Promise(function(resolve) {
+      customConfirmResolve = resolve;
     });
-
-  if (categoryTasks.length === 0) {
-    alert("No tasks in this category.");
-    return;
   }
 
-  const confirmMessage =
-    "Mark ALL " + selectedCategory + " tasks completed for " +
-    currentWorkDateDisplay + "?";
+  function customConfirmYes() {
+    document.getElementById("customConfirmModal").classList.add("hidden");
 
-  if (!confirm(confirmMessage)) {
-    return;
+    if (customConfirmResolve) {
+      customConfirmResolve(true);
+    }
   }
 
-  showLoading();
+  function customConfirmNo() {
+    document.getElementById("customConfirmModal").classList.add("hidden");
 
-  await saveTaskStatuses(
-    categoryTasks.map(function(task) {
-      return {
-        task: task,
-        status: "Completed",
-        reason: ""
-      };
-    })
-  );
-
-  hideLoading();
-
-  drawAreaButtons(selectedCategory);
-  drawCategories();
-}
+    if (customConfirmResolve) {
+      customConfirmResolve(false);
+    }
+  }
 
   /* SCHEDULE-Q1: SAVE FIREBASE PROGRESS */
   async function saveTaskStatuses(saveItems) {
@@ -1103,6 +1197,8 @@ async function completeWholeCategory() {
   window.backToAreas = backToAreas;
   window.showView = showView;
   window.logout = logout;
+  window.customConfirmYes = customConfirmYes;
+  window.customConfirmNo = customConfirmNo;
 
 </script>
 
