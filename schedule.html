@@ -28,57 +28,71 @@
 <body>
 
 <div class="card">
-  <!-- WELCOME HEADER (Moved to top) -->
   <h2 id="employeeName">Welcome</h2>
 
-  <!-- GLOBAL DATE PICKER -->
   <div class="view-center">
     <label style="font-weight: bold; font-size: 14px;">Selected Work Date:</label>
-    <input type="date" id="globalWorkDate" onchange="updateDate(this.value)">
+    <input type="date" id="globalWorkDate">
   </div>
 
-  <!-- VIEW 1: ASSIGNMENT SELECTION -->
   <div id="assignmentScreen">
     <div class="view-center"><div class="view-tag">VIEW 1</div></div>
-    <button onclick="chooseAssignment('Housekeeper 1')">Housekeeper 1</button>
-    <button onclick="chooseAssignment('Housekeeper 2')">Housekeeper 2</button>
-    <button onclick="chooseAssignment('Laundry')">Laundry</button>
-    <button class="back" onclick="logout()">LOGOUT</button>
+    <button id="btnH1">Housekeeper 1</button>
+    <button id="btnH2">Housekeeper 2</button>
+    <button id="btnLaundry">Laundry</button>
+    <button class="back" id="btnLogout">LOGOUT</button>
   </div>
 
-  <!-- VIEW 3: TASK LIST -->
   <div id="categoryScreen" class="hidden">
     <div class="view-center"><div class="view-tag">VIEW 3</div></div>
     <h3 id="displayAssignment"></h3>
-    <p style="text-align:center;">Task list will load here...</p>
+    <div id="taskListContainer">Task list will load here...</div>
     <button class="back" onclick="location.reload()">BACK TO ASSIGNMENTS</button>
   </div>
 </div>
 
-<div id="loadingScreen" class="loading-bg hidden"><div class="spinner"></div></div>
+<script type="module">
+// 1. IMPORT FIREBASE LIBRARIES
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+import { getFirestore, collection, query, where, getDocs, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-<script>
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycby4kZ1JPlMrjzvjHSQxgpuZXl2zZ9jekz8j-tasSjS84uRS5iCx0UReV0b0s4tSGea-/exec";
+// 2. YOUR FIREBASE CONFIG
+const firebaseConfig = {
+  projectId: "gms-task-tracker",
+  // Copy your full config object from Firebase Project Settings here
+};
+const firebaseConfig = {
+  apiKey: "AIzaSyBgq_ooBeEN4noEyIxYPLVokgM6RjCO648",
+  authDomain: "gms-task-tracker.firebaseapp.com",
+  projectId: "gms-task-tracker",
+  storageBucket: "gms-task-tracker.firebasestorage.app",
+  messagingSenderId: "790880979860",
+  appId: "1:790880979860:web:6faee2a6e56955af3c1d81",
+  measurementId: "G-5TRHQMS039"
+};
+const app = initializeApp(firebaseConfig);
+const db = getFirestore(app);
 
 // Setup Session
 const sessionData = JSON.parse(sessionStorage.getItem("currentEmployee"));
 if (!sessionData) window.location.href = "index.html";
 
 let currentEmployee = sessionData.firstName;
-let currentEmployeeId = sessionData.employeeId;
 let currentAssignment = "";
 let currentWorkDateValue = new Date().toISOString().split('T')[0];
 
-// Initialize UI
 document.getElementById("globalWorkDate").value = currentWorkDateValue;
 document.getElementById("employeeName").innerText = "Welcome, " + currentEmployee;
 
-function updateDate(newDate) {
-    currentWorkDateValue = newDate;
-    if (!document.getElementById("categoryScreen").classList.contains("hidden")) {
-        loadTasks();
-    }
-}
+// Event Listeners for Module Script
+document.getElementById("globalWorkDate").onchange = (e) => {
+    currentWorkDateValue = e.target.value;
+    if (!document.getElementById("categoryScreen").classList.contains("hidden")) loadTasks();
+};
+document.getElementById("btnH1").onclick = () => chooseAssignment('Housekeeper 1');
+document.getElementById("btnH2").onclick = () => chooseAssignment('Housekeeper 2');
+document.getElementById("btnLaundry").onclick = () => chooseAssignment('Laundry');
+document.getElementById("btnLogout").onclick = () => { sessionStorage.clear(); window.location.href = "index.html"; };
 
 function chooseAssignment(assignment) {
     currentAssignment = assignment;
@@ -88,75 +102,50 @@ function chooseAssignment(assignment) {
     loadTasks();
 }
 
-/* Purpose: Fetch tasks directly from Firebase for maximum speed */
-/* Location: schedule.html -> inside <script> tag */
-
 async function loadTasks() {
-    const taskContainer = document.querySelector("#categoryScreen p");
-    taskContainer.innerHTML = "<div class='view-center'>Loading your schedule...</div>";
+    const taskContainer = document.getElementById("taskListContainer");
+    taskContainer.innerHTML = "<div class='view-center'>Loading tasks...</div>";
 
     try {
-        // 1. Point to the 'tasks' collection we just created
-        const tasksRef = db.collection("tasks");
-        
-        // 2. Filter for the current assignment (e.g., 'Housekeeper 1')
-        const q = tasksRef.where("assignment", "==", currentAssignment);
-        
-        const querySnapshot = await q.get();
-        
+        const q = query(collection(db, "tasks"), where("assignment", "==", currentAssignment));
+        const querySnapshot = await getDocs(q);
+
         if (querySnapshot.empty) {
             taskContainer.innerHTML = "<div class='view-center'>No tasks found.</div>";
             return;
         }
 
         let html = '<div style="margin-top: 20px;">';
-        
-        querySnapshot.forEach((doc) => {
-            const item = doc.data();
-            const docId = doc.id;
-            
+        querySnapshot.forEach((docSnap) => {
+            const item = docSnap.data();
             html += `
                 <div style="background: #fff; border: 1px solid #ddd; margin: 10px 0; padding: 15px; border-radius: 12px; display: flex; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
                     <div style="flex-grow: 1;">
                         <strong style="color: #1976d2; display: block; font-size: 14px;">${item.area}</strong>
                         <span style="font-size: 18px;">${item.task}</span>
                     </div>
-                    <input type="checkbox" 
-                           style="width: 30px; height: 30px; cursor: pointer;"
-                           onclick="toggleTaskStatus('${docId}', this.checked)"
-                           ${item.status === 'done' ? 'checked' : ''}>
+                    <input type="checkbox" data-id="${docSnap.id}" class="task-check" style="width: 30px; height: 30px;" ${item.status === 'done' ? 'checked' : ''}>
                 </div>`;
         });
-        
         taskContainer.innerHTML = html + '</div>';
+
+        // Attach listeners to checkboxes
+        document.querySelectorAll('.task-check').forEach(cb => {
+            cb.onchange = (e) => toggleTaskStatus(e.target.dataset.id, e.target.checked);
+        });
+
     } catch (error) {
-        console.error("Firebase Error:", error);
-        taskContainer.innerHTML = "<div class='view-center' style='color:red;'>Error loading tasks.</div>";
+        taskContainer.innerHTML = `<div class='view-center' style='color:red;'>Error: ${error.message}</div>`;
     }
 }
-
-  /* Purpose: Save the checkbox status back to Firebase */
-/* Location: schedule.html -> inside <script> tag */
 
 async function toggleTaskStatus(taskId, isChecked) {
-    const newStatus = isChecked ? "done" : "pending";
-    
     try {
-        await db.collection("tasks").doc(taskId).update({
-            status: newStatus
-        });
-        console.log("Task updated!");
+        await updateDoc(doc(db, "tasks", taskId), { status: isChecked ? "done" : "pending" });
     } catch (error) {
-        console.error("Error updating task:", error);
-        alert("Could not save status. Check your connection.");
+        alert("Failed to save status.");
     }
 }
-
-function logout() {
-    sessionStorage.clear();
-    window.location.href = "index.html";
-}
 </script>
-
 </body>
 </html>
