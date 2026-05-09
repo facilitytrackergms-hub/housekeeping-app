@@ -135,6 +135,23 @@ async function loadTasks() {
     }
 }
 
+  /* Purpose: Save the checkbox status back to Firebase */
+/* Location: schedule.html -> inside <script> tag */
+
+async function toggleTaskStatus(taskId, isChecked) {
+    const newStatus = isChecked ? "done" : "pending";
+    
+    try {
+        await db.collection("tasks").doc(taskId).update({
+            status: newStatus
+        });
+        console.log("Task updated!");
+    } catch (error) {
+        console.error("Error updating task:", error);
+        alert("Could not save status. Check your connection.");
+    }
+}
+
 function logout() {
     sessionStorage.clear();
     window.location.href = "index.html";
