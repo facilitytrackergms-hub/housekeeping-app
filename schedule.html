@@ -1,4 +1,4 @@
-<!-- Purpose: Corrected Schedule Page with View 1 & 2 -->
+<!-- Purpose: Unified Dashboard with Global Date Picker -->
 <!-- Location: schedule.html -->
 
 <!DOCTYPE html>
@@ -17,11 +17,7 @@
     h2 { font-size: 30px; }
     h3 { font-size: 24px; }
     input, select, textarea { width: 100%; font-size: 22px; padding: 14px; margin: 10px 0 18px; border-radius: 14px; border: 1px solid #ccc; }
-    textarea { min-height: 90px; }
     button { width: 100%; border: none; border-radius: 14px; background: #1976d2; color: white; font-size: 22px; font-weight: bold; padding: 16px; margin: 8px 0; cursor: pointer; }
-    .green { background: #2e7d32; }
-    .yellow { background: #f9a825; color: black; }
-    .red { background: #c62828; }
     .back { background: #555; }
     .hidden { display: none !important; }
     .loading-bg { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.7); display: flex; justify-content: center; align-items: center; z-index: 99999; }
@@ -32,6 +28,12 @@
 <body>
 
 <div class="card">
+  <!-- GLOBAL DATE PICKER (Available on all views) -->
+  <div class="view-center">
+    <label style="font-weight: bold; font-size: 14px;">Selected Work Date:</label>
+    <input type="date" id="globalWorkDate" onchange="updateDate(this.value)">
+  </div>
+
   <!-- VIEW 1: ASSIGNMENT SELECTION -->
   <div id="assignmentScreen">
     <div class="view-center"><div class="view-tag">VIEW 1</div></div>
@@ -42,13 +44,12 @@
     <button class="back" onclick="logout()">LOGOUT</button>
   </div>
 
-  <!-- VIEW 2: DATE SELECTION (New) -->
-  <div id="dateScreen" class="hidden">
-    <div class="view-center"><div class="view-tag">VIEW 2</div></div>
-    <h3>Select Date</h3>
-    <input type="date" id="workDate">
-    <button class="green" onclick="confirmDate()">CONTINUE</button>
-    <button class="back" onclick="location.reload()">BACK</button>
+  <!-- VIEW 3: TASK LIST (Place your Category/Task HTML here) -->
+  <div id="categoryScreen" class="hidden">
+    <div class="view-center"><div class="view-tag">VIEW 3</div></div>
+    <h3 id="displayAssignment"></h3>
+    <p style="text-align:center;">Task list will load here...</p>
+    <button class="back" onclick="location.reload()">BACK TO ASSIGNMENTS</button>
   </div>
 </div>
 
@@ -57,35 +58,42 @@
 <script>
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycby4kZ1JPlMrjzvjHSQxgpuZXl2zZ9jekz8j-tasSjS84uRS5iCx0UReV0b0s4tSGea-/exec";
 
+// Setup Session
 const sessionData = JSON.parse(sessionStorage.getItem("currentEmployee"));
-
-if (!sessionData) {
-    window.location.href = "index.html";
-}
+if (!sessionData) window.location.href = "index.html";
 
 let currentEmployee = sessionData.firstName;
 let currentEmployeeId = sessionData.employeeId;
 let currentAssignment = "";
-let currentWorkDateValue = "";
+let currentWorkDateValue = new Date().toISOString().split('T')[0]; // Default to today
 
+// Set Initial Date UI
+document.getElementById("globalWorkDate").value = currentWorkDateValue;
 document.getElementById("employeeName").innerText = "Welcome, " + currentEmployee;
 
-// --- VIEW 1 LOGIC ---
-function chooseAssignment(assignment) {
-    currentAssignment = assignment;
-    document.getElementById("assignmentScreen").classList.add("hidden");
-    document.getElementById("dateScreen").classList.remove("hidden");
+function updateDate(newDate) {
+    currentWorkDateValue = newDate;
+    console.log("Date updated to:", currentWorkDateValue);
+    // Refresh tasks automatically if we are already in View 3
+    if (!document.getElementById("categoryScreen").classList.contains("hidden")) {
+        loadTasks();
+    }
 }
 
-// --- VIEW 2 LOGIC ---
-function confirmDate() {
-    const dateInput = document.getElementById("workDate").value;
-    if (!dateInput) {
-        alert("Please select a date first.");
-        return;
-    }
-    currentWorkDateValue = dateInput;
-    alert("Moving to View 3 logic for: " + currentAssignment + " on " + currentWorkDateValue);
+function chooseAssignment(assignment) {
+    currentAssignment = assignment;
+    document.getElementById("displayAssignment").innerText = assignment;
+    
+    // Hide View 1, Show View 3
+    document.getElementById("assignmentScreen").classList.add("hidden");
+    document.getElementById("categoryScreen").classList.remove("hidden");
+    
+    loadTasks();
+}
+
+async function loadTasks() {
+    console.log("Fetching tasks for:", currentAssignment, "on", currentWorkDateValue);
+    // Add your apiCall logic here to populate View 3
 }
 
 function logout() {
