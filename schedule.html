@@ -25,12 +25,6 @@
 <div class="card">
   <h2 id="employeeName">Welcome</h2>
 
-  <!-- 1. GLOBAL DATE PICKER -->
-  <div class="view-center">
-    <label style="font-weight: bold; font-size: 14px;">Selected Work Date:</label>
-    <input type="date" id="globalWorkDate">
-  </div>
-
   <!-- VIEW 1: ASSIGNMENTS -->
   <div id="view1">
     <div class="view-center"><div class="view-tag">VIEW 1</div></div>
@@ -53,10 +47,17 @@
     <button class="back" onclick="showView(1)">BACK</button>
   </div>
 
-  <!-- VIEW 3: AREAS (Dynamic Room Grid) -->
+  <!-- VIEW 3: AREAS (Now contains the Date Picker) -->
   <div id="view3" class="hidden">
     <div class="view-center"><div class="view-tag">VIEW 3</div></div>
-    <h3 id="v3Title">Select Area</h3>
+    
+    <!-- DATE PICKER MOVED HERE -->
+    <div class="view-center" id="datePickerContainer">
+      <label style="font-weight: bold; font-size: 14px;">Selected Work Date:</label>
+      <input type="date" id="globalWorkDate">
+    </div>
+
+    <h3 id="v3Title" style="margin-top:15px;">Select Area</h3>
     <div id="areaBtnContainer" class="rooms-grid"></div>
     <button class="back" onclick="showView(2)">BACK</button>
   </div>
