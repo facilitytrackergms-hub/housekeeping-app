@@ -62,7 +62,7 @@
       color: #1847d1;
     }
 
-    /* INDEX-B6: INPUT BOXES */
+    /* INDEX-B6: INPUT BOX */
     input {
       width: 100%;
       padding: 22px;
@@ -134,18 +134,7 @@
     <!-- INDEX-C4: TITLE -->
     <h1>Employee Login</h1>
 
-    <!-- INDEX-C5: EMPLOYEE ID INPUT -->
-    <input
-      type="text"
-      id="employeeId"
-      placeholder="Employee ID"
-      autocomplete="off"
-      autocorrect="off"
-      autocapitalize="off"
-      spellcheck="false"
-    >
-
-    <!-- INDEX-C6: PIN INPUT -->
+    <!-- INDEX-C5: PIN INPUT -->
     <input
       type="password"
       id="pin"
@@ -156,12 +145,12 @@
       spellcheck="false"
     >
 
-    <!-- INDEX-C7: LOGIN BUTTON -->
+    <!-- INDEX-C6: LOGIN BUTTON -->
     <button onclick="login()">
       LOGIN
     </button>
 
-    <!-- INDEX-C8: LOGIN MESSAGE -->
+    <!-- INDEX-C7: LOGIN MESSAGE -->
     <div id="message"></div>
 
   </div>
@@ -195,16 +184,8 @@
 
   /* INDEX-D3: LOGIN FUNCTION */
   async function login() {
-    const employeeId =
-      document.getElementById("employeeId").value.trim();
-
     const pin =
       document.getElementById("pin").value.trim();
-
-    if (!employeeId) {
-      showMessage("Enter Employee ID", false);
-      return;
-    }
 
     if (!pin) {
       showMessage("Enter PIN", false);
@@ -216,13 +197,13 @@
     try {
       const employeeQuery = query(
         collection(db, "employees"),
-        where("employeeId", "==", employeeId)
+        where("pin", "==", pin)
       );
 
       const employeeSnap = await getDocs(employeeQuery);
 
       if (employeeSnap.empty) {
-        showMessage("Employee not found", false);
+        showMessage("Invalid PIN", false);
         return;
       }
 
@@ -231,33 +212,23 @@
       employeeSnap.docs.forEach(function(docSnap) {
         const emp = docSnap.data();
 
-        const storedPin =
-          String(
-            emp.pin ||
-            emp.PIN ||
-            emp.employeePin ||
-            emp.password ||
-            ""
-          ).trim();
-
         const active =
           String(emp.active || "Yes").trim();
 
         if (
-          storedPin === pin &&
           active !== "No" &&
           active !== "false"
         ) {
           foundEmployee = {
             id: docSnap.id,
-            employeeId: emp.employeeId || employeeId,
+            employeeId: emp.employeeId || emp.id || docSnap.id,
             firstName: emp.firstName || emp.FirstName || "",
             lastName: emp.lastName || emp.LastName || "",
             employeeName:
               emp.employeeName ||
               emp.name ||
               ((emp.firstName || "") + " " + (emp.lastName || "")).trim(),
-            pin: storedPin,
+            pin: pin,
             role: emp.role || "",
             department: emp.department || ""
           };
@@ -265,7 +236,7 @@
       });
 
       if (!foundEmployee) {
-        showMessage("Wrong PIN or inactive employee", false);
+        showMessage("Inactive employee", false);
         return;
       }
 
@@ -300,14 +271,6 @@
   }
 
   /* INDEX-D5: ENTER KEY LOGIN */
-  document
-    .getElementById("employeeId")
-    .addEventListener("keydown", function(event) {
-      if (event.key === "Enter") {
-        login();
-      }
-    });
-
   document
     .getElementById("pin")
     .addEventListener("keydown", function(event) {
