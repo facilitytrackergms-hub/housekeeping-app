@@ -66,6 +66,7 @@
       border-radius: 14px;
       border: 1px solid #ccc;
       margin: 6px 0;
+      background: white;
     }
 
     textarea {
@@ -110,18 +111,6 @@
       margin-top: 8px;
     }
 
-    .small-row {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 8px;
-    }
-
-    .label-row {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 6px;
-    }
-
     .top-info {
       background: #edf2ff;
       padding: 10px;
@@ -138,7 +127,10 @@
 
   <div id="dashboardView">
     <h1>Admin Dashboard</h1>
-    <div class="top-info" id="adminInfo">Admin</div>
+
+    <div class="top-info" id="adminInfo">
+      Admin
+    </div>
 
     <button onclick="showEmployees()">Employees</button>
     <button onclick="showTasks()">Tasks</button>
@@ -151,11 +143,38 @@
   <div id="employeesView" class="hidden">
     <h1>Employees</h1>
 
-    <input id="empFirstName" placeholder="First Name">
-    <input id="empEmployeeId" placeholder="Employee ID">
-    <input id="empPin" placeholder="PIN" type="number">
+    <button class="gray" onclick="showDashboard()">BACK</button>
+
+    <input
+      id="empFirstName"
+      placeholder="First Name"
+      autocomplete="off"
+      autocorrect="off"
+      autocapitalize="off"
+      spellcheck="false"
+    >
+
+    <input
+      id="empEmployeeId"
+      placeholder="Employee ID"
+      autocomplete="off"
+      autocorrect="off"
+      autocapitalize="off"
+      spellcheck="false"
+    >
+
+    <input
+      id="empPin"
+      placeholder="PIN"
+      type="number"
+      autocomplete="off"
+      autocorrect="off"
+      autocapitalize="off"
+      spellcheck="false"
+    >
 
     <select id="empRole">
+      <option value="">Select Role</option>
       <option value="Housekeeping">Housekeeping</option>
       <option value="Admin">Admin</option>
       <option value="Laundry">Laundry</option>
@@ -164,6 +183,7 @@
     <button class="green" onclick="addEmployee()">ADD EMPLOYEE</button>
 
     <h2>Employee List</h2>
+
     <div id="employeesList"></div>
 
     <button class="gray" onclick="showDashboard()">BACK</button>
@@ -172,16 +192,35 @@
   <div id="tasksView" class="hidden">
     <h1>Tasks</h1>
 
+    <button class="gray" onclick="showDashboard()">BACK</button>
+
     <select id="taskAssignment">
+      <option value="">Select Daily Task</option>
       <option value="HK Schedule 1">HK Schedule 1</option>
       <option value="HK Schedule 2">HK Schedule 2</option>
       <option value="Laundry">Laundry</option>
     </select>
 
-    <input id="taskArea" placeholder="Room / Area">
-    <input id="taskName" placeholder="Task Name">
+    <input
+      id="taskArea"
+      placeholder="Room / Area"
+      autocomplete="off"
+      autocorrect="off"
+      autocapitalize="off"
+      spellcheck="false"
+    >
+
+    <input
+      id="taskName"
+      placeholder="Task Name"
+      autocomplete="off"
+      autocorrect="off"
+      autocapitalize="off"
+      spellcheck="false"
+    >
 
     <select id="taskSchedule">
+      <option value="">Select Schedule</option>
       <option value="Daily">Daily</option>
       <option value="Monday">Monday</option>
       <option value="Tuesday">Tuesday</option>
@@ -193,6 +232,7 @@
     </select>
 
     <select id="taskCategory">
+      <option value="">Select Category</option>
       <option value="Common Area">Common Area</option>
       <option value="Weekly Room">Weekly Room</option>
       <option value="Daily Room">Daily Room</option>
@@ -220,6 +260,8 @@
   <div id="logsView" class="hidden">
     <h1>Task Logs</h1>
 
+    <button class="gray" onclick="showDashboard()">BACK</button>
+
     <button onclick="loadLogs()">REFRESH LOGS</button>
 
     <div id="logsList"></div>
@@ -230,25 +272,44 @@
   <div id="roomLabelsView" class="hidden">
     <h1>Room Labels</h1>
 
-    <input id="roomNumber" placeholder="Room Number">
+    <button class="gray" onclick="showDashboard()">BACK</button>
+
+    <input
+      id="roomNumber"
+      placeholder="Room Number"
+      autocomplete="off"
+      autocorrect="off"
+      autocapitalize="off"
+      spellcheck="false"
+    >
 
     <select id="occupiedStatus">
+      <option value="">Select Occupancy</option>
       <option value="Full">Full</option>
       <option value="Empty">Empty</option>
     </select>
 
     <select id="moldRisk">
+      <option value="">Select Mold Status</option>
       <option value="No Mold">No Mold</option>
       <option value="Mold Watch">Mold Watch</option>
       <option value="High Mold Risk">High Mold Risk</option>
     </select>
 
     <select id="smellStatus">
+      <option value="">Select Smell Status</option>
       <option value="No Smell">No Smell</option>
       <option value="Smelly">Smelly</option>
     </select>
 
-    <textarea id="labelNotes" placeholder="Notes"></textarea>
+    <textarea
+      id="labelNotes"
+      placeholder="Notes"
+      autocomplete="off"
+      autocorrect="off"
+      autocapitalize="off"
+      spellcheck="false"
+    ></textarea>
 
     <button class="green" onclick="saveRoomLabel()">SAVE ROOM LABEL</button>
     <button class="yellow" onclick="resetRoomLabel()">RESET ROOM FOR NEW RESIDENT</button>
@@ -308,6 +369,13 @@
   document.getElementById("adminInfo").innerText =
     "Logged in as: " + (sessionData.firstName || "Admin");
 
+  document.querySelectorAll("input, textarea, select").forEach(function(field) {
+    field.setAttribute("autocomplete", "off");
+    field.setAttribute("autocorrect", "off");
+    field.setAttribute("autocapitalize", "off");
+    field.setAttribute("spellcheck", "false");
+  });
+
   function hideAllViews() {
     document.getElementById("dashboardView").classList.add("hidden");
     document.getElementById("employeesView").classList.add("hidden");
@@ -330,6 +398,7 @@
   function showTasks() {
     hideAllViews();
     document.getElementById("tasksView").classList.remove("hidden");
+    clearTaskForm();
     loadTasks();
   }
 
@@ -342,6 +411,7 @@
   function showRoomLabels() {
     hideAllViews();
     document.getElementById("roomLabelsView").classList.remove("hidden");
+    clearRoomForm();
     loadRoomLabels();
   }
 
@@ -351,8 +421,8 @@
     const pin = Number(document.getElementById("empPin").value.trim());
     const role = document.getElementById("empRole").value;
 
-    if (!firstName || !employeeId || !pin) {
-      alert("Fill first name, employee ID, and PIN.");
+    if (!firstName || !employeeId || !pin || !role) {
+      alert("Fill first name, employee ID, PIN, and role.");
       return;
     }
 
@@ -365,11 +435,15 @@
       createdAt: serverTimestamp()
     });
 
+    clearEmployeeForm();
+    loadEmployees();
+  }
+
+  function clearEmployeeForm() {
     document.getElementById("empFirstName").value = "";
     document.getElementById("empEmployeeId").value = "";
     document.getElementById("empPin").value = "";
-
-    loadEmployees();
+    document.getElementById("empRole").value = "";
   }
 
   async function loadEmployees() {
@@ -397,6 +471,10 @@
 
       box.appendChild(div);
     });
+
+    if (box.innerHTML === "") {
+      box.innerHTML = "<h3>No employees found.</h3>";
+    }
   }
 
   async function toggleEmployeeActive(id, currentActive) {
@@ -426,7 +504,7 @@
     const category = document.getElementById("taskCategory").value;
 
     if (!assignment || !area || !task || !schedule || !category) {
-      alert("Fill all task fields.");
+      alert("Fill daily task, room/area, task name, schedule, and category.");
       return;
     }
 
@@ -441,10 +519,16 @@
       createdAt: serverTimestamp()
     });
 
+    clearTaskForm();
+    loadTasks();
+  }
+
+  function clearTaskForm() {
+    document.getElementById("taskAssignment").value = "";
     document.getElementById("taskArea").value = "";
     document.getElementById("taskName").value = "";
-
-    loadTasks();
+    document.getElementById("taskSchedule").value = "";
+    document.getElementById("taskCategory").value = "";
   }
 
   async function loadTasks() {
@@ -533,8 +617,8 @@
     const smellStatus = document.getElementById("smellStatus").value;
     const labelNotes = document.getElementById("labelNotes").value.trim();
 
-    if (!roomNumber) {
-      alert("Enter room number.");
+    if (!roomNumber || !occupiedStatus || !moldRisk || !smellStatus) {
+      alert("Fill room number, occupancy, mold status, and smell status.");
       return;
     }
 
@@ -631,9 +715,9 @@
 
       if (room.roomNumber === roomNumber) {
         document.getElementById("roomNumber").value = room.roomNumber || "";
-        document.getElementById("occupiedStatus").value = room.occupiedStatus || "Full";
-        document.getElementById("moldRisk").value = room.moldRisk || "No Mold";
-        document.getElementById("smellStatus").value = room.smellStatus || "No Smell";
+        document.getElementById("occupiedStatus").value = room.occupiedStatus || "";
+        document.getElementById("moldRisk").value = room.moldRisk || "";
+        document.getElementById("smellStatus").value = room.smellStatus || "";
         document.getElementById("labelNotes").value = room.labelNotes || "";
       }
     });
@@ -641,9 +725,9 @@
 
   function clearRoomForm() {
     document.getElementById("roomNumber").value = "";
-    document.getElementById("occupiedStatus").value = "Full";
-    document.getElementById("moldRisk").value = "No Mold";
-    document.getElementById("smellStatus").value = "No Smell";
+    document.getElementById("occupiedStatus").value = "";
+    document.getElementById("moldRisk").value = "";
+    document.getElementById("smellStatus").value = "";
     document.getElementById("labelNotes").value = "";
   }
 
