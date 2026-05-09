@@ -1,14 +1,11 @@
 <!DOCTYPE html>
 <html>
 
-<!-- SCHEDULE-A1: PAGE HEAD / PHONE SETUP -->
 <head>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Facility Tracker</title>
 
-  <!-- SCHEDULE-B1: PAGE STYLE -->
   <style>
-    /* SCHEDULE-B2: GLOBAL STYLE */
     * {
       box-sizing: border-box;
     }
@@ -24,7 +21,6 @@
       padding: 18px 10px;
     }
 
-    /* SCHEDULE-B3: MAIN CARD */
     .card {
       width: 100%;
       max-width: 430px;
@@ -34,7 +30,6 @@
       box-shadow: 0 4px 18px rgba(0,0,0,0.18);
     }
 
-    /* SCHEDULE-B4: VIEW TAG */
     .view-tag {
       display: inline-block;
       background: black;
@@ -49,7 +44,6 @@
       text-align: center;
     }
 
-    /* SCHEDULE-B5: TITLES */
     h2, h3 {
       text-align: center;
       margin-top: 0;
@@ -63,7 +57,6 @@
       font-size: 24px;
     }
 
-    /* SCHEDULE-B6: INPUTS */
     input, select, textarea {
       width: 100%;
       font-size: 22px;
@@ -77,7 +70,6 @@
       min-height: 90px;
     }
 
-    /* SCHEDULE-B7: BUTTONS */
     button {
       width: 100%;
       border: none;
@@ -115,7 +107,6 @@
       display: none !important;
     }
 
-    /* SCHEDULE-B8: DATE ROW */
     .date-row {
       display: flex;
       align-items: center;
@@ -152,7 +143,6 @@
       margin-bottom: 24px;
     }
 
-    /* SCHEDULE-B9: AREA BUTTON GRID */
     .rooms-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -167,7 +157,6 @@
       padding: 14px;
     }
 
-    /* SCHEDULE-B10: CHECKLIST */
     #checklist {
       display: grid;
       grid-template-columns: 1fr 1fr 1fr;
@@ -199,7 +188,6 @@
       font-size: 18px;
     }
 
-    /* SCHEDULE-B11: LOADING SPINNER */
     .loading-bg {
       position: fixed;
       top: 0;
@@ -232,7 +220,6 @@
       }
     }
 
-    /* SCHEDULE-B12: CUSTOM CONFIRM POPUP */
     .custom-modal-bg {
       position: fixed;
       top: 0;
@@ -277,34 +264,17 @@
   </style>
 </head>
 
-<!-- SCHEDULE-C1: PAGE BODY -->
 <body>
 
 <div class="card">
 
-  <!-- SCHEDULE-D1: VIEW 1 - ASSIGNMENT SCREEN -->
-  <div id="view1">
-
-    <div class="view-center">
-      <div class="view-tag">VIEW 1</div>
-    </div>
-
-    <h2 id="employeeName">Welcome</h2>
-
-    <button onclick="chooseAssignment('HK Schedule 1')">HK Schedule 1</button>
-    <button onclick="chooseAssignment('HK Schedule 2')">HK Schedule 2</button>
-    <button onclick="chooseAssignment('Laundry')">Laundry</button>
-    <button class="back" onclick="logout()">LOGOUT</button>
-
-  </div>
-
-  <!-- SCHEDULE-E1: VIEW 2 - CATEGORY SCREEN -->
-  <div id="view2" class="hidden">
+  <div id="view2">
 
     <div class="view-center">
       <div class="view-tag">VIEW 2</div>
     </div>
 
+    <h2 id="employeeName">Welcome</h2>
     <h2 id="assignmentTitle"></h2>
 
     <div class="date-row">
@@ -324,11 +294,10 @@
 
     <div id="categoryButtons"></div>
 
-    <button class="back" onclick="showView(1)">BACK</button>
+    <button class="back" onclick="logout()">LOGOUT</button>
 
   </div>
 
-  <!-- SCHEDULE-F1: VIEW 3/4/5/6 - AREA / ROOM SCREEN -->
   <div id="view3" class="hidden">
 
     <div class="view-center">
@@ -355,7 +324,6 @@
 
   </div>
 
-  <!-- SCHEDULE-G1: VIEW 7 - TASK COMPLETION SCREEN -->
   <div id="view4" class="hidden">
 
     <div class="view-center">
@@ -406,7 +374,6 @@
 
 </div>
 
-<!-- CUSTOM CONFIRM POPUP -->
 <div id="customConfirmModal" class="custom-modal-bg hidden">
 
   <div class="custom-modal-box">
@@ -424,12 +391,10 @@
 
 </div>
 
-<!-- SCHEDULE-H1: LOADING SCREEN -->
 <div id="loadingScreen" class="loading-bg hidden">
   <div class="spinner"></div>
 </div>
 
-<!-- SCHEDULE-I1: JAVASCRIPT / FIREBASE -->
 <script type="module">
 
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
@@ -445,7 +410,6 @@
     serverTimestamp
   } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-  /* SCHEDULE-I2: FIREBASE CONFIG */
   const firebaseConfig = {
     apiKey: "AIzaSyBgq_ooBeEN4noEyIxYPLVokgM6RjCO648",
     authDomain: "gms-task-tracker.firebaseapp.com",
@@ -459,10 +423,10 @@
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
 
-  /* SCHEDULE-I3: SESSION LOGIN */
   const sessionData = JSON.parse(sessionStorage.getItem("currentEmployee"));
+  const selectedDailyTask = JSON.parse(sessionStorage.getItem("selectedDailyTask"));
 
-  if (!sessionData) {
+  if (!sessionData || !selectedDailyTask || !selectedDailyTask.assignment) {
     window.location.href = "index.html";
   }
 
@@ -478,11 +442,7 @@
     sessionData.name ||
     "Employee";
 
-  document.getElementById("employeeName").innerText =
-    "Welcome, " + employeeName;
-
-  /* SCHEDULE-I4: MAIN VARIABLES */
-  let currentAssignment = "";
+  let currentAssignment = selectedDailyTask.assignment;
   let currentWorkDateISO = getTodayISO();
   let currentWorkDateDisplay = "";
   let currentWorkDayName = "";
@@ -496,7 +456,19 @@
 
   let customConfirmResolve = null;
 
-  /* SCHEDULE-J1: LOADING FUNCTIONS */
+  document.getElementById("employeeName").innerText =
+    "Welcome, " + employeeName;
+
+  document.getElementById("assignmentTitle").innerText =
+    currentAssignment;
+
+  startSchedule();
+
+  async function startSchedule() {
+    await loadAssignmentTasks();
+    showView(2);
+  }
+
   function showLoading() {
     document.getElementById("loadingScreen").classList.remove("hidden");
   }
@@ -505,7 +477,6 @@
     document.getElementById("loadingScreen").classList.add("hidden");
   }
 
-  /* SCHEDULE-J2: DATE FUNCTIONS */
   function getTodayISO() {
     const today = new Date();
     const yyyy = today.getFullYear();
@@ -580,18 +551,6 @@
       drawAreaButtons(selectedCategory);
       showView(3);
     }
-  }
-
-  /* SCHEDULE-K1: LOAD TASKS AND PROGRESS FROM FIREBASE */
-  async function chooseAssignment(assignment) {
-    currentAssignment = assignment;
-    selectedCategory = "";
-    currentArea = "";
-    currentTaskList = [];
-
-    await loadAssignmentTasks();
-
-    showView(2);
   }
 
   async function loadAssignmentTasks() {
@@ -676,7 +635,6 @@
     });
   }
 
-  /* SCHEDULE-L1: CATEGORY BUTTONS */
   function drawCategories() {
     const box = document.getElementById("categoryButtons");
     box.innerHTML = "";
@@ -719,9 +677,14 @@
 
       box.appendChild(btn);
     });
+
+    if (box.innerHTML === "") {
+      const emptyMessage = document.createElement("h3");
+      emptyMessage.innerText = "No tasks found for " + currentAssignment;
+      box.appendChild(emptyMessage);
+    }
   }
 
-  /* SCHEDULE-M1: AREA / ROOM BUTTONS */
   function drawAreaButtons(category) {
     const box = document.getElementById("areaButtons");
     box.innerHTML = "";
@@ -810,7 +773,6 @@
     }
   }
 
-  /* SCHEDULE-N1: TASK COUNT AND COLOR LOGIC */
   function getTaskCounts(tasks) {
     let completed = 0;
     let incomplete = 0;
@@ -843,7 +805,6 @@
     return "yellow";
   }
 
-  /* SCHEDULE-O1: TASK COMPLETION SCREEN */
   function openTaskGroup(area) {
     currentArea = area;
 
@@ -881,65 +842,6 @@
 
       box.appendChild(div);
     });
-  }
-
-  async function confirmEmployeePin() {
-    const enteredPin = prompt("Enter your PIN to continue:");
-
-    if (!enteredPin) {
-      return false;
-    }
-
-    const cleanPin = String(enteredPin).trim();
-
-    const sessionPin =
-      String(
-        sessionData.pin ||
-        sessionData.PIN ||
-        sessionData.employeePin ||
-        sessionData.password ||
-        ""
-      ).trim();
-
-    if (sessionPin && cleanPin === sessionPin) {
-      return true;
-    }
-
-    const employeeQuery = query(
-      collection(db, "employees"),
-      where("pin", "==", cleanPin)
-    );
-
-    const employeeSnap = await getDocs(employeeQuery);
-
-    let valid = false;
-
-    employeeSnap.docs.forEach(function(employeeDoc) {
-      const emp = employeeDoc.data();
-
-      const empId =
-        String(emp.employeeId || emp.id || employeeDoc.id || "").trim();
-
-      const currentId =
-        String(employeeId || "").trim();
-
-      const active =
-        String(emp.active || "Yes").trim();
-
-      if (
-        (!currentId || empId === currentId) &&
-        active !== "No" &&
-        active !== "false"
-      ) {
-        valid = true;
-      }
-    });
-
-    if (!valid) {
-      alert("Wrong PIN.");
-    }
-
-    return valid;
   }
 
   async function completeAllTasks() {
@@ -1072,7 +974,6 @@
     }
   }
 
-  /* SCHEDULE-Q1: SAVE FIREBASE PROGRESS */
   async function saveTaskStatuses(saveItems) {
     const batch = writeBatch(db);
 
@@ -1154,9 +1055,8 @@
     return raw.replace(/[^a-zA-Z0-9_-]/g, "_");
   }
 
-  /* SCHEDULE-R1: NAVIGATION */
   function showView(num) {
-    [1, 2, 3, 4].forEach(function(viewNumber) {
+    [2, 3, 4].forEach(function(viewNumber) {
       document
         .getElementById("view" + viewNumber)
         .classList
@@ -1184,8 +1084,6 @@
     window.location.href = "index.html";
   }
 
-  /* SCHEDULE-S1: MAKE FUNCTIONS AVAILABLE TO HTML BUTTONS */
-  window.chooseAssignment = chooseAssignment;
   window.openCalendar = openCalendar;
   window.changeWorkDateFromCalendar = changeWorkDateFromCalendar;
   window.changeWorkDateFromBigPicker = changeWorkDateFromBigPicker;
@@ -1195,7 +1093,6 @@
   window.submitIncomplete = submitIncomplete;
   window.backToCategories = backToCategories;
   window.backToAreas = backToAreas;
-  window.showView = showView;
   window.logout = logout;
   window.customConfirmYes = customConfirmYes;
   window.customConfirmNo = customConfirmNo;
