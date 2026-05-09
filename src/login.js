@@ -6,12 +6,13 @@ import { getFirestore, collection, query, where, getDocs } from "https://www.gst
 
 // PASTE YOUR FIREBASE CONFIG HERE (from your Firebase Project Settings)
 const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
+  apiKey: "AIzaSyBgq_ooBeEN4noEyIxYPLVokgM6RjCO648",
   authDomain: "gms-task-tracker.firebaseapp.com",
   projectId: "gms-task-tracker",
-  storageBucket: "gms-task-tracker.appspot.com",
-  messagingSenderId: "YOUR_ID",
-  appId: "YOUR_APP_ID"
+  storageBucket: "gms-task-tracker.firebasestorage.app",
+  messagingSenderId: "790880979860",
+  appId: "1:790880979860:web:6faee2a6e56955af3c1d81",
+  measurementId: "G-5TRHQMS039"
 };
 
 const app = initializeApp(firebaseConfig);
