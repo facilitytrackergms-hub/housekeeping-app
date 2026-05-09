@@ -1,16 +1,13 @@
 <!DOCTYPE html>
 <html>
 
-<!-- INDEX-A1: PAGE HEAD / PHONE SETUP -->
 <head>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
   <title>Employee Login</title>
 
-  <!-- INDEX-B1: PAGE STYLE -->
   <style>
 
-    /* INDEX-B2: GLOBAL STYLE */
     * {
       box-sizing: border-box;
     }
@@ -28,7 +25,6 @@
       min-height: 100vh;
     }
 
-    /* INDEX-B3: MAIN WHITE CARD */
     .card {
       width: 92%;
       max-width: 420px;
@@ -44,7 +40,6 @@
       text-align: center;
     }
 
-    /* INDEX-B4: VIEW TAG */
     .view-tag {
       display: inline-block;
       background: black;
@@ -55,14 +50,18 @@
       margin-bottom: 14px;
     }
 
-    /* INDEX-B5: TITLE */
     h1 {
       margin: 0 0 35px 0;
       font-size: 42px;
       color: #1847d1;
     }
 
-    /* INDEX-B6: INPUT BOX */
+    h2 {
+      margin: 0 0 25px 0;
+      font-size: 30px;
+      color: black;
+    }
+
     input {
       width: 100%;
       padding: 22px;
@@ -78,7 +77,6 @@
       text-align: center;
     }
 
-    /* INDEX-B7: LOGIN BUTTON */
     button {
       width: 100%;
 
@@ -94,17 +92,22 @@
       color: white;
 
       cursor: pointer;
+
+      margin-bottom: 18px;
     }
 
     button:active {
       transform: scale(0.98);
     }
 
-    /* INDEX-B8: MESSAGE BOX */
-    #message {
-      margin-top: 30px;
+    .gray-button {
+      background: #5a5a5a;
+    }
 
-      padding: 25px;
+    #message {
+      margin-top: 20px;
+
+      padding: 22px;
 
       border-radius: 20px;
 
@@ -117,45 +120,69 @@
       display: none;
     }
 
+    #taskView {
+      display: none;
+    }
+
   </style>
 </head>
 
-<!-- INDEX-C1: PAGE BODY -->
 <body>
 
-  <!-- INDEX-C2: LOGIN CARD -->
   <div class="card">
 
-    <!-- INDEX-C3: VIEW LABEL -->
     <div class="view-tag">
       VIEW 1
     </div>
 
-    <!-- INDEX-C4: TITLE -->
-    <h1>Employee Login</h1>
+    <div id="pinView">
 
-    <!-- INDEX-C5: PIN INPUT -->
-    <input
-      type="password"
-      id="pin"
-      placeholder="Enter PIN"
-      autocomplete="new-password"
-      autocorrect="off"
-      autocapitalize="off"
-      spellcheck="false"
-    >
+      <h1>Employee Login</h1>
 
-    <!-- INDEX-C6: LOGIN BUTTON -->
-    <button onclick="login()">
-      LOGIN
-    </button>
+      <input
+        type="password"
+        id="pin"
+        placeholder="Enter PIN"
+        autocomplete="new-password"
+        autocorrect="off"
+        autocapitalize="off"
+        spellcheck="false"
+      >
 
-    <!-- INDEX-C7: LOGIN MESSAGE -->
+      <button onclick="checkPin()">
+        NEXT
+      </button>
+
+    </div>
+
+    <div id="taskView">
+
+      <h2 id="welcomeName">
+        Welcome
+      </h2>
+
+      <button onclick="selectDailyTask('HK Schedule 1')">
+        HK Schedule 1
+      </button>
+
+      <button onclick="selectDailyTask('HK Schedule 2')">
+        HK Schedule 2
+      </button>
+
+      <button onclick="selectDailyTask('Laundry')">
+        Laundry
+      </button>
+
+      <button class="gray-button" onclick="goBackToPin()">
+        BACK
+      </button>
+
+    </div>
+
     <div id="message"></div>
 
   </div>
 
-<!-- INDEX-D1: JAVASCRIPT / FIREBASE -->
 <script type="module">
 
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
@@ -168,7 +195,6 @@
     getDocs
   } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-  /* INDEX-D2: FIREBASE CONFIG */
   const firebaseConfig = {
     apiKey: "AIzaSyBgq_ooBeEN4noEyIxYPLVokgM6RjCO648",
     authDomain: "gms-task-tracker.firebaseapp.com",
@@ -182,72 +208,105 @@
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
 
- /* INDEX-D3: UPDATED LOGIN FUNCTION (PIN ONLY) */
-async function login() {
-  const pinInput = document.getElementById("pin").value.trim();
+  let foundEmployee = null;
 
-  if (!pinInput) {
-    showMessage("Enter PIN", false);
-    return;
+  async function checkPin() {
+    const pinInput = document.getElementById("pin").value.trim();
+
+    if (!pinInput) {
+      showMessage("Enter PIN", false);
+      return;
+    }
+
+    showMessage("Checking...", true);
+
+    try {
+      const pinNumber = Number(pinInput);
+
+      const employeeQuery = query(
+        collection(db, "employees"),
+        where("pin", "==", pinNumber)
+      );
+
+      const employeeSnap = await getDocs(employeeQuery);
+
+      if (employeeSnap.empty) {
+        showMessage("Invalid PIN", false);
+        return;
+      }
+
+      foundEmployee = null;
+
+      employeeSnap.docs.forEach(function(docSnap) {
+        const emp = docSnap.data();
+
+        const active = String(emp.active || "Yes").trim();
+
+        if (active !== "No" && active !== "false") {
+          foundEmployee = {
+            id: docSnap.id,
+            firstName: emp.firstName || emp.FirstName || "Employee",
+            employeeName: emp.employeeName || emp.name || emp.firstName || "Employee",
+            pin: pinNumber,
+            role: emp.role || "Housekeeping"
+          };
+        }
+      });
+
+      if (!foundEmployee) {
+        showMessage("Inactive employee", false);
+        return;
+      }
+
+      document.getElementById("message").style.display = "none";
+      document.getElementById("pinView").style.display = "none";
+      document.getElementById("taskView").style.display = "block";
+
+      document.getElementById("welcomeName").innerHTML =
+        "Welcome, " + foundEmployee.firstName;
+
+    } catch (error) {
+      console.error("Login error details:", error);
+      showMessage("Connection error", false);
+    }
   }
 
-  showMessage("Checking...", true);
-
-  try {
-    // FIX: Convert input to a Number because Firebase stores it as a number
-    const pinNumber = Number(pinInput);
-
-    const employeeQuery = query(
-      collection(db, "employees"),
-      where("pin", "==", pinNumber)
-    );
-
-    const employeeSnap = await getDocs(employeeQuery);
-
-    if (employeeSnap.empty) {
-      showMessage("Invalid PIN", false);
-      return;
-    }
-
-    let foundEmployee = null;
-
-    employeeSnap.docs.forEach(function(docSnap) {
-      const emp = docSnap.data();
-
-      // Check if employee is active
-      const active = String(emp.active || "Yes").trim();
-
-      if (active !== "No" && active !== "false") {
-        foundEmployee = {
-          id: docSnap.id,
-          // FIX: Use firstName and the doc ID if employeeId is missing
-          firstName: emp.firstName || emp.FirstName || "Employee",
-          employeeName: emp.employeeName || emp.name || (emp.firstName || "Employee"),
-          pin: pinNumber,
-          role: emp.role || "Housekeeping"
-        };
-      }
-    });
-
+  function selectDailyTask(taskName) {
     if (!foundEmployee) {
-      showMessage("Inactive employee", false);
+      showMessage("Enter PIN first", false);
       return;
     }
 
-    // Save to session so schedule.html can see who logged in
     sessionStorage.setItem(
       "currentEmployee",
       JSON.stringify(foundEmployee)
     );
 
-    window.location.href = "schedule.html";
+    sessionStorage.setItem(
+      "selectedDailyTask",
+      JSON.stringify({
+        assignment: taskName,
+        schedule: "Daily"
+      })
+    );
 
-  } catch (error) {
-    console.error("Login error details:", error);
-    showMessage("Connection error", false);
+    showMessage("Login successful", true);
+
+    setTimeout(function() {
+      window.location.href = "schedule.html";
+    }, 800);
   }
-}
-  /* INDEX-D4: SHOW MESSAGE */
+
+  function goBackToPin() {
+    foundEmployee = null;
+
+    document.getElementById("taskView").style.display = "none";
+    document.getElementById("pinView").style.display = "block";
+    document.getElementById("message").style.display = "none";
+    document.getElementById("pin").value = "";
+    document.getElementById("pin").focus();
+  }
+
   function showMessage(text, success) {
     const message =
       document.getElementById("message");
@@ -265,16 +324,17 @@ async function login() {
     message.innerHTML = text;
   }
 
-  /* INDEX-D5: ENTER KEY LOGIN */
   document
     .getElementById("pin")
     .addEventListener("keydown", function(event) {
       if (event.key === "Enter") {
-        login();
+        checkPin();
       }
     });
 
-  window.login = login;
+  window.checkPin = checkPin;
+  window.selectDailyTask = selectDailyTask;
+  window.goBackToPin = goBackToPin;
 
 </script>
 
