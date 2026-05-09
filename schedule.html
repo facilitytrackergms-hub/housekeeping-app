@@ -1,246 +1,996 @@
 <!DOCTYPE html>
 <html>
+
+<!-- SCHEDULE-A1: PAGE HEAD / PHONE SETUP -->
 <head>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Facility Tracker</title>
-  <style>
-    /* GLOBAL STYLE */
-    * { box-sizing: border-box; }
-    body { margin: 0; font-family: Arial, sans-serif; background: #f2f2f2; min-height: 100vh; display: flex; justify-content: center; align-items: flex-start; padding: 18px 10px; }
-    .card { width: 100%; max-width: 430px; background: white; border-radius: 24px; padding: 24px; box-shadow: 0 4px 18px rgba(0,0,0,0.18); }
-    .view-tag { display: inline-block; background: black; color: white; padding: 4px 10px; border-radius: 8px; font-size: 12px; margin-bottom: 12px; }
-    .view-center { text-align: center; }
-    h2, h3 { text-align: center; margin-top: 0; }
-    h2 { font-size: 30px; }
-    input[type="date"] { width: 100%; font-size: 22px; padding: 14px; margin: 10px 0 18px; border-radius: 14px; border: 1px solid #ccc; text-align: center; }
-    button { width: 100%; border: none; border-radius: 14px; background: #1976d2; color: white; font-size: 20px; font-weight: bold; padding: 16px; margin: 8px 0; cursor: pointer; }
-    .rooms-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 15px; }
-    .back { background: #555; color: white; }
-    .hidden { display: none !important; }
-    .task-row { background: #fff; border: 1px solid #ddd; margin: 10px 0; padding: 15px; border-radius: 12px; display: flex; align-items: center; justify-content: space-between; flex-direction: column; }
-    .task-controls { display: flex; gap: 10px; width: 100%; margin-top: 10px; }
-    .task-controls button { font-size: 14px; padding: 8px; margin: 0; flex: 1; }
 
-    /* Progress-based Button Colors */
-    button.red { background-color: #d93025 !important; color: white; }
-    button.yellow { background-color: #f9ab00 !important; color: black; }
-    button.green { background-color: #1e8e3e !important; color: white; }
-    button.standard { background-color: #1976d2; color: white; }
+  <!-- SCHEDULE-B1: PAGE STYLE -->
+  <style>
+    /* SCHEDULE-B2: GLOBAL STYLE */
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f2f2f2;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 18px 10px;
+    }
+
+    /* SCHEDULE-B3: MAIN CARD */
+    .card {
+      width: 100%;
+      max-width: 430px;
+      background: white;
+      border-radius: 24px;
+      padding: 24px;
+      box-shadow: 0 4px 18px rgba(0,0,0,0.18);
+    }
+
+    /* SCHEDULE-B4: VIEW TAG */
+    .view-tag {
+      display: inline-block;
+      background: black;
+      color: white;
+      padding: 4px 10px;
+      border-radius: 8px;
+      font-size: 12px;
+      margin-bottom: 12px;
+    }
+
+    .view-center {
+      text-align: center;
+    }
+
+    /* SCHEDULE-B5: TITLES */
+    h2, h3 {
+      text-align: center;
+      margin-top: 0;
+    }
+
+    h2 {
+      font-size: 30px;
+    }
+
+    h3 {
+      font-size: 24px;
+    }
+
+    /* SCHEDULE-B6: INPUTS */
+    input, select, textarea {
+      width: 100%;
+      font-size: 22px;
+      padding: 14px;
+      margin: 10px 0 18px;
+      border-radius: 14px;
+      border: 1px solid #ccc;
+    }
+
+    textarea {
+      min-height: 90px;
+    }
+
+    /* SCHEDULE-B7: BUTTONS */
+    button {
+      width: 100%;
+      border: none;
+      border-radius: 14px;
+      background: #1976d2;
+      color: white;
+      font-size: 22px;
+      font-weight: bold;
+      padding: 16px;
+      margin: 8px 0;
+      cursor: pointer;
+    }
+
+    .green {
+      background: #2e7d32 !important;
+      color: white !important;
+    }
+
+    .yellow {
+      background: #f9a825 !important;
+      color: black !important;
+    }
+
+    .red {
+      background: #c62828 !important;
+      color: white !important;
+    }
+
+    .back {
+      background: #555 !important;
+      color: white !important;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    /* SCHEDULE-B8: DATE ROW */
+    .date-row {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      margin-bottom: 18px;
+    }
+
+    .date-row h3 {
+      margin: 0;
+      font-size: 24px;
+      line-height: 1.2;
+    }
+
+    .date-change-btn {
+      width: auto;
+      font-size: 15px;
+      padding: 10px 12px;
+      margin: 0;
+      border-radius: 10px;
+      background: #555;
+      white-space: nowrap;
+    }
+
+    .hidden-date {
+      position: absolute;
+      opacity: 0;
+      pointer-events: none;
+      width: 1px;
+      height: 1px;
+    }
+
+    /* SCHEDULE-B9: AREA BUTTON GRID */
+    .rooms-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+      margin-top: 15px;
+    }
+
+    .rooms-grid button {
+      width: 100%;
+      min-height: 90px;
+      font-size: 20px;
+      padding: 14px;
+    }
+
+    /* SCHEDULE-B10: CHECKLIST */
+    #checklist {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 10px;
+    }
+
+    .check-row {
+      font-size: 18px;
+      padding: 12px 8px;
+      border: 1px solid #ddd;
+      border-radius: 12px;
+      text-align: center;
+      min-height: 70px;
+
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    .check-row input {
+      width: auto;
+      transform: scale(1.3);
+      margin: 0;
+    }
+
+    #message {
+      text-align: center;
+      font-size: 18px;
+    }
+
+    /* SCHEDULE-B11: LOADING SPINNER */
+    .loading-bg {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(255,255,255,0.70);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 99999;
+    }
+
+    .spinner {
+      width: 70px;
+      height: 70px;
+      border: 8px solid #ddd;
+      border-top: 8px solid #1976d2;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      from {
+        transform: rotate(0deg);
+      }
+
+      to {
+        transform: rotate(360deg);
+      }
+    }
   </style>
 </head>
+
+<!-- SCHEDULE-C1: PAGE BODY -->
 <body>
 
 <div class="card">
-  <h2 id="employeeName">Welcome</h2>
 
+  <!-- SCHEDULE-D1: VIEW 1 - ASSIGNMENT SCREEN -->
   <div id="view1">
-    <div class="view-center"><div class="view-tag">VIEW 1</div></div>
-    <button onclick="navToView2('Housekeeper 1')">Housekeeper 1</button>
-    <button onclick="navToView2('Housekeeper 2')">Housekeeper 2</button>
-    <button onclick="navToView2('Laundry')">Laundry</button>
-    <button class="back" id="btnLogout">LOGOUT</button>
-  </div>
 
-  <div id="view2" class="hidden">
-    <div class="view-center"><div class="view-tag">VIEW 2</div></div>
-    <h3 id="v2Title">Categories</h3>
-    <div id="categoryButtons"></div>
-    <button class="back" onclick="showView(1)">BACK</button>
-  </div>
-
-  <div id="view3" class="hidden">
-    <div class="view-center"><div class="view-tag">VIEW 3</div></div>
-    <div class="view-center hidden" id="datePickerContainer">
-      <label style="font-weight: bold; font-size: 14px;">Selected Work Date:</label>
-      <input type="date" id="globalWorkDate">
+    <div class="view-center">
+      <div class="view-tag">VIEW 1</div>
     </div>
-    <h3 id="v3Title" style="margin-top:15px;">Select Area</h3>
-    <div id="areaBtnContainer" class="rooms-grid"></div>
-    <button class="back" onclick="showView(2)">BACK</button>
+
+    <h2 id="employeeName">Welcome</h2>
+
+    <button onclick="chooseAssignment('Housekeeper 1')">Housekeeper 1</button>
+    <button onclick="chooseAssignment('Housekeeper 2')">Housekeeper 2</button>
+    <button onclick="chooseAssignment('Laundry')">Laundry</button>
+    <button class="back" onclick="logout()">LOGOUT</button>
+
   </div>
 
-  <div id="view4" class="hidden">
-    <div class="view-center"><div class="view-tag">VIEW 4</div></div>
-    <h3 id="v4Title">Tasks</h3>
-    <div id="taskListContainer"></div>
-    <button class="back" onclick="showView(3)">BACK</button>
+  <!-- SCHEDULE-E1: VIEW 2 - CATEGORY SCREEN -->
+  <div id="view2" class="hidden">
+
+    <div class="view-center">
+      <div class="view-tag">VIEW 2</div>
+    </div>
+
+    <h2 id="assignmentTitle"></h2>
+
+    <div class="date-row">
+      <h3 id="workDateTitle"></h3>
+
+      <button class="date-change-btn" onclick="openCalendar()">
+        CHANGE DATE
+      </button>
+
+      <input
+        type="date"
+        id="quickDatePicker"
+        class="hidden-date"
+        onchange="changeWorkDateFromCalendar()"
+      >
+    </div>
+
+    <div id="categoryButtons"></div>
+
+    <button class="back" onclick="showView(1)">BACK</button>
+
   </div>
+
+  <!-- SCHEDULE-F1: VIEW 3 - AREA / ROOM SCREEN -->
+  <div id="view3" class="hidden">
+
+    <div class="view-center">
+      <div class="view-tag">VIEW 3</div>
+    </div>
+
+    <button id="completeAllCategoryButton" class="green" onclick="completeWholeCategory()">
+      ALL
+    </button>
+
+    <div class="date-row">
+      <h3 id="areaDateTitle"></h3>
+
+      <button class="date-change-btn" onclick="openCalendar()">
+        CHANGE DATE
+      </button>
+    </div>
+
+    <div id="areaButtons" class="rooms-grid"></div>
+
+    <button class="back" onclick="backToCategories()">BACK</button>
+
+  </div>
+
+  <!-- SCHEDULE-G1: VIEW 4 - TASK COMPLETION SCREEN -->
+  <div id="view4" class="hidden">
+
+    <div class="view-center">
+      <div class="view-tag">VIEW 4</div>
+    </div>
+
+    <h2 id="taskTitle"></h2>
+    <h3 id="taskDateTitle"></h3>
+
+    <button class="green" onclick="completeAllTasks()">
+      ALL TASKS COMPLETED
+    </button>
+
+    <button class="red" onclick="showIncompleteChecklist()">
+      NO - SOMETHING NOT DONE
+    </button>
+
+    <div id="checklistBox" class="hidden">
+
+      <h3>Select tasks NOT completed</h3>
+
+      <div id="checklist"></div>
+
+      <h3>Reason</h3>
+
+      <select id="reason">
+        <option value="">Select reason</option>
+        <option>Resident in room</option>
+        <option>Resident refused</option>
+        <option>Room occupied</option>
+        <option>Supplies missing</option>
+        <option>Maintenance issue</option>
+        <option>Not enough time</option>
+        <option>Other</option>
+      </select>
+
+      <textarea id="note" placeholder="Other reason / notes"></textarea>
+
+      <button onclick="submitIncomplete()">SAVE</button>
+
+    </div>
+
+    <p id="message"></p>
+
+    <button class="back" onclick="backToAreas()">BACK</button>
+
+  </div>
+
 </div>
 
+<!-- SCHEDULE-H1: LOADING SCREEN -->
+<div id="loadingScreen" class="loading-bg hidden">
+  <div class="spinner"></div>
+</div>
+
+<!-- SCHEDULE-I1: JAVASCRIPT / FIREBASE -->
 <script type="module">
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-import { getFirestore, collection, query, where, getDocs, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-const firebaseConfig = {
-  apiKey: "AIzaSyBgq_ooBeEN4noEyIxYPLVokgM6RjCO648",
-  authDomain: "gms-task-tracker.firebaseapp.com",
-  projectId: "gms-task-tracker",
-  storageBucket: "gms-task-tracker.firebasestorage.app",
-  messagingSenderId: "790880979860",
-  appId: "1:790880979860:web:6faee2a6e56955af3c1d81",
-  measurementId: "G-5TRHQMS039"
-};
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 
-const app = initializeApp(firebaseConfig);
-const db = getFirestore(app);
+  import {
+    getFirestore,
+    collection,
+    query,
+    where,
+    getDocs,
+    doc,
+    writeBatch,
+    serverTimestamp
+  } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-const sessionData = JSON.parse(sessionStorage.getItem("currentEmployee"));
-if (!sessionData) window.location.href = "index.html";
+  /* SCHEDULE-I2: FIREBASE CONFIG */
+  const firebaseConfig = {
+    apiKey: "AIzaSyBgq_ooBeEN4noEyIxYPLVokgM6RjCO648",
+    authDomain: "gms-task-tracker.firebaseapp.com",
+    projectId: "gms-task-tracker",
+    storageBucket: "gms-task-tracker.firebasestorage.app",
+    messagingSenderId: "790880979860",
+    appId: "1:790880979860:web:6faee2a6e56955af3c1d81",
+    measurementId: "G-5TRHQMS039"
+  };
 
-let currentWorkDate = new Date().toISOString().split('T')[0];
-document.getElementById("globalWorkDate").value = currentWorkDate;
-document.getElementById("employeeName").innerText = "Welcome, " + sessionData.firstName;
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
 
-let currentAssignment = "";
-let selectedCategory = "";
-let progressData = {}; // [area][task] = status
-let allTasksForDay = []; 
+  /* SCHEDULE-I3: SESSION LOGIN */
+  const sessionData = JSON.parse(sessionStorage.getItem("currentEmployee"));
 
-window.showView = (num) => {
-    [1,2,3,4].forEach(v => document.getElementById('view'+v).classList.add('hidden'));
-    document.getElementById('view'+num).classList.remove('hidden');
-};
+  if (!sessionData) {
+    window.location.href = "index.html";
+  }
 
-// --- PROGRESS LOGIC ---
-function getTaskCounts(tasks) {
-  let completed = 0;
-  let incomplete = 0;
-  let untouched = 0;
+  const employeeId =
+    sessionData.employeeId ||
+    sessionData.id ||
+    sessionData.pin ||
+    "";
 
-  tasks.forEach(task => {
-    const status = progressData[task.area]?.[task.task] || "";
-    if (status === "Completed") completed++;
-    else if (status === "Incomplete") incomplete++;
-    else untouched++;
-  });
+  const employeeName =
+    ((sessionData.firstName || "") + " " + (sessionData.lastName || "")).trim() ||
+    sessionData.employeeName ||
+    sessionData.name ||
+    "Employee";
 
-  return { completed, incomplete, untouched };
-}
+  document.getElementById("employeeName").innerText =
+    "Welcome, " + employeeName;
 
-function getProgressColor(completed, incomplete, total) {
-  if (incomplete > 0) return "yellow";
-  if (completed === 0) return "red";
-  if (completed >= total) return "green";
-  return "yellow";
-}
+  /* SCHEDULE-I4: MAIN VARIABLES */
+  let currentAssignment = "";
+  let currentWorkDateISO = getTodayISO();
+  let currentWorkDateDisplay = "";
+  let currentWorkDayName = "";
 
-async function refreshProgressData() {
-    const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-    const selectedDay = dayNames[new Date(currentWorkDate + 'T00:00:00').getDay()];
+  let selectedCategory = "";
+  let currentArea = "";
 
-    const q = query(collection(db, "tasks"), where("assignment", "==", currentAssignment));
-    const snap = await getDocs(q);
-    
-    allTasksForDay = snap.docs.map(d => ({id: d.id, ...d.data()})).filter(item => {
-        const itemSched = (item.schedule || "").toLowerCase();
-        return itemSched === selectedDay.toLowerCase() || itemSched === "daily";
-    });
+  let allTasksForDay = [];
+  let progressData = {};
+  let currentTaskList = [];
 
-    progressData = {};
-    allTasksForDay.forEach(item => {
-        if (!progressData[item.area]) progressData[item.area] = {};
-        progressData[item.area][item.task] = item.status || "";
-    });
-}
+  /* SCHEDULE-J1: LOADING FUNCTIONS */
+  function showLoading() {
+    document.getElementById("loadingScreen").classList.remove("hidden");
+  }
 
-// --- NAVIGATION ---
-window.navToView2 = async (assignment) => {
+  function hideLoading() {
+    document.getElementById("loadingScreen").classList.add("hidden");
+  }
+
+  /* SCHEDULE-J2: DATE FUNCTIONS */
+  function getTodayISO() {
+    const today = new Date();
+    const yyyy = today.getFullYear();
+    const mm = String(today.getMonth() + 1).padStart(2, "0");
+    const dd = String(today.getDate()).padStart(2, "0");
+
+    return yyyy + "-" + mm + "-" + dd;
+  }
+
+  function updateDateDisplay() {
+    const date = new Date(currentWorkDateISO + "T00:00:00");
+
+    const weekdays = [
+      "Sunday",
+      "Monday",
+      "Tuesday",
+      "Wednesday",
+      "Thursday",
+      "Friday",
+      "Saturday"
+    ];
+
+    currentWorkDayName = weekdays[date.getDay()];
+
+    const mm = String(date.getMonth() + 1).padStart(2, "0");
+    const dd = String(date.getDate()).padStart(2, "0");
+    const yyyy = date.getFullYear();
+
+    currentWorkDateDisplay = mm + "/" + dd + "/" + yyyy;
+  }
+
+  function openCalendar() {
+    const picker = document.getElementById("quickDatePicker");
+
+    picker.value = currentWorkDateISO;
+
+    if (picker.showPicker) {
+      picker.showPicker();
+    } else {
+      picker.click();
+    }
+  }
+
+  async function changeWorkDateFromCalendar() {
+    const picker = document.getElementById("quickDatePicker");
+
+    if (!picker.value) return;
+
+    currentWorkDateISO = picker.value;
+
+    await loadAssignmentTasks();
+
+    if (selectedCategory) {
+      drawAreaButtons(selectedCategory);
+      showView(3);
+    } else {
+      drawCategories();
+      showView(2);
+    }
+  }
+
+  /* SCHEDULE-K1: LOAD TASKS AND PROGRESS FROM FIREBASE */
+  async function chooseAssignment(assignment) {
     currentAssignment = assignment;
-    await refreshProgressData();
-    const cats = ["Common Area", "Weekly Room", "Daily Room", "Dehumidifier"];
-    const container = document.getElementById("categoryButtons");
-    container.innerHTML = "";
+    selectedCategory = "";
+    currentArea = "";
+    currentTaskList = [];
 
-    cats.forEach(cat => {
-        const catTasks = allTasksForDay.filter(t => t.category === cat);
-        const total = catTasks.length;
-        const counts = getTaskCounts(catTasks);
-        
-        const btn = document.createElement("button");
-        btn.innerText = cat + (counts.incomplete > 0 ? ` ${counts.completed}/${total} - ISSUE` : ` ${counts.completed}/${total}`);
-        btn.className = total > 0 ? getProgressColor(counts.completed, counts.incomplete, total) : "standard";
-        btn.onclick = () => navToView3(cat);
-        container.appendChild(btn);
-    });
+    await loadAssignmentTasks();
+
     showView(2);
-};
+  }
 
-window.navToView3 = async (cat) => {
-    selectedCategory = cat;
-    const datePicker = document.getElementById("datePickerContainer");
-    if (cat === "Weekly Room") datePicker.classList.remove("hidden");
-    else {
-        datePicker.classList.add("hidden");
-        currentWorkDate = new Date().toISOString().split('T')[0];
-        document.getElementById("globalWorkDate").value = currentWorkDate;
-        await refreshProgressData();
+  async function loadAssignmentTasks() {
+    showLoading();
+
+    updateDateDisplay();
+
+    document.getElementById("assignmentTitle").innerText = currentAssignment;
+
+    document.getElementById("workDateTitle").innerText =
+      currentWorkDateDisplay + " - " + currentWorkDayName;
+
+    document.getElementById("areaDateTitle").innerText =
+      currentWorkDateDisplay + " - " + currentWorkDayName;
+
+    const taskQuery = query(
+      collection(db, "tasks"),
+      where("assignment", "==", currentAssignment)
+    );
+
+    const taskSnap = await getDocs(taskQuery);
+
+    const allAssignmentTasks =
+      taskSnap.docs.map(function(taskDoc) {
+        return {
+          id: taskDoc.id,
+          ...taskDoc.data()
+        };
+      });
+
+    allTasksForDay =
+      allAssignmentTasks.filter(function(item) {
+        const activeValue = item.active;
+
+        if (activeValue === false || activeValue === "No") {
+          return false;
+        }
+
+        const schedule =
+          String(item.schedule || "").trim().toLowerCase();
+
+        return (
+          schedule === "daily" ||
+          schedule === currentWorkDayName.toLowerCase()
+        );
+      });
+
+    await loadProgressData();
+
+    drawCategories();
+
+    hideLoading();
+  }
+
+  async function loadProgressData() {
+    progressData = {};
+
+    const progressQuery = query(
+      collection(db, "taskProgress"),
+      where("workDateISO", "==", currentWorkDateISO)
+    );
+
+    const progressSnap = await getDocs(progressQuery);
+
+    progressSnap.docs.forEach(function(progressDoc) {
+      const item = progressDoc.data();
+
+      if (item.assignment !== currentAssignment) return;
+      if (String(item.employeeId || "") !== String(employeeId || "")) return;
+
+      const area = item.area || "";
+      const task = item.task || "";
+      const status = item.status || "";
+
+      if (!area || !task) return;
+
+      if (!progressData[area]) {
+        progressData[area] = {};
+      }
+
+      progressData[area][task] = status;
+    });
+  }
+
+  /* SCHEDULE-L1: CATEGORY BUTTONS */
+  function drawCategories() {
+    const box = document.getElementById("categoryButtons");
+    box.innerHTML = "";
+
+    const categories =
+      currentAssignment === "Laundry"
+        ? ["Weekly Laundry", "Daily Laundry Check"]
+        : ["Common Area", "Weekly Room", "Daily Room", "Dehumidifier"];
+
+    categories.forEach(function(category) {
+      const categoryTasks =
+        allTasksForDay.filter(function(task) {
+          return task.category === category;
+        });
+
+      const total = categoryTasks.length;
+
+      if (total === 0) return;
+
+      const counts = getTaskCounts(categoryTasks);
+
+      const btn = document.createElement("button");
+
+      if (counts.incomplete > 0) {
+        btn.innerText =
+          category + " " + counts.completed + "/" + total + " - ISSUE";
+      } else {
+        btn.innerText =
+          category + " " + counts.completed + "/" + total;
+      }
+
+      btn.className =
+        getProgressColor(counts.completed, counts.incomplete, total);
+
+      btn.onclick = function() {
+        selectedCategory = category;
+        drawAreaButtons(category);
+        showView(3);
+      };
+
+      box.appendChild(btn);
+    });
+  }
+
+  /* SCHEDULE-M1: AREA / ROOM BUTTONS */
+  function drawAreaButtons(category) {
+    const box = document.getElementById("areaButtons");
+    box.innerHTML = "";
+
+    document.getElementById("completeAllCategoryButton").innerText =
+      "ALL " + category.toUpperCase();
+
+    document.getElementById("areaDateTitle").innerText =
+      currentWorkDateDisplay + " - " + currentWorkDayName;
+
+    const categoryTasks =
+      allTasksForDay.filter(function(task) {
+        return task.category === category;
+      });
+
+    const areas =
+      [...new Set(categoryTasks.map(function(task) {
+        return task.area;
+      }))];
+
+    areas.forEach(function(area) {
+      const areaTasks =
+        categoryTasks.filter(function(task) {
+          return task.area === area;
+        });
+
+      const total = areaTasks.length;
+      const counts = getTaskCounts(areaTasks);
+
+      const btn = document.createElement("button");
+
+      if (counts.incomplete > 0) {
+        btn.innerText =
+          area + " " + counts.completed + "/" + total + " - ISSUE";
+      } else {
+        btn.innerText =
+          area + " " + counts.completed + "/" + total;
+      }
+
+      btn.className =
+        getProgressColor(counts.completed, counts.incomplete, total);
+
+      btn.onclick = function() {
+        openTaskGroup(area);
+      };
+
+      box.appendChild(btn);
+    });
+  }
+
+  /* SCHEDULE-N1: TASK COUNT AND COLOR LOGIC */
+  function getTaskCounts(tasks) {
+    let completed = 0;
+    let incomplete = 0;
+    let untouched = 0;
+
+    tasks.forEach(function(task) {
+      const areaProgress = progressData[task.area] || {};
+      const status = areaProgress[task.task] || "";
+
+      if (status === "Completed") {
+        completed++;
+      } else if (status === "Incomplete") {
+        incomplete++;
+      } else {
+        untouched++;
+      }
+    });
+
+    return {
+      completed: completed,
+      incomplete: incomplete,
+      untouched: untouched
+    };
+  }
+
+  function getProgressColor(completed, incomplete, total) {
+    if (incomplete > 0) return "yellow";
+    if (completed === 0) return "red";
+    if (completed >= total) return "green";
+    return "yellow";
+  }
+
+  /* SCHEDULE-O1: TASK COMPLETION SCREEN */
+  function openTaskGroup(area) {
+    currentArea = area;
+
+    currentTaskList =
+      allTasksForDay.filter(function(task) {
+        return task.area === area && task.category === selectedCategory;
+      });
+
+    document.getElementById("taskTitle").innerText = area;
+
+    document.getElementById("taskDateTitle").innerText =
+      currentWorkDateDisplay + " - " + currentWorkDayName;
+
+    document.getElementById("message").innerText = "";
+    document.getElementById("reason").value = "";
+    document.getElementById("note").value = "";
+    document.getElementById("checklistBox").classList.add("hidden");
+
+    buildChecklist();
+
+    showView(4);
+  }
+
+  function buildChecklist() {
+    const box = document.getElementById("checklist");
+    box.innerHTML = "";
+
+    currentTaskList.forEach(function(task, index) {
+      const div = document.createElement("div");
+      div.className = "check-row";
+
+      div.innerHTML =
+        '<input type="checkbox" id="task_' + index + '">' +
+        task.task;
+
+      box.appendChild(div);
+    });
+  }
+
+  async function completeAllTasks() {
+    showLoading();
+
+    await saveTaskStatuses(
+      currentTaskList.map(function(task) {
+        return {
+          task: task,
+          status: "Completed",
+          reason: ""
+        };
+      })
+    );
+
+    hideLoading();
+
+    drawAreaButtons(selectedCategory);
+    showView(3);
+  }
+
+  function showIncompleteChecklist() {
+    document.getElementById("checklistBox").classList.remove("hidden");
+  }
+
+  async function submitIncomplete() {
+    const reason = document.getElementById("reason").value;
+    const note = document.getElementById("note").value;
+
+    if (!reason) {
+      alert("Select a reason.");
+      return;
     }
 
-    const container = document.getElementById("areaBtnContainer");
-    container.innerHTML = "Loading...";
+    showLoading();
+
+    const finalReason =
+      note ? reason + " - " + note : reason;
+
+    const saveItems = [];
+
+    currentTaskList.forEach(function(task, index) {
+      const checked =
+        document.getElementById("task_" + index).checked;
+
+      if (checked) {
+        saveItems.push({
+          task: task,
+          status: "Incomplete",
+          reason: finalReason
+        });
+      } else {
+        saveItems.push({
+          task: task,
+          status: "Completed",
+          reason: ""
+        });
+      }
+    });
+
+    await saveTaskStatuses(saveItems);
+
+    hideLoading();
+
+    drawAreaButtons(selectedCategory);
     showView(3);
+  }
 
-    const catTasks = allTasksForDay.filter(t => t.category === cat);
-    const uniqueAreas = [...new Set(catTasks.map(t => t.area))];
+  /* SCHEDULE-P1: COMPLETE WHOLE CATEGORY */
+  async function completeWholeCategory() {
+    const categoryTasks =
+      allTasksForDay.filter(function(task) {
+        return task.category === selectedCategory;
+      });
 
-    container.innerHTML = "";
-    uniqueAreas.forEach(area => {
-        const areaTasks = catTasks.filter(t => t.area === area);
-        const total = areaTasks.length;
-        const counts = getTaskCounts(areaTasks);
-        
-        const btn = document.createElement("button");
-        btn.innerText = area + (counts.incomplete > 0 ? ` ${counts.completed}/${total} - ISSUE` : ` ${counts.completed}/${total}`);
-        btn.className = getProgressColor(counts.completed, counts.incomplete, total);
-        btn.onclick = () => navToView4(area);
-        container.appendChild(btn);
+    if (categoryTasks.length === 0) {
+      alert("No tasks in this category.");
+      return;
+    }
+
+    const confirmMessage =
+      "Mark ALL " + selectedCategory + " tasks completed for " +
+      currentWorkDateDisplay + "?";
+
+    if (!confirm(confirmMessage)) {
+      return;
+    }
+
+    showLoading();
+
+    await saveTaskStatuses(
+      categoryTasks.map(function(task) {
+        return {
+          task: task,
+          status: "Completed",
+          reason: ""
+        };
+      })
+    );
+
+    hideLoading();
+
+    drawAreaButtons(selectedCategory);
+    drawCategories();
+  }
+
+  /* SCHEDULE-Q1: SAVE FIREBASE PROGRESS */
+  async function saveTaskStatuses(saveItems) {
+    const batch = writeBatch(db);
+
+    saveItems.forEach(function(item) {
+      const task = item.task;
+      const status = item.status;
+      const reason = item.reason || "";
+
+      updateLocalProgress(task, status);
+
+      const progressId = makeProgressId(task);
+
+      const progressRef =
+        doc(db, "taskProgress", progressId);
+
+      batch.set(progressRef, {
+        workDateISO: currentWorkDateISO,
+        workDate: currentWorkDateDisplay,
+        weekday: currentWorkDayName,
+
+        employeeId: String(employeeId || ""),
+        employeeName: employeeName,
+
+        assignment: currentAssignment,
+        area: task.area,
+        task: task.task,
+        schedule: task.schedule || "",
+        category: task.category || "",
+
+        status: status,
+        reason: reason,
+
+        updatedAt: serverTimestamp()
+      });
+
+      const logRef =
+        doc(collection(db, "taskLogs"));
+
+      batch.set(logRef, {
+        workDateISO: currentWorkDateISO,
+        workDate: currentWorkDateDisplay,
+        weekday: currentWorkDayName,
+
+        employeeId: String(employeeId || ""),
+        employeeName: employeeName,
+
+        assignment: currentAssignment,
+        area: task.area,
+        task: task.task,
+        schedule: task.schedule || "",
+        category: task.category || "",
+
+        status: status,
+        reason: reason,
+
+        timestamp: serverTimestamp()
+      });
     });
-};
 
-window.navToView4 = (area) => {
-    localStorage.setItem("currentArea", area);
-    showView(4);
-    loadTasks();
-};
+    await batch.commit();
+  }
 
-window.loadTasks = () => {
-    const area = localStorage.getItem("currentArea");
-    const container = document.getElementById("taskListContainer");
-    const areaTasks = allTasksForDay.filter(t => t.area === area && t.category === selectedCategory);
+  function updateLocalProgress(task, status) {
+    if (!progressData[task.area]) {
+      progressData[task.area] = {};
+    }
 
-    let html = `<h4 style="text-align:center;">${area}</h4>`;
-    areaTasks.forEach(t => {
-        const status = progressData[area]?.[t.task] || "";
-        html += `
-            <div class="task-row">
-                <span style="font-weight:bold">${t.task}</span>
-                <div class="task-controls">
-                    <button class="${status === 'Completed' ? 'green' : 'standard'}" onclick="updateTaskStatus('${t.id}', 'Completed')">DONE</button>
-                    <button class="${status === 'Incomplete' ? 'yellow' : 'standard'}" onclick="updateTaskStatus('${t.id}', 'Incomplete')">ISSUE</button>
-                    <button class="back" onclick="updateTaskStatus('${t.id}', '')">CLEAR</button>
-                </div>
-            </div>`;
-    });
-    container.innerHTML = html;
-};
-
-window.updateTaskStatus = async (id, status) => {
-    const task = allTasksForDay.find(t => t.id === id);
-    await updateDoc(doc(db, "tasks", id), { status: status });
-    
-    if (!progressData[task.area]) progressData[task.area] = {};
     progressData[task.area][task.task] = status;
-    
-    loadTasks(); // Redraw task list to show current selection
-};
+  }
 
-document.getElementById("globalWorkDate").onchange = async (e) => {
-    currentWorkDate = e.target.value;
-    await refreshProgressData();
-    navToView3(selectedCategory);
-};
+  function makeProgressId(task) {
+    const raw =
+      currentWorkDateISO + "_" +
+      String(employeeId || "") + "_" +
+      currentAssignment + "_" +
+      task.area + "_" +
+      task.task;
 
-document.getElementById("btnLogout").onclick = () => { sessionStorage.clear(); window.location.href = "index.html"; };
+    return raw.replace(/[^a-zA-Z0-9_-]/g, "_");
+  }
+
+  /* SCHEDULE-R1: NAVIGATION */
+  function showView(num) {
+    [1, 2, 3, 4].forEach(function(viewNumber) {
+      document
+        .getElementById("view" + viewNumber)
+        .classList
+        .add("hidden");
+    });
+
+    document
+      .getElementById("view" + num)
+      .classList
+      .remove("hidden");
+  }
+
+  function backToCategories() {
+    drawCategories();
+    showView(2);
+  }
+
+  function backToAreas() {
+    drawAreaButtons(selectedCategory);
+    showView(3);
+  }
+
+  function logout() {
+    sessionStorage.clear();
+    window.location.href = "index.html";
+  }
+
+  /* SCHEDULE-S1: MAKE FUNCTIONS AVAILABLE TO HTML BUTTONS */
+  window.chooseAssignment = chooseAssignment;
+  window.openCalendar = openCalendar;
+  window.changeWorkDateFromCalendar = changeWorkDateFromCalendar;
+  window.completeWholeCategory = completeWholeCategory;
+  window.completeAllTasks = completeAllTasks;
+  window.showIncompleteChecklist = showIncompleteChecklist;
+  window.submitIncomplete = submitIncomplete;
+  window.backToCategories = backToCategories;
+  window.backToAreas = backToAreas;
+  window.showView = showView;
+  window.logout = logout;
+
 </script>
+
 </body>
 </html>
