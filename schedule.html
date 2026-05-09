@@ -18,15 +18,15 @@
       display: flex;
       justify-content: center;
       align-items: flex-start;
-      padding: 18px 10px;
+      padding: 10px 8px;
     }
 
     .card {
       width: 100%;
       max-width: 430px;
       background: white;
-      border-radius: 24px;
-      padding: 24px;
+      border-radius: 20px;
+      padding: 16px;
       box-shadow: 0 4px 18px rgba(0,0,0,0.18);
     }
 
@@ -37,7 +37,7 @@
       padding: 4px 10px;
       border-radius: 8px;
       font-size: 12px;
-      margin-bottom: 12px;
+      margin-bottom: 8px;
     }
 
     .view-center {
@@ -50,24 +50,26 @@
     }
 
     h2 {
-      font-size: 30px;
+      font-size: 24px;
+      margin-bottom: 10px;
     }
 
     h3 {
-      font-size: 24px;
+      font-size: 20px;
+      margin-bottom: 10px;
     }
 
     input, select, textarea {
       width: 100%;
-      font-size: 22px;
-      padding: 14px;
-      margin: 10px 0 18px;
+      font-size: 20px;
+      padding: 12px;
+      margin: 8px 0 14px;
       border-radius: 14px;
       border: 1px solid #ccc;
     }
 
     textarea {
-      min-height: 90px;
+      min-height: 80px;
     }
 
     button {
@@ -76,10 +78,10 @@
       border-radius: 14px;
       background: #1976d2;
       color: white;
-      font-size: 22px;
+      font-size: 20px;
       font-weight: bold;
-      padding: 16px;
-      margin: 8px 0;
+      padding: 14px;
+      margin: 6px 0;
       cursor: pointer;
     }
 
@@ -111,20 +113,20 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 10px;
-      margin-bottom: 18px;
+      gap: 8px;
+      margin-bottom: 10px;
     }
 
     .date-row h3 {
       margin: 0;
-      font-size: 24px;
+      font-size: 20px;
       line-height: 1.2;
     }
 
     .date-change-btn {
       width: auto;
-      font-size: 15px;
-      padding: 10px 12px;
+      font-size: 13px;
+      padding: 8px 10px;
       margin: 0;
       border-radius: 10px;
       background: #555;
@@ -140,63 +142,65 @@
     }
 
     .top-date-box {
-      margin-bottom: 24px;
+      margin-bottom: 14px;
     }
 
-.rooms-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 8px;
-  margin-top: 10px;
-}
+    .rooms-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 10px;
+    }
 
-.rooms-grid button {
-  width: 100%;
-  min-height: 68px;
-  font-size: 18px;
-  padding: 10px 6px;
-  line-height: 1.15;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-}
+    .rooms-grid button {
+      width: 100%;
+      min-height: 64px;
+      font-size: 18px;
+      padding: 8px 6px;
+      line-height: 1.1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      border-radius: 14px;
+      margin: 0;
+    }
 
-.room-number {
-  font-size: 24px;
-  font-weight: bold;
-  line-height: 1.1;
-}
+    .room-number {
+      font-size: 24px;
+      font-weight: bold;
+      line-height: 1.1;
+    }
 
-.room-counter {
-  font-size: 17px;
-  font-weight: bold;
-  margin-top: 4px;
-}
+    .room-counter {
+      font-size: 16px;
+      font-weight: bold;
+      margin-top: 3px;
+    }
 
     #checklist {
       display: grid;
-      grid-template-columns: 1fr 1fr 1fr;
-      gap: 10px;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
     }
 
     .check-row {
-      font-size: 18px;
-      padding: 12px 8px;
+      font-size: 16px;
+      padding: 10px 6px;
       border: 1px solid #ddd;
       border-radius: 12px;
       text-align: center;
-      min-height: 70px;
+      min-height: 60px;
 
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 8px;
+      gap: 6px;
     }
 
     .check-row input {
       width: auto;
-      transform: scale(1.3);
+      transform: scale(1.2);
       margin: 0;
     }
 
@@ -737,15 +741,16 @@
       const counts = getTaskCounts(areaTasks);
 
       const btn = document.createElement("button");
-if (counts.incomplete > 0) {
-  btn.innerHTML =
-    '<div class="room-number">' + area + '</div>' +
-    '<div class="room-counter">' + counts.completed + '/' + total + ' ISSUE</div>';
-} else {
-  btn.innerHTML =
-    '<div class="room-number">' + area + '</div>' +
-    '<div class="room-counter">' + counts.completed + '/' + total + '</div>';
-}
+
+      if (counts.incomplete > 0) {
+        btn.innerHTML =
+          '<div class="room-number">' + area + '</div>' +
+          '<div class="room-counter">' + counts.completed + '/' + total + ' ISSUE</div>';
+      } else {
+        btn.innerHTML =
+          '<div class="room-number">' + area + '</div>' +
+          '<div class="room-counter">' + counts.completed + '/' + total + '</div>';
+      }
 
       btn.className =
         getProgressColor(counts.completed, counts.incomplete, total);
