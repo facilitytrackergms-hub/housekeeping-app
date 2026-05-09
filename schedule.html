@@ -143,19 +143,36 @@
       margin-bottom: 24px;
     }
 
-    .rooms-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-      margin-top: 15px;
-    }
+.rooms-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 10px;
+}
 
-    .rooms-grid button {
-      width: 100%;
-      min-height: 90px;
-      font-size: 20px;
-      padding: 14px;
-    }
+.rooms-grid button {
+  width: 100%;
+  min-height: 68px;
+  font-size: 18px;
+  padding: 10px 6px;
+  line-height: 1.15;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+.room-number {
+  font-size: 24px;
+  font-weight: bold;
+  line-height: 1.1;
+}
+
+.room-counter {
+  font-size: 17px;
+  font-weight: bold;
+  margin-top: 4px;
+}
 
     #checklist {
       display: grid;
@@ -720,14 +737,15 @@
       const counts = getTaskCounts(areaTasks);
 
       const btn = document.createElement("button");
-
-      if (counts.incomplete > 0) {
-        btn.innerText =
-          area + " " + counts.completed + "/" + total + " - ISSUE";
-      } else {
-        btn.innerText =
-          area + " " + counts.completed + "/" + total;
-      }
+if (counts.incomplete > 0) {
+  btn.innerHTML =
+    '<div class="room-number">' + area + '</div>' +
+    '<div class="room-counter">' + counts.completed + '/' + total + ' ISSUE</div>';
+} else {
+  btn.innerHTML =
+    '<div class="room-number">' + area + '</div>' +
+    '<div class="room-counter">' + counts.completed + '/' + total + '</div>';
+}
 
       btn.className =
         getProgressColor(counts.completed, counts.incomplete, total);
