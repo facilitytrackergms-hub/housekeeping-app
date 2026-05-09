@@ -4,14 +4,18 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Facility Tracker</title>
   <style>
+    /* GLOBAL STYLE FROM GITHUB CODE */
     * { box-sizing: border-box; }
-    body { margin: 0; font-family: Arial, sans-serif; background: #f2f2f2; padding: 18px 10px; }
-    .card { width: 100%; max-width: 430px; background: white; border-radius: 24px; padding: 24px; margin: auto; box-shadow: 0 4px 18px rgba(0,0,0,0.18); }
-    .view-tag { display: inline-block; background: black; color: white; padding: 4px 10px; border-radius: 8px; font-size: 12px; margin-bottom: 12px; text-align: center; }
+    body { margin: 0; font-family: Arial, sans-serif; background: #f2f2f2; min-height: 100vh; display: flex; justify-content: center; align-items: flex-start; padding: 18px 10px; }
+    .card { width: 100%; max-width: 430px; background: white; border-radius: 24px; padding: 24px; box-shadow: 0 4px 18px rgba(0,0,0,0.18); }
+    .view-tag { display: inline-block; background: black; color: white; padding: 4px 10px; border-radius: 8px; font-size: 12px; margin-bottom: 12px; }
+    .view-center { text-align: center; }
     h2, h3 { text-align: center; margin-top: 0; }
-    input[type="date"] { width: 100%; font-size: 20px; padding: 12px; margin-bottom: 20px; border-radius: 14px; border: 1px solid #ccc; text-align: center; }
-    button { width: 100%; border: none; border-radius: 14px; background: #1976d2; color: white; font-size: 20px; font-weight: bold; padding: 16px; margin: 8px 0; cursor: pointer; }
-    .back { background: #555; }
+    h2 { font-size: 30px; }
+    input[type="date"] { width: 100%; font-size: 22px; padding: 14px; margin: 10px 0 18px; border-radius: 14px; border: 1px solid #ccc; text-align: center; }
+    button { width: 100%; border: none; border-radius: 14px; background: #1976d2; color: white; font-size: 22px; font-weight: bold; padding: 16px; margin: 8px 0; cursor: pointer; }
+    .rooms-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 15px; }
+    .back { background: #555; color: white; }
     .hidden { display: none !important; }
     .task-row { background: #fff; border: 1px solid #ddd; margin: 10px 0; padding: 15px; border-radius: 12px; display: flex; align-items: center; justify-content: space-between; }
   </style>
@@ -21,42 +25,45 @@
 <div class="card">
   <h2 id="employeeName">Welcome</h2>
 
-  <!-- 1. DATE PICKER -->
-  <div style="text-align:center;">
-    <label style="font-weight: bold; font-size: 14px;">Work Date:</label>
+  <!-- 1. GLOBAL DATE PICKER -->
+  <div class="view-center">
+    <label style="font-weight: bold; font-size: 14px;">Selected Work Date:</label>
     <input type="date" id="globalWorkDate">
   </div>
 
   <!-- VIEW 1: ASSIGNMENTS -->
   <div id="view1">
-    <div class="view-tag">VIEW 1</div>
-    <button onclick="navToView2('Housekeeper 1')">Housekeeper 1</button>
-    <button onclick="navToView2('Housekeeper 2')">Housekeeper 2</button>
-    <button onclick="navToView2('Laundry')">Laundry</button>
+    <div class="view-center"><div class="view-tag">VIEW 1</div></div>
+    <button id="btnH1">Housekeeper 1</button>
+    <button id="btnH2">Housekeeper 2</button>
+    <button id="btnLaundry">Laundry</button>
+    <button class="back" id="btnLogout">LOGOUT</button>
   </div>
 
-  <!-- VIEW 2: CATEGORIES (Based on Column E) -->
+  <!-- VIEW 2: CATEGORIES -->
   <div id="view2" class="hidden">
-    <div class="view-tag">VIEW 2</div>
+    <div class="view-center"><div class="view-tag">VIEW 2</div></div>
     <h3 id="v2Title">Categories</h3>
-    <button onclick="navToView3('Common Area')">Common Area</button>
-    <button onclick="navToView3('Weekly Room')">Weekly Room</button>
-    <button onclick="navToView3('Daily Room')">Daily Room</button>
-    <button onclick="navToView3('Dehumidifier')">Dehumidifier</button>
+    <div id="categoryButtons">
+       <button id="btnCommon">Common Area</button>
+       <button id="btnWeekly">Weekly Room</button>
+       <button id="btnDaily">Daily Room</button>
+       <button id="btnDehum">Dehumidifier</button>
+    </div>
     <button class="back" onclick="showView(1)">BACK</button>
   </div>
 
-  <!-- VIEW 3: AREAS (Dynamic Buttons for Room/Lobby) -->
+  <!-- VIEW 3: AREAS (Dynamic Room Grid) -->
   <div id="view3" class="hidden">
-    <div class="view-tag">VIEW 3</div>
+    <div class="view-center"><div class="view-tag">VIEW 3</div></div>
     <h3 id="v3Title">Select Area</h3>
-    <div id="areaBtnContainer"></div>
+    <div id="areaBtnContainer" class="rooms-grid"></div>
     <button class="back" onclick="showView(2)">BACK</button>
   </div>
 
-  <!-- VIEW 4: FINAL TASK LIST -->
+  <!-- VIEW 4: TASK LIST -->
   <div id="view4" class="hidden">
-    <div class="view-tag">VIEW 4</div>
+    <div class="view-center"><div class="view-tag">VIEW 4</div></div>
     <h3 id="v4Title">Tasks</h3>
     <div id="taskListContainer"></div>
     <button class="back" onclick="showView(3)">BACK</button>
@@ -73,28 +80,45 @@ const firebaseConfig = {
   projectId: "gms-task-tracker",
   storageBucket: "gms-task-tracker.firebasestorage.app",
   messagingSenderId: "790880979860",
-  appId: "1:790880979860:web:6faee2a6e56955af3c1d81"
+  appId: "1:790880979860:web:6faee2a6e56955af3c1d81",
+  measurementId: "G-5TRHQMS039"
 };
 
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
+
+// Initialize Session
+const sessionData = JSON.parse(sessionStorage.getItem("currentEmployee"));
+if (!sessionData) window.location.href = "index.html";
 
 let currentAssignment = "";
 let selectedCategory = "";
 let currentWorkDate = new Date().toISOString().split('T')[0];
 
 document.getElementById("globalWorkDate").value = currentWorkDate;
-document.getElementById("globalWorkDate").onchange = (e) => currentWorkDate = e.target.value;
+document.getElementById("employeeName").innerText = "Welcome, " + sessionData.firstName;
 
-// Navigation Helpers
+// Navigation Controls
 window.showView = (num) => {
     [1,2,3,4].forEach(v => document.getElementById('view'+v).classList.add('hidden'));
     document.getElementById('view'+num).classList.remove('hidden');
 };
 
-window.navToView2 = (val) => { currentAssignment = val; showView(2); };
+document.getElementById("btnH1").onclick = () => { currentAssignment = 'Housekeeper 1'; showView(2); };
+document.getElementById("btnH2").onclick = () => { currentAssignment = 'Housekeeper 2'; showView(2); };
+document.getElementById("btnLaundry").onclick = () => { currentAssignment = 'Laundry'; showView(2); };
 
-window.navToView3 = async (cat) => {
+document.getElementById("btnCommon").onclick = () => navToView3('Common Area');
+document.getElementById("btnWeekly").onclick = () => navToView3('Weekly Room');
+document.getElementById("btnDaily").onclick = () => navToView3('Daily Room');
+document.getElementById("btnDehum").onclick = () => navToView3('Dehumidifier');
+
+document.getElementById("globalWorkDate").onchange = (e) => {
+    currentWorkDate = e.target.value;
+    if (!document.getElementById("view4").classList.contains("hidden")) loadTasks();
+};
+
+async function navToView3(cat) {
     selectedCategory = cat;
     const container = document.getElementById("areaBtnContainer");
     container.innerHTML = "Loading Areas...";
@@ -114,38 +138,39 @@ window.navToView3 = async (cat) => {
         btn.onclick = () => navToView4(area);
         container.appendChild(btn);
     });
-};
+}
 
-window.navToView4 = async (area) => {
+async function navToView4(area) {
     const container = document.getElementById("taskListContainer");
     container.innerHTML = "Loading Tasks...";
     showView(4);
 
-    // Weekday Logic for your Column D
     const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
     const selectedDay = dayNames[new Date(currentWorkDate + 'T00:00:00').getDay()];
 
     const q = query(collection(db, "tasks"), where("area", "==", area));
     const snap = await getDocs(q);
 
-    let html = "";
+    let html = `<h4>${area} - ${selectedDay}</h4>`;
     snap.forEach(d => {
         const item = d.data();
         if (item.schedule === "Daily" || item.schedule === selectedDay) {
             html += `<div class="task-row">
-                <div><strong>${item.task}</strong></div>
-                <input type="checkbox" style="width:25px;height:25px;" 
+                <span>${item.task}</span>
+                <input type="checkbox" style="width:30px;height:30px;" 
                        ${item.status === 'done' ? 'checked' : ''} 
                        onchange="updateStatus('${d.id}', this.checked)">
             </div>`;
         }
     });
-    container.innerHTML = html || "No tasks for today!";
-};
+    container.innerHTML = html || "No tasks scheduled!";
+}
 
 window.updateStatus = async (id, checked) => {
     await updateDoc(doc(db, "tasks", id), { status: checked ? "done" : "pending" });
 };
+
+document.getElementById("btnLogout").onclick = () => { sessionStorage.clear(); window.location.href = "index.html"; };
 </script>
 </body>
 </html>
