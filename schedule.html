@@ -734,15 +734,18 @@
     }
   }
 
-  function setAreaDatePickerVisibility(category) {
-    const box = document.getElementById("areaBigDatePickerBox");
+ function setAreaDatePickerVisibility(category) {
+  const pickerBox = document.getElementById("areaBigDatePickerBox");
+  const dateTitle = document.getElementById("areaDateTitle");
 
-    if (category === "Weekly Room" || category === "Weekly Laundry") {
-      box.classList.remove("hidden");
-    } else {
-      box.classList.add("hidden");
-    }
+  if (category === "Weekly Room" || category === "Weekly Laundry") {
+    pickerBox.classList.remove("hidden");
+    dateTitle.classList.remove("hidden");
+  } else {
+    pickerBox.classList.add("hidden");
+    dateTitle.classList.add("hidden");
   }
+}
 
   /* SCHEDULE-N1: TASK COUNT AND COLOR LOGIC */
   function getTaskCounts(tasks) {
