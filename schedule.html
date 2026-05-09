@@ -101,16 +101,32 @@ async function chooseAssignment(assignment) {
     await loadTasks();
 }
 
+/* Purpose: Filter tasks by both Assignment AND Selected Date */
+/* Location: schedule.html -> inside <script type="module"> */
+
 async function loadTasks() {
     const taskContainer = document.getElementById("taskListContainer");
-    taskContainer.innerHTML = "<div class='view-center'>Loading tasks...</div>";
+    taskContainer.innerHTML = "<div class='view-center'>Loading tasks for " + currentWorkDateValue + "...</div>";
 
     try {
-        const q = query(collection(db, "tasks"), where("assignment", "==", currentAssignment));
+        // 1. Create a reference to the 'tasks' collection
+        const tasksRef = collection(db, "tasks");
+
+        // 2. Build a query that filters by Assignment AND the specific Date
+        const q = query(
+            tasksRef, 
+            where("assignment", "==", currentAssignment),
+            where("date", "==", currentWorkDateValue) // This is the new date filter
+        );
+
         const querySnapshot = await getDocs(q);
 
         if (querySnapshot.empty) {
-            taskContainer.innerHTML = "<div class='view-center'>No tasks found for " + currentAssignment + ".</div>";
+            taskContainer.innerHTML = `
+                <div class='view-center'>
+                    <p>No tasks found for ${currentAssignment}</p>
+                    <p style="font-size: 14px; color: #666;">on ${currentWorkDateValue}</p>
+                </div>`;
             return;
         }
 
@@ -137,6 +153,7 @@ async function loadTasks() {
         taskContainer.innerHTML = `<div class='view-center' style='color:red;'>Error: ${error.message}</div>`;
     }
 }
+  
 
 async function toggleTaskStatus(taskId, isChecked) {
     try {
