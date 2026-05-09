@@ -13,20 +13,19 @@
     h2, h3 { text-align: center; margin-top: 0; }
     h2 { font-size: 30px; }
     input[type="date"] { width: 100%; font-size: 22px; padding: 14px; margin: 10px 0 18px; border-radius: 14px; border: 1px solid #ccc; text-align: center; }
-    button { width: 100%; border: none; border-radius: 14px; background: #1976d2; color: white; font-size: 22px; font-weight: bold; padding: 16px; margin: 8px 0; cursor: pointer; }
+    button { width: 100%; border: none; border-radius: 14px; background: #1976d2; color: white; font-size: 20px; font-weight: bold; padding: 16px; margin: 8px 0; cursor: pointer; }
     .rooms-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 15px; }
     .back { background: #555; color: white; }
     .hidden { display: none !important; }
-    .task-row { background: #fff; border: 1px solid #ddd; margin: 10px 0; padding: 15px; border-radius: 12px; display: flex; align-items: center; justify-content: space-between; }
- 
-  /* Progress-based Button Colors */
-button.red { background-color: #d93025 !important; color: white; }
-button.yellow { background-color: #f9ab00 !important; color: black; }
-button.green { background-color: #1e8e3e !important; color: white; }
-/* Standard buttons remain blue */
-button.standard { background-color: #1976d2; color: white; }
-  
-  
+    .task-row { background: #fff; border: 1px solid #ddd; margin: 10px 0; padding: 15px; border-radius: 12px; display: flex; align-items: center; justify-content: space-between; flex-direction: column; }
+    .task-controls { display: flex; gap: 10px; width: 100%; margin-top: 10px; }
+    .task-controls button { font-size: 14px; padding: 8px; margin: 0; flex: 1; }
+
+    /* Progress-based Button Colors */
+    button.red { background-color: #d93025 !important; color: white; }
+    button.yellow { background-color: #f9ab00 !important; color: black; }
+    button.green { background-color: #1e8e3e !important; color: white; }
+    button.standard { background-color: #1976d2; color: white; }
   </style>
 </head>
 <body>
@@ -34,44 +33,32 @@ button.standard { background-color: #1976d2; color: white; }
 <div class="card">
   <h2 id="employeeName">Welcome</h2>
 
-  <!-- VIEW 1: ASSIGNMENTS -->
   <div id="view1">
     <div class="view-center"><div class="view-tag">VIEW 1</div></div>
-    <button id="btnH1">Housekeeper 1</button>
-    <button id="btnH2">Housekeeper 2</button>
-    <button id="btnLaundry">Laundry</button>
+    <button onclick="navToView2('Housekeeper 1')">Housekeeper 1</button>
+    <button onclick="navToView2('Housekeeper 2')">Housekeeper 2</button>
+    <button onclick="navToView2('Laundry')">Laundry</button>
     <button class="back" id="btnLogout">LOGOUT</button>
   </div>
 
-  <!-- VIEW 2: CATEGORIES -->
   <div id="view2" class="hidden">
     <div class="view-center"><div class="view-tag">VIEW 2</div></div>
     <h3 id="v2Title">Categories</h3>
-    <div id="categoryButtons">
-       <button id="btnCommon">Common Area</button>
-       <button id="btnWeekly">Weekly Room</button>
-       <button id="btnDaily">Daily Room</button>
-       <button id="btnDehum">Dehumidifier</button>
-    </div>
+    <div id="categoryButtons"></div>
     <button class="back" onclick="showView(1)">BACK</button>
   </div>
 
-  <!-- VIEW 3: AREAS (Now contains the Date Picker) -->
   <div id="view3" class="hidden">
     <div class="view-center"><div class="view-tag">VIEW 3</div></div>
-    
-    <!-- DATE PICKER CONTAINER (HIDDEN BY DEFAULT) -->
     <div class="view-center hidden" id="datePickerContainer">
       <label style="font-weight: bold; font-size: 14px;">Selected Work Date:</label>
       <input type="date" id="globalWorkDate">
     </div>
-
     <h3 id="v3Title" style="margin-top:15px;">Select Area</h3>
     <div id="areaBtnContainer" class="rooms-grid"></div>
     <button class="back" onclick="showView(2)">BACK</button>
   </div>
 
-  <!-- VIEW 4: TASK LIST -->
   <div id="view4" class="hidden">
     <div class="view-center"><div class="view-tag">VIEW 4</div></div>
     <h3 id="v4Title">Tasks</h3>
@@ -97,129 +84,160 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// Initialize Session
 const sessionData = JSON.parse(sessionStorage.getItem("currentEmployee"));
 if (!sessionData) window.location.href = "index.html";
 
-// Logic: Default date to CURRENT DATE (Today)
-const today = new Date();
-let currentWorkDate = today.toISOString().split('T')[0];
-
+let currentWorkDate = new Date().toISOString().split('T')[0];
 document.getElementById("globalWorkDate").value = currentWorkDate;
 document.getElementById("employeeName").innerText = "Welcome, " + sessionData.firstName;
 
 let currentAssignment = "";
 let selectedCategory = "";
+let progressData = {}; // [area][task] = status
+let allTasksForDay = []; 
 
-// Navigation Controls
 window.showView = (num) => {
     [1,2,3,4].forEach(v => document.getElementById('view'+v).classList.add('hidden'));
     document.getElementById('view'+num).classList.remove('hidden');
 };
 
-document.getElementById("btnH1").onclick = () => { currentAssignment = 'Housekeeper 1'; showView(2); };
-document.getElementById("btnH2").onclick = () => { currentAssignment = 'Housekeeper 2'; showView(2); };
-document.getElementById("btnLaundry").onclick = () => { currentAssignment = 'Laundry'; showView(2); };
+// --- PROGRESS LOGIC ---
+function getTaskCounts(tasks) {
+  let completed = 0;
+  let incomplete = 0;
+  let untouched = 0;
 
-document.getElementById("btnCommon").onclick = () => navToView3('Common Area');
-document.getElementById("btnWeekly").onclick = () => navToView3('Weekly Room');
-document.getElementById("btnDaily").onclick = () => navToView3('Daily Room');
-document.getElementById("btnDehum").onclick = () => navToView3('Dehumidifier');
+  tasks.forEach(task => {
+    const status = progressData[task.area]?.[task.task] || "";
+    if (status === "Completed") completed++;
+    else if (status === "Incomplete") incomplete++;
+    else untouched++;
+  });
 
-document.getElementById("globalWorkDate").onchange = (e) => {
-    currentWorkDate = e.target.value;
-    navToView3(selectedCategory);
-};
+  return { completed, incomplete, untouched };
+}
 
-async function navToView3(cat) {
-    selectedCategory = cat;
-    const container = document.getElementById("areaBtnContainer");
-    const datePicker = document.getElementById("datePickerContainer");
-    
-    // LOGIC: Only show date picker for Weekly Room. Reset to today for others.
-    if (cat === "Weekly Room") {
-        datePicker.classList.remove("hidden");
-    } else {
-        datePicker.classList.add("hidden");
-        currentWorkDate = new Date().toISOString().split('T')[0];
-        document.getElementById("globalWorkDate").value = currentWorkDate;
-    }
+function getProgressColor(completed, incomplete, total) {
+  if (incomplete > 0) return "yellow";
+  if (completed === 0) return "red";
+  if (completed >= total) return "green";
+  return "yellow";
+}
 
-    container.innerHTML = "Searching tasks...";
-    showView(3);
-
+async function refreshProgressData() {
     const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
     const selectedDay = dayNames[new Date(currentWorkDate + 'T00:00:00').getDay()];
 
     const q = query(collection(db, "tasks"), where("assignment", "==", currentAssignment));
     const snap = await getDocs(q);
     
-    const filteredDocs = snap.docs.filter(d => {
-        const item = d.data();
-        const itemCat = (item.category || "").toLowerCase();
-        const targetCat = cat.toLowerCase();
+    allTasksForDay = snap.docs.map(d => ({id: d.id, ...d.data()})).filter(item => {
         const itemSched = (item.schedule || "").toLowerCase();
-        const targetDay = selectedDay.toLowerCase();
-
-        return itemCat === targetCat && (itemSched === targetDay || itemSched === "daily");
+        return itemSched === selectedDay.toLowerCase() || itemSched === "daily";
     });
 
-    const uniqueAreas = [...new Set(filteredDocs.map(d => d.data().area))];
-    
+    progressData = {};
+    allTasksForDay.forEach(item => {
+        if (!progressData[item.area]) progressData[item.area] = {};
+        progressData[item.area][item.task] = item.status || "";
+    });
+}
+
+// --- NAVIGATION ---
+window.navToView2 = async (assignment) => {
+    currentAssignment = assignment;
+    await refreshProgressData();
+    const cats = ["Common Area", "Weekly Room", "Daily Room", "Dehumidifier"];
+    const container = document.getElementById("categoryButtons");
     container.innerHTML = "";
-    if (uniqueAreas.length === 0) {
-        container.innerHTML = `<div style="text-align:center; padding-top:20px;">No areas found for ${selectedDay}.</div>`;
-        return;
+
+    cats.forEach(cat => {
+        const catTasks = allTasksForDay.filter(t => t.category === cat);
+        const total = catTasks.length;
+        const counts = getTaskCounts(catTasks);
+        
+        const btn = document.createElement("button");
+        btn.innerText = cat + (counts.incomplete > 0 ? ` ${counts.completed}/${total} - ISSUE` : ` ${counts.completed}/${total}`);
+        btn.className = total > 0 ? getProgressColor(counts.completed, counts.incomplete, total) : "standard";
+        btn.onclick = () => navToView3(cat);
+        container.appendChild(btn);
+    });
+    showView(2);
+};
+
+window.navToView3 = async (cat) => {
+    selectedCategory = cat;
+    const datePicker = document.getElementById("datePickerContainer");
+    if (cat === "Weekly Room") datePicker.classList.remove("hidden");
+    else {
+        datePicker.classList.add("hidden");
+        currentWorkDate = new Date().toISOString().split('T')[0];
+        document.getElementById("globalWorkDate").value = currentWorkDate;
+        await refreshProgressData();
     }
 
+    const container = document.getElementById("areaBtnContainer");
+    container.innerHTML = "Loading...";
+    showView(3);
+
+    const catTasks = allTasksForDay.filter(t => t.category === cat);
+    const uniqueAreas = [...new Set(catTasks.map(t => t.area))];
+
+    container.innerHTML = "";
     uniqueAreas.forEach(area => {
+        const areaTasks = catTasks.filter(t => t.area === area);
+        const total = areaTasks.length;
+        const counts = getTaskCounts(areaTasks);
+        
         const btn = document.createElement("button");
-        btn.innerText = area;
+        btn.innerText = area + (counts.incomplete > 0 ? ` ${counts.completed}/${total} - ISSUE` : ` ${counts.completed}/${total}`);
+        btn.className = getProgressColor(counts.completed, counts.incomplete, total);
         btn.onclick = () => navToView4(area);
         container.appendChild(btn);
     });
-}
+};
 
-async function navToView4(area) {
+window.navToView4 = (area) => {
     localStorage.setItem("currentArea", area);
     showView(4);
     loadTasks();
-}
+};
 
-async function loadTasks() {
+window.loadTasks = () => {
     const area = localStorage.getItem("currentArea");
     const container = document.getElementById("taskListContainer");
-    container.innerHTML = "Loading Tasks...";
+    const areaTasks = allTasksForDay.filter(t => t.area === area && t.category === selectedCategory);
 
-    const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-    const selectedDay = dayNames[new Date(currentWorkDate + 'T00:00:00').getDay()];
-
-    const q = query(collection(db, "tasks"), 
-              where("assignment", "==", currentAssignment),
-              where("area", "==", area));
-    
-    const snap = await getDocs(q);
-
-    let html = `<h4 style="text-align:center; margin-bottom:15px;">${area}<br><small style="color:#666;">${selectedDay}</small></h4>`;
-    let found = false;
-    
-    snap.forEach(d => {
-        const item = d.data();
-        if (item.schedule === "Daily" || item.schedule === selectedDay) {
-            found = true;
-            html += `<div class="task-row">
-                <span>${item.task}</span>
-                <input type="checkbox" style="width:30px;height:30px;" 
-                       ${item.status === 'done' ? 'checked' : ''} 
-                       onchange="updateStatus('${d.id}', this.checked)">
+    let html = `<h4 style="text-align:center;">${area}</h4>`;
+    areaTasks.forEach(t => {
+        const status = progressData[area]?.[t.task] || "";
+        html += `
+            <div class="task-row">
+                <span style="font-weight:bold">${t.task}</span>
+                <div class="task-controls">
+                    <button class="${status === 'Completed' ? 'green' : 'standard'}" onclick="updateTaskStatus('${t.id}', 'Completed')">DONE</button>
+                    <button class="${status === 'Incomplete' ? 'yellow' : 'standard'}" onclick="updateTaskStatus('${t.id}', 'Incomplete')">ISSUE</button>
+                    <button class="back" onclick="updateTaskStatus('${t.id}', '')">CLEAR</button>
+                </div>
             </div>`;
-        }
     });
-    container.innerHTML = found ? html : `<div style="text-align:center; color:red;">No tasks scheduled for today.</div>`;
-}
+    container.innerHTML = html;
+};
 
-window.updateStatus = async (id, checked) => {
-    await updateDoc(doc(db, "tasks", id), { status: checked ? "done" : "pending" });
+window.updateTaskStatus = async (id, status) => {
+    const task = allTasksForDay.find(t => t.id === id);
+    await updateDoc(doc(db, "tasks", id), { status: status });
+    
+    if (!progressData[task.area]) progressData[task.area] = {};
+    progressData[task.area][task.task] = status;
+    
+    loadTasks(); // Redraw task list to show current selection
+};
+
+document.getElementById("globalWorkDate").onchange = async (e) => {
+    currentWorkDate = e.target.value;
+    await refreshProgressData();
+    navToView3(selectedCategory);
 };
 
 document.getElementById("btnLogout").onclick = () => { sessionStorage.clear(); window.location.href = "index.html"; };
