@@ -50,32 +50,72 @@
 <div id="loadingScreen" class="loading-bg hidden"><div class="spinner"></div></div>
 
 <script>
-  const SCRIPT_URL = "https://script.google.com/macros/s/AKfycby4kZ1JPlMrjzvjHSQxgpuZXl2zZ9jekz8j-tasSjS84uRS5iCx0UReV0b0s4tSGea-/exec";
+/* Purpose: View 1 Logic & GAS Connectivity */
+/* Location: schedule.html Script Block */
 
-  // CORRECTED: Get data from sessionStorage
-  const sessionData = JSON.parse(sessionStorage.getItem("currentEmployee"));
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycby4kZ1JPlMrjzvjHSQxgpuZXl2zZ9jekz8j-tasSjS84uRS5iCx0UReV0b0s4tSGea-/exec";
 
-  // Check if logged in
-  if (!sessionData) {
+// Get data from sessionStorage
+const sessionData = JSON.parse(sessionStorage.getItem("currentEmployee"));
+
+// Check if logged in
+if (!sessionData) {
     window.location.href = "index.html";
-  }
+}
 
-  let currentEmployee = sessionData.firstName;
-  let currentEmployeeId = sessionData.employeeId;
-  let currentAssignment = "";
-  let currentWorkDateValue = "";
-  let allTasks = [];
-  let progressData = {};
+let currentEmployee = sessionData.firstName;
+let currentEmployeeId = sessionData.employeeId;
+let currentAssignment = "";
+let currentWorkDateValue = "";
 
-  // Update Welcome Message
-  document.getElementById("employeeName").innerText = "Welcome, " + currentEmployee;
+// Update Welcome Message
+document.getElementById("employeeName").innerText = "Welcome, " + currentEmployee;
 
-  function logout() {
+// --- BUTTON LOGIC FOR VIEW 1 ---
+
+function chooseAssignment(assignment) {
+    currentAssignment = assignment;
+    console.log("Selected:", currentAssignment);
+
+    // Hide View 1
+    document.getElementById("assignmentScreen").classList.add("hidden");
+
+    // Show View 2 (Ensure your date selection div has id="dateScreen")
+    const nextView = document.getElementById("dateScreen");
+    if (nextView) {
+        nextView.classList.remove("hidden");
+    } else {
+        console.error("Error: dateScreen element not found.");
+    }
+}
+
+// --- BACKEND CONNECTIVITY ---
+
+async function apiCall(params) {
+    document.getElementById("loadingScreen").classList.remove("hidden");
+    
+    // Add employee ID to every request automatically
+    const queryParams = new URLSearchParams({
+        ...params,
+        employeeId: currentEmployeeId
+    });
+
+    try {
+        const response = await fetch(`${SCRIPT_URL}?${queryParams.toString()}`);
+        const data = await response.json();
+        return data;
+    } catch (error) {
+        console.error("Fetch Error:", error);
+        alert("Failed to connect to Google Sheets.");
+    } finally {
+        document.getElementById("loadingScreen").classList.add("hidden");
+    }
+}
+
+function logout() {
     sessionStorage.clear();
     window.location.href = "index.html";
-  }
-
-  // ... (Include your other functions: chooseAssignment, apiCall, loadAssignmentTasks, etc.) ...
+}
 </script>
 
 </body>
