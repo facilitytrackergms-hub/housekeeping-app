@@ -1,4 +1,4 @@
-<!-- Purpose: Login Interface & Connection -->
+<!-- Purpose: Full Login Interface with SDK -->
 <!-- Location: index.html -->
 
 <!DOCTYPE html>
@@ -17,14 +17,15 @@
             <br><br>
             <input type="password" id="pin" placeholder="4-Digit PIN" maxlength="4" required>
             <br><br>
-            <button type="submit">Sign In</button>
+            <button type="submit" id="signin-btn">Sign In</button>
         </form>
         <p id="login-feedback" style="color: red;"></p>
     </div>
 
-    <!-- This script connects the HTML to your login.js logic -->
+    <!-- 1. Firebase App SDK (REQUIRED) -->
     <script type="module">
-        import { verifyEmployee } from './src/login.js';
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+        import { loginEmployee } from './src/login.js';
         
         const loginForm = document.getElementById('login-form');
         const feedback = document.getElementById('login-feedback');
@@ -34,13 +35,20 @@
             const id = document.getElementById('employee-id').value;
             const pin = document.getElementById('pin').value;
             
-            feedback.textContent = "Verifying...";
+            // This proves the button is working
+            feedback.textContent = "Connecting to Database...";
+            feedback.style.color = "blue";
             
-            const success = await verifyEmployee(id, pin);
-            if (success) {
-                window.location.href = 'schedule.html';
-            } else {
+            try {
+                const employeeData = await loginEmployee(id, pin);
+                if (employeeData) {
+                    sessionStorage.setItem("currentEmployee", JSON.stringify(employeeData));
+                    window.location.href = 'schedule.html';
+                }
+            } catch (error) {
+                console.error("Login failed:", error);
                 feedback.textContent = "Invalid ID or PIN. Please try again.";
+                feedback.style.color = "red";
             }
         });
     </script>
