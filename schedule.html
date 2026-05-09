@@ -539,10 +539,10 @@
     document.getElementById("assignmentTitle").innerText = currentAssignment;
 
     document.getElementById("workDateTitle").innerText =
-      currentWorkDateDisplay + " - " + currentWorkDayName;
+      currentWorkDayName;
 
     document.getElementById("areaDateTitle").innerText =
-      currentWorkDateDisplay + " - " + currentWorkDayName;
+      currentWorkDayName;
 
     const taskQuery = query(
       collection(db, "tasks"),
@@ -672,7 +672,7 @@
       "ALL " + category.toUpperCase();
 
     document.getElementById("areaDateTitle").innerText =
-      currentWorkDateDisplay + " - " + currentWorkDayName;
+      currentWorkDayName;
 
     const categoryTasks =
       allTasksForDay.filter(function(task) {
@@ -792,7 +792,7 @@
     document.getElementById("taskTitle").innerText = area;
 
     document.getElementById("taskDateTitle").innerText =
-      currentWorkDateDisplay + " - " + currentWorkDayName;
+      currentWorkDayName;
 
     document.getElementById("message").innerText = "";
     document.getElementById("reason").value = "";
