@@ -104,56 +104,34 @@ async function chooseAssignment(assignment) {
 /* Purpose: Filter tasks by both Assignment AND Selected Date */
 /* Location: schedule.html -> inside <script type="module"> */
 
+/* Purpose: Convert calendar date to Weekday and filter by Section */
+/* Location: GitHub -> schedule.html */
+
 async function loadTasks() {
-    const taskContainer = document.getElementById("taskListContainer");
-    taskContainer.innerHTML = "<div class='view-center'>Loading tasks for " + currentWorkDateValue + "...</div>";
+    const container = document.getElementById("taskListContainer");
+    
+    // 1. Get the Weekday Name from the calendar (e.g., "Saturday")
+    const dateObj = new Date(currentWorkDateValue + 'T00:00:00');
+    const dayNames = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+    const selectedDay = dayNames[dateObj.getDay()];
 
-    try {
-        // 1. Create a reference to the 'tasks' collection
-        const tasksRef = collection(db, "tasks");
+    // 2. Query Firebase for the Section (e.g., "Common Area")
+    const q = query(
+        collection(db, "tasks"), 
+        where("assignment", "==", currentAssignment),
+        where("category", "==", selectedCategory) // This is your View 2 selection
+    );
 
-        // 2. Build a query that filters by Assignment AND the specific Date
-        const q = query(
-            tasksRef, 
-            where("assignment", "==", currentAssignment),
-            where("date", "==", currentWorkDateValue) // This is the new date filter
-        );
-
-        const querySnapshot = await getDocs(q);
-
-        if (querySnapshot.empty) {
-            taskContainer.innerHTML = `
-                <div class='view-center'>
-                    <p>No tasks found for ${currentAssignment}</p>
-                    <p style="font-size: 14px; color: #666;">on ${currentWorkDateValue}</p>
-                </div>`;
-            return;
+    const querySnapshot = await getDocs(q);
+    
+    // 3. Only display tasks that are "Daily" or match the current "Weekday"
+    querySnapshot.forEach((docSnap) => {
+        const item = docSnap.data();
+        if (item.schedule === "Daily" || item.schedule === selectedDay) {
+            // ... (Add task to HTML)
         }
-
-        let html = '<div style="margin-top: 20px;">';
-        querySnapshot.forEach((docSnap) => {
-            const item = docSnap.data();
-            html += `
-                <div style="background: #fff; border: 1px solid #ddd; margin: 10px 0; padding: 15px; border-radius: 12px; display: flex; align-items: center; box-shadow: 0 2px 5px rgba(0,0,0,0.05);">
-                    <div style="flex-grow: 1;">
-                        <strong style="color: #1976d2; display: block; font-size: 14px;">${item.area}</strong>
-                        <span style="font-size: 18px;">${item.task}</span>
-                    </div>
-                    <input type="checkbox" data-id="${docSnap.id}" class="task-check" style="width: 30px; height: 30px;" ${item.status === 'done' ? 'checked' : ''}>
-                </div>`;
-        });
-        taskContainer.innerHTML = html + '</div>';
-
-        document.querySelectorAll('.task-check').forEach(cb => {
-            cb.onchange = (e) => toggleTaskStatus(e.target.dataset.id, e.target.checked);
-        });
-
-    } catch (error) {
-        console.error("Load Error:", error);
-        taskContainer.innerHTML = `<div class='view-center' style='color:red;'>Error: ${error.message}</div>`;
-    }
+    });
 }
-  
 
 async function toggleTaskStatus(taskId, isChecked) {
     try {
