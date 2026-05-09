@@ -1,9 +1,126 @@
 <!DOCTYPE html>
 <html>
 <head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin Dashboard</title>
+
+  <style>
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #eef2f7;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 15px;
+    }
+
+    .card {
+      width: 100%;
+      max-width: 430px;
+      background: white;
+      border-radius: 24px;
+      padding: 25px;
+      box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+      text-align: center;
+    }
+
+    h1 {
+      color: #1847d1;
+      font-size: 34px;
+      margin-top: 0;
+    }
+
+    input {
+      width: 100%;
+      padding: 20px;
+      font-size: 26px;
+      border-radius: 16px;
+      border: 2px solid #2e5cff;
+      text-align: center;
+      margin-bottom: 20px;
+    }
+
+    button {
+      width: 100%;
+      padding: 18px;
+      font-size: 24px;
+      font-weight: bold;
+      border: none;
+      border-radius: 16px;
+      background: #2e5cff;
+      color: white;
+      cursor: pointer;
+      margin-bottom: 12px;
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    .red {
+      color: #c62828;
+      font-size: 20px;
+      font-weight: bold;
+    }
+  </style>
 </head>
+
 <body>
-  Admin Dashboard
+
+<div class="card">
+
+  <div id="pinView">
+    <h1>Admin Login</h1>
+
+    <input
+      type="password"
+      id="adminPin"
+      placeholder="Enter Admin PIN"
+      autocomplete="new-password"
+    >
+
+    <button onclick="adminLogin()">LOGIN</button>
+
+    <p id="message" class="red"></p>
+  </div>
+
+  <div id="dashboardView" class="hidden">
+    <h1>Admin Dashboard</h1>
+
+    <button>Employees</button>
+    <button>Tasks</button>
+    <button>Task Logs</button>
+    <button>Room Labels</button>
+  </div>
+
+</div>
+
+<script>
+  function adminLogin() {
+    const pin = document.getElementById("adminPin").value.trim();
+
+    if (pin === "4026") {
+      document.getElementById("pinView").classList.add("hidden");
+      document.getElementById("dashboardView").classList.remove("hidden");
+    } else {
+      document.getElementById("message").innerText = "Wrong admin PIN";
+    }
+  }
+
+  document
+    .getElementById("adminPin")
+    .addEventListener("keydown", function(event) {
+      if (event.key === "Enter") {
+        adminLogin();
+      }
+    });
+</script>
+
 </body>
 </html>
