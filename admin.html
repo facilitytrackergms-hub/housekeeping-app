@@ -17,45 +17,117 @@
       display: flex;
       justify-content: center;
       align-items: flex-start;
-      padding: 15px;
+      padding: 12px;
     }
 
     .card {
       width: 100%;
-      max-width: 430px;
+      max-width: 460px;
       background: white;
       border-radius: 24px;
-      padding: 25px;
+      padding: 20px;
       box-shadow: 0 8px 25px rgba(0,0,0,0.15);
       text-align: center;
     }
 
     h1 {
       color: #1847d1;
-      font-size: 34px;
-      margin-top: 0;
+      font-size: 32px;
+      margin: 0 0 20px;
     }
 
     h2 {
       font-size: 24px;
-      margin-bottom: 25px;
+      margin: 8px 0 16px;
+    }
+
+    h3 {
+      font-size: 20px;
+      margin: 14px 0 8px;
     }
 
     button {
       width: 100%;
-      padding: 18px;
-      font-size: 24px;
+      padding: 16px;
+      font-size: 22px;
       font-weight: bold;
       border: none;
       border-radius: 16px;
       background: #2e5cff;
       color: white;
       cursor: pointer;
-      margin-bottom: 12px;
+      margin: 7px 0;
+    }
+
+    input, select, textarea {
+      width: 100%;
+      padding: 14px;
+      font-size: 20px;
+      border-radius: 14px;
+      border: 1px solid #ccc;
+      margin: 6px 0;
+    }
+
+    textarea {
+      min-height: 75px;
     }
 
     .gray {
-      background: #555;
+      background: #555 !important;
+    }
+
+    .red {
+      background: #c62828 !important;
+    }
+
+    .green {
+      background: #2e7d32 !important;
+    }
+
+    .yellow {
+      background: #f9a825 !important;
+      color: black !important;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    .item-card {
+      background: #f2f2f2;
+      border-radius: 14px;
+      padding: 12px;
+      margin: 10px 0;
+      text-align: left;
+      font-size: 17px;
+      line-height: 1.4;
+    }
+
+    .item-card button {
+      font-size: 17px;
+      padding: 10px;
+      border-radius: 12px;
+      margin-top: 8px;
+    }
+
+    .small-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .label-row {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 6px;
+    }
+
+    .top-info {
+      background: #edf2ff;
+      padding: 10px;
+      border-radius: 12px;
+      font-size: 18px;
+      margin-bottom: 12px;
     }
   </style>
 </head>
@@ -64,31 +136,555 @@
 
 <div class="card">
 
-  <h1>Admin Dashboard</h1>
+  <div id="dashboardView">
+    <h1>Admin Dashboard</h1>
+    <div class="top-info" id="adminInfo">Admin</div>
 
-  <button>Employees</button>
-  <button>Tasks</button>
-  <button>Task Logs</button>
-  <button>Room Labels</button>
+    <button onclick="showEmployees()">Employees</button>
+    <button onclick="showTasks()">Tasks</button>
+    <button onclick="showLogs()">Task Logs</button>
+    <button onclick="showRoomLabels()">Room Labels</button>
 
-  <button class="gray" onclick="logout()">LOGOUT</button>
+    <button class="gray" onclick="logout()">LOGOUT</button>
+  </div>
+
+  <div id="employeesView" class="hidden">
+    <h1>Employees</h1>
+
+    <input id="empFirstName" placeholder="First Name">
+    <input id="empEmployeeId" placeholder="Employee ID">
+    <input id="empPin" placeholder="PIN" type="number">
+
+    <select id="empRole">
+      <option value="Housekeeping">Housekeeping</option>
+      <option value="Admin">Admin</option>
+      <option value="Laundry">Laundry</option>
+    </select>
+
+    <button class="green" onclick="addEmployee()">ADD EMPLOYEE</button>
+
+    <h2>Employee List</h2>
+    <div id="employeesList"></div>
+
+    <button class="gray" onclick="showDashboard()">BACK</button>
+  </div>
+
+  <div id="tasksView" class="hidden">
+    <h1>Tasks</h1>
+
+    <select id="taskAssignment">
+      <option value="HK Schedule 1">HK Schedule 1</option>
+      <option value="HK Schedule 2">HK Schedule 2</option>
+      <option value="Laundry">Laundry</option>
+    </select>
+
+    <input id="taskArea" placeholder="Room / Area">
+    <input id="taskName" placeholder="Task Name">
+
+    <select id="taskSchedule">
+      <option value="Daily">Daily</option>
+      <option value="Monday">Monday</option>
+      <option value="Tuesday">Tuesday</option>
+      <option value="Wednesday">Wednesday</option>
+      <option value="Thursday">Thursday</option>
+      <option value="Friday">Friday</option>
+      <option value="Saturday">Saturday</option>
+      <option value="Sunday">Sunday</option>
+    </select>
+
+    <select id="taskCategory">
+      <option value="Common Area">Common Area</option>
+      <option value="Weekly Room">Weekly Room</option>
+      <option value="Daily Room">Daily Room</option>
+      <option value="Dehumidifier">Dehumidifier</option>
+      <option value="Weekly Laundry">Weekly Laundry</option>
+      <option value="Daily Laundry Check">Daily Laundry Check</option>
+    </select>
+
+    <button class="green" onclick="addTask()">ADD TASK</button>
+
+    <h2>Task List</h2>
+
+    <select id="taskFilter" onchange="loadTasks()">
+      <option value="ALL">Show All</option>
+      <option value="HK Schedule 1">HK Schedule 1</option>
+      <option value="HK Schedule 2">HK Schedule 2</option>
+      <option value="Laundry">Laundry</option>
+    </select>
+
+    <div id="tasksList"></div>
+
+    <button class="gray" onclick="showDashboard()">BACK</button>
+  </div>
+
+  <div id="logsView" class="hidden">
+    <h1>Task Logs</h1>
+
+    <button onclick="loadLogs()">REFRESH LOGS</button>
+
+    <div id="logsList"></div>
+
+    <button class="gray" onclick="showDashboard()">BACK</button>
+  </div>
+
+  <div id="roomLabelsView" class="hidden">
+    <h1>Room Labels</h1>
+
+    <input id="roomNumber" placeholder="Room Number">
+
+    <select id="occupiedStatus">
+      <option value="Full">Full</option>
+      <option value="Empty">Empty</option>
+    </select>
+
+    <select id="moldRisk">
+      <option value="No Mold">No Mold</option>
+      <option value="Mold Watch">Mold Watch</option>
+      <option value="High Mold Risk">High Mold Risk</option>
+    </select>
+
+    <select id="smellStatus">
+      <option value="No Smell">No Smell</option>
+      <option value="Smelly">Smelly</option>
+    </select>
+
+    <textarea id="labelNotes" placeholder="Notes"></textarea>
+
+    <button class="green" onclick="saveRoomLabel()">SAVE ROOM LABEL</button>
+    <button class="yellow" onclick="resetRoomLabel()">RESET ROOM FOR NEW RESIDENT</button>
+
+    <h2>Search Rooms</h2>
+
+    <select id="roomFilter" onchange="loadRoomLabels()">
+      <option value="ALL">Show All Rooms</option>
+      <option value="Empty">Show Empty Rooms</option>
+      <option value="Mold">Show Mold Risk Rooms</option>
+      <option value="Smelly">Show Smelly Rooms</option>
+      <option value="MoldSmelly">Show Mold + Smelly Rooms</option>
+    </select>
+
+    <div id="roomLabelsList"></div>
+
+    <button class="gray" onclick="showDashboard()">BACK</button>
+  </div>
 
 </div>
 
-<script>
+<script type="module">
+
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+
+  import {
+    getFirestore,
+    collection,
+    addDoc,
+    getDocs,
+    doc,
+    setDoc,
+    updateDoc,
+    deleteDoc,
+    serverTimestamp
+  } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyBgq_ooBeEN4noEyIxYPLVokgM6RjCO648",
+    authDomain: "gms-task-tracker.firebaseapp.com",
+    projectId: "gms-task-tracker",
+    storageBucket: "gms-task-tracker.firebasestorage.app",
+    messagingSenderId: "790880979860",
+    appId: "1:790880979860:web:6faee2a6e56955af3c1d81",
+    measurementId: "G-5TRHQMS039"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
   const sessionData = JSON.parse(sessionStorage.getItem("currentEmployee"));
 
   if (!sessionData || sessionData.role !== "Admin") {
     window.location.href = "index.html";
   }
 
-  document.getElementById("adminName").innerText =
-    "Welcome, " + (sessionData.firstName || "Admin");
+  document.getElementById("adminInfo").innerText =
+    "Logged in as: " + (sessionData.firstName || "Admin");
+
+  function hideAllViews() {
+    document.getElementById("dashboardView").classList.add("hidden");
+    document.getElementById("employeesView").classList.add("hidden");
+    document.getElementById("tasksView").classList.add("hidden");
+    document.getElementById("logsView").classList.add("hidden");
+    document.getElementById("roomLabelsView").classList.add("hidden");
+  }
+
+  function showDashboard() {
+    hideAllViews();
+    document.getElementById("dashboardView").classList.remove("hidden");
+  }
+
+  function showEmployees() {
+    hideAllViews();
+    document.getElementById("employeesView").classList.remove("hidden");
+    loadEmployees();
+  }
+
+  function showTasks() {
+    hideAllViews();
+    document.getElementById("tasksView").classList.remove("hidden");
+    loadTasks();
+  }
+
+  function showLogs() {
+    hideAllViews();
+    document.getElementById("logsView").classList.remove("hidden");
+    loadLogs();
+  }
+
+  function showRoomLabels() {
+    hideAllViews();
+    document.getElementById("roomLabelsView").classList.remove("hidden");
+    loadRoomLabels();
+  }
+
+  async function addEmployee() {
+    const firstName = document.getElementById("empFirstName").value.trim();
+    const employeeId = document.getElementById("empEmployeeId").value.trim();
+    const pin = Number(document.getElementById("empPin").value.trim());
+    const role = document.getElementById("empRole").value;
+
+    if (!firstName || !employeeId || !pin) {
+      alert("Fill first name, employee ID, and PIN.");
+      return;
+    }
+
+    await addDoc(collection(db, "employees"), {
+      firstName: firstName,
+      employeeId: employeeId,
+      pin: pin,
+      role: role,
+      active: "Yes",
+      createdAt: serverTimestamp()
+    });
+
+    document.getElementById("empFirstName").value = "";
+    document.getElementById("empEmployeeId").value = "";
+    document.getElementById("empPin").value = "";
+
+    loadEmployees();
+  }
+
+  async function loadEmployees() {
+    const box = document.getElementById("employeesList");
+    box.innerHTML = "Loading...";
+
+    const snap = await getDocs(collection(db, "employees"));
+
+    box.innerHTML = "";
+
+    snap.docs.forEach(function(docSnap) {
+      const emp = docSnap.data();
+
+      const div = document.createElement("div");
+      div.className = "item-card";
+
+      div.innerHTML =
+        "<b>" + (emp.firstName || "Employee") + "</b><br>" +
+        "Employee ID: " + (emp.employeeId || "") + "<br>" +
+        "PIN: " + (emp.pin || "") + "<br>" +
+        "Role: " + (emp.role || "Housekeeping") + "<br>" +
+        "Active: " + (emp.active || "Yes") + "<br>" +
+        '<button class="yellow" onclick="toggleEmployeeActive(\'' + docSnap.id + '\', \'' + (emp.active || "Yes") + '\')">ACTIVE / INACTIVE</button>' +
+        '<button class="red" onclick="deleteEmployee(\'' + docSnap.id + '\')">DELETE</button>';
+
+      box.appendChild(div);
+    });
+  }
+
+  async function toggleEmployeeActive(id, currentActive) {
+    const newValue =
+      String(currentActive).toLowerCase() === "yes" ? "No" : "Yes";
+
+    await updateDoc(doc(db, "employees", id), {
+      active: newValue
+    });
+
+    loadEmployees();
+  }
+
+  async function deleteEmployee(id) {
+    if (!confirm("Delete this employee?")) return;
+
+    await deleteDoc(doc(db, "employees", id));
+
+    loadEmployees();
+  }
+
+  async function addTask() {
+    const assignment = document.getElementById("taskAssignment").value;
+    const area = document.getElementById("taskArea").value.trim();
+    const task = document.getElementById("taskName").value.trim();
+    const schedule = document.getElementById("taskSchedule").value;
+    const category = document.getElementById("taskCategory").value;
+
+    if (!assignment || !area || !task || !schedule || !category) {
+      alert("Fill all task fields.");
+      return;
+    }
+
+    await addDoc(collection(db, "tasks"), {
+      assignment: assignment,
+      area: area,
+      task: task,
+      schedule: schedule,
+      category: category,
+      status: "pending",
+      active: "Yes",
+      createdAt: serverTimestamp()
+    });
+
+    document.getElementById("taskArea").value = "";
+    document.getElementById("taskName").value = "";
+
+    loadTasks();
+  }
+
+  async function loadTasks() {
+    const box = document.getElementById("tasksList");
+    const filter = document.getElementById("taskFilter").value;
+
+    box.innerHTML = "Loading...";
+
+    const snap = await getDocs(collection(db, "tasks"));
+
+    box.innerHTML = "";
+
+    snap.docs.forEach(function(docSnap) {
+      const task = docSnap.data();
+
+      if (filter !== "ALL" && task.assignment !== filter) return;
+
+      const div = document.createElement("div");
+      div.className = "item-card";
+
+      div.innerHTML =
+        "<b>" + (task.area || "") + "</b><br>" +
+        "Task: " + (task.task || "") + "<br>" +
+        "Assignment: " + (task.assignment || "") + "<br>" +
+        "Schedule: " + (task.schedule || "") + "<br>" +
+        "Category: " + (task.category || "") + "<br>" +
+        '<button class="red" onclick="deleteTask(\'' + docSnap.id + '\')">DELETE TASK</button>';
+
+      box.appendChild(div);
+    });
+
+    if (box.innerHTML === "") {
+      box.innerHTML = "<h3>No tasks found.</h3>";
+    }
+  }
+
+  async function deleteTask(id) {
+    if (!confirm("Delete this task?")) return;
+
+    await deleteDoc(doc(db, "tasks", id));
+
+    loadTasks();
+  }
+
+  async function loadLogs() {
+    const box = document.getElementById("logsList");
+    box.innerHTML = "Loading...";
+
+    const snap = await getDocs(collection(db, "taskLogs"));
+
+    const logs = [];
+
+    snap.docs.forEach(function(docSnap) {
+      logs.push(docSnap.data());
+    });
+
+    logs.reverse();
+
+    box.innerHTML = "";
+
+    logs.slice(0, 100).forEach(function(log) {
+      const div = document.createElement("div");
+      div.className = "item-card";
+
+      div.innerHTML =
+        "<b>" + (log.employeeName || "Employee") + "</b><br>" +
+        "Assignment: " + (log.assignment || "") + "<br>" +
+        "Area: " + (log.area || "") + "<br>" +
+        "Task: " + (log.task || "") + "<br>" +
+        "Status: " + (log.status || "") + "<br>" +
+        "Date: " + (log.workDate || "") + "<br>" +
+        "Reason: " + (log.reason || "");
+
+      box.appendChild(div);
+    });
+
+    if (box.innerHTML === "") {
+      box.innerHTML = "<h3>No logs found.</h3>";
+    }
+  }
+
+  async function saveRoomLabel() {
+    const roomNumber = document.getElementById("roomNumber").value.trim();
+    const occupiedStatus = document.getElementById("occupiedStatus").value;
+    const moldRisk = document.getElementById("moldRisk").value;
+    const smellStatus = document.getElementById("smellStatus").value;
+    const labelNotes = document.getElementById("labelNotes").value.trim();
+
+    if (!roomNumber) {
+      alert("Enter room number.");
+      return;
+    }
+
+    await setDoc(doc(db, "rooms", roomNumber), {
+      roomNumber: roomNumber,
+      occupiedStatus: occupiedStatus,
+      moldRisk: moldRisk,
+      smellStatus: smellStatus,
+      labelNotes: labelNotes,
+      labelUpdatedDate: getTodayDisplay(),
+      updatedBy: sessionData.firstName || "Admin",
+      updatedAt: serverTimestamp()
+    });
+
+    clearRoomForm();
+    loadRoomLabels();
+  }
+
+  async function resetRoomLabel() {
+    const roomNumber = document.getElementById("roomNumber").value.trim();
+
+    if (!roomNumber) {
+      alert("Enter room number to reset.");
+      return;
+    }
+
+    if (!confirm("Reset room " + roomNumber + " for new resident?")) return;
+
+    await setDoc(doc(db, "rooms", roomNumber), {
+      roomNumber: roomNumber,
+      occupiedStatus: "Full",
+      moldRisk: "No Mold",
+      smellStatus: "No Smell",
+      labelNotes: "",
+      labelUpdatedDate: getTodayDisplay(),
+      updatedBy: sessionData.firstName || "Admin",
+      updatedAt: serverTimestamp()
+    });
+
+    clearRoomForm();
+    loadRoomLabels();
+  }
+
+  async function loadRoomLabels() {
+    const box = document.getElementById("roomLabelsList");
+    const filter = document.getElementById("roomFilter").value;
+
+    box.innerHTML = "Loading...";
+
+    const snap = await getDocs(collection(db, "rooms"));
+
+    box.innerHTML = "";
+
+    snap.docs.forEach(function(docSnap) {
+      const room = docSnap.data();
+
+      const isMold =
+        room.moldRisk === "Mold Watch" ||
+        room.moldRisk === "High Mold Risk";
+
+      const isSmelly =
+        room.smellStatus === "Smelly";
+
+      if (filter === "Empty" && room.occupiedStatus !== "Empty") return;
+      if (filter === "Mold" && !isMold) return;
+      if (filter === "Smelly" && !isSmelly) return;
+      if (filter === "MoldSmelly" && (!isMold || !isSmelly)) return;
+
+      const div = document.createElement("div");
+      div.className = "item-card";
+
+      div.innerHTML =
+        "<b>Room " + (room.roomNumber || "") + "</b><br>" +
+        "Occupancy: " + (room.occupiedStatus || "Full") + "<br>" +
+        "Mold: " + (room.moldRisk || "No Mold") + "<br>" +
+        "Smell: " + (room.smellStatus || "No Smell") + "<br>" +
+        "Notes: " + (room.labelNotes || "") + "<br>" +
+        "Updated: " + (room.labelUpdatedDate || "") + "<br>" +
+        '<button onclick="editRoomLabel(\'' + (room.roomNumber || "") + '\')">EDIT</button>';
+
+      box.appendChild(div);
+    });
+
+    if (box.innerHTML === "") {
+      box.innerHTML = "<h3>No rooms found.</h3>";
+    }
+  }
+
+  async function editRoomLabel(roomNumber) {
+    const snap = await getDocs(collection(db, "rooms"));
+
+    snap.docs.forEach(function(docSnap) {
+      const room = docSnap.data();
+
+      if (room.roomNumber === roomNumber) {
+        document.getElementById("roomNumber").value = room.roomNumber || "";
+        document.getElementById("occupiedStatus").value = room.occupiedStatus || "Full";
+        document.getElementById("moldRisk").value = room.moldRisk || "No Mold";
+        document.getElementById("smellStatus").value = room.smellStatus || "No Smell";
+        document.getElementById("labelNotes").value = room.labelNotes || "";
+      }
+    });
+  }
+
+  function clearRoomForm() {
+    document.getElementById("roomNumber").value = "";
+    document.getElementById("occupiedStatus").value = "Full";
+    document.getElementById("moldRisk").value = "No Mold";
+    document.getElementById("smellStatus").value = "No Smell";
+    document.getElementById("labelNotes").value = "";
+  }
+
+  function getTodayDisplay() {
+    const d = new Date();
+    const mm = String(d.getMonth() + 1).padStart(2, "0");
+    const dd = String(d.getDate()).padStart(2, "0");
+    const yyyy = d.getFullYear();
+
+    return mm + "/" + dd + "/" + yyyy;
+  }
 
   function logout() {
     sessionStorage.clear();
     window.location.href = "index.html";
   }
+
+  window.showDashboard = showDashboard;
+  window.showEmployees = showEmployees;
+  window.showTasks = showTasks;
+  window.showLogs = showLogs;
+  window.showRoomLabels = showRoomLabels;
+
+  window.addEmployee = addEmployee;
+  window.loadEmployees = loadEmployees;
+  window.toggleEmployeeActive = toggleEmployeeActive;
+  window.deleteEmployee = deleteEmployee;
+
+  window.addTask = addTask;
+  window.loadTasks = loadTasks;
+  window.deleteTask = deleteTask;
+
+  window.loadLogs = loadLogs;
+
+  window.saveRoomLabel = saveRoomLabel;
+  window.resetRoomLabel = resetRoomLabel;
+  window.loadRoomLabels = loadRoomLabels;
+  window.editRoomLabel = editRoomLabel;
+
+  window.logout = logout;
+
 </script>
 
 </body>
