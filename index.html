@@ -23,32 +23,27 @@
     </div>
 
     <!-- This script connects the HTML to your login.js logic -->
-   <script type="module">
-    // Changed verifyEmployee to loginEmployee to match your file
-    import { loginEmployee } from './src/login.js';
-    
-    const loginForm = document.getElementById('login-form');
-    const feedback = document.getElementById('login-feedback');
+    <script type="module">
+        import { verifyEmployee } from './src/login.js';
+        
+        const loginForm = document.getElementById('login-form');
+        const feedback = document.getElementById('login-feedback');
 
-    loginForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const id = document.getElementById('employee-id').value;
-        const pin = document.getElementById('pin').value;
-        
-        feedback.textContent = "Verifying...";
-        
-        try {
-            // Updated to use the correct function name
-            const employeeData = await loginEmployee(id, pin);
-            if (employeeData) {
-                sessionStorage.setItem("currentEmployee", JSON.stringify(employeeData));
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const id = document.getElementById('employee-id').value;
+            const pin = document.getElementById('pin').value;
+            
+            feedback.textContent = "Verifying...";
+            
+            const success = await verifyEmployee(id, pin);
+            if (success) {
                 window.location.href = 'schedule.html';
+            } else {
+                feedback.textContent = "Invalid ID or PIN. Please try again.";
             }
-        } catch (error) {
-            feedback.textContent = "Invalid ID or PIN. Please try again.";
-        }
-    });
-</script>
+        });
+    </script>
 
 </body>
 </html>
