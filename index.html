@@ -1,57 +1,324 @@
-<!-- Purpose: Full Login Interface with SDK -->
-<!-- Location: index.html -->
-
 <!DOCTYPE html>
-<html lang="en">
+<html>
+
+<!-- INDEX-A1: PAGE HEAD / PHONE SETUP -->
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GMS Housekeeping Login</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>Employee Login</title>
+
+  <!-- INDEX-B1: PAGE STYLE -->
+  <style>
+
+    /* INDEX-B2: GLOBAL STYLE */
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: Arial, sans-serif;
+      background: #eef2f7;
+
+      display: flex;
+      justify-content: center;
+      align-items: center;
+
+      min-height: 100vh;
+    }
+
+    /* INDEX-B3: MAIN WHITE CARD */
+    .card {
+      width: 92%;
+      max-width: 420px;
+
+      background: white;
+
+      border-radius: 30px;
+
+      padding: 35px 25px;
+
+      box-shadow: 0 10px 30px rgba(0,0,0,0.12);
+
+      text-align: center;
+    }
+
+    /* INDEX-B4: VIEW TAG */
+    .view-tag {
+      display: inline-block;
+      background: black;
+      color: white;
+      padding: 4px 10px;
+      border-radius: 8px;
+      font-size: 12px;
+      margin-bottom: 14px;
+    }
+
+    /* INDEX-B5: TITLE */
+    h1 {
+      margin: 0 0 35px 0;
+      font-size: 42px;
+      color: #1847d1;
+    }
+
+    /* INDEX-B6: INPUT BOXES */
+    input {
+      width: 100%;
+      padding: 22px;
+
+      font-size: 28px;
+
+      border-radius: 18px;
+      border: 2px solid #2e5cff;
+
+      outline: none;
+
+      margin-bottom: 22px;
+      text-align: center;
+    }
+
+    /* INDEX-B7: LOGIN BUTTON */
+    button {
+      width: 100%;
+
+      padding: 22px;
+
+      font-size: 28px;
+      font-weight: bold;
+
+      border: none;
+      border-radius: 18px;
+
+      background: #2e5cff;
+      color: white;
+
+      cursor: pointer;
+    }
+
+    button:active {
+      transform: scale(0.98);
+    }
+
+    /* INDEX-B8: MESSAGE BOX */
+    #message {
+      margin-top: 30px;
+
+      padding: 25px;
+
+      border-radius: 20px;
+
+      font-size: 24px;
+      font-weight: bold;
+
+      background: #edf9ef;
+      color: #1c7a32;
+
+      display: none;
+    }
+
+  </style>
 </head>
+
+<!-- INDEX-C1: PAGE BODY -->
 <body>
 
-    <div id="login-container">
-        <h2>Employee Login</h2>
-        <form id="login-form">
-            <input type="text" id="employee-id" placeholder="Employee ID (e.g. EMP001)" required>
-            <br><br>
-            <input type="password" id="pin" placeholder="4-Digit PIN" maxlength="4" required>
-            <br><br>
-            <button type="submit" id="signin-btn">Sign In</button>
-        </form>
-        <p id="login-feedback" style="color: red;"></p>
+  <!-- INDEX-C2: LOGIN CARD -->
+  <div class="card">
+
+    <!-- INDEX-C3: VIEW LABEL -->
+    <div class="view-tag">
+      VIEW 1
     </div>
 
-    <!-- 1. Firebase App SDK (REQUIRED) -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-        import { loginEmployee } from './src/login.js';
-        
-        const loginForm = document.getElementById('login-form');
-        const feedback = document.getElementById('login-feedback');
+    <!-- INDEX-C4: TITLE -->
+    <h1>Employee Login</h1>
 
-        loginForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            const id = document.getElementById('employee-id').value;
-            const pin = document.getElementById('pin').value;
-            
-            // This proves the button is working
-            feedback.textContent = "Connecting to Database...";
-            feedback.style.color = "blue";
-            
-            try {
-                const employeeData = await loginEmployee(id, pin);
-                if (employeeData) {
-                    sessionStorage.setItem("currentEmployee", JSON.stringify(employeeData));
-                    window.location.href = 'schedule.html';
-                }
-            } catch (error) {
-                console.error("Login failed:", error);
-                feedback.textContent = "Invalid ID or PIN. Please try again.";
-                feedback.style.color = "red";
-            }
-        });
-    </script>
+    <!-- INDEX-C5: EMPLOYEE ID INPUT -->
+    <input
+      type="text"
+      id="employeeId"
+      placeholder="Employee ID"
+      autocomplete="off"
+      autocorrect="off"
+      autocapitalize="off"
+      spellcheck="false"
+    >
+
+    <!-- INDEX-C6: PIN INPUT -->
+    <input
+      type="password"
+      id="pin"
+      placeholder="Enter PIN"
+      autocomplete="new-password"
+      autocorrect="off"
+      autocapitalize="off"
+      spellcheck="false"
+    >
+
+    <!-- INDEX-C7: LOGIN BUTTON -->
+    <button onclick="login()">
+      LOGIN
+    </button>
+
+    <!-- INDEX-C8: LOGIN MESSAGE -->
+    <div id="message"></div>
+
+  </div>
+
+<!-- INDEX-D1: JAVASCRIPT / FIREBASE -->
+<script type="module">
+
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+
+  import {
+    getFirestore,
+    collection,
+    query,
+    where,
+    getDocs
+  } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+  /* INDEX-D2: FIREBASE CONFIG */
+  const firebaseConfig = {
+    apiKey: "AIzaSyBgq_ooBeEN4noEyIxYPLVokgM6RjCO648",
+    authDomain: "gms-task-tracker.firebaseapp.com",
+    projectId: "gms-task-tracker",
+    storageBucket: "gms-task-tracker.firebasestorage.app",
+    messagingSenderId: "790880979860",
+    appId: "1:790880979860:web:6faee2a6e56955af3c1d81",
+    measurementId: "G-5TRHQMS039"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  /* INDEX-D3: LOGIN FUNCTION */
+  async function login() {
+    const employeeId =
+      document.getElementById("employeeId").value.trim();
+
+    const pin =
+      document.getElementById("pin").value.trim();
+
+    if (!employeeId) {
+      showMessage("Enter Employee ID", false);
+      return;
+    }
+
+    if (!pin) {
+      showMessage("Enter PIN", false);
+      return;
+    }
+
+    showMessage("Checking...", true);
+
+    try {
+      const employeeQuery = query(
+        collection(db, "employees"),
+        where("employeeId", "==", employeeId)
+      );
+
+      const employeeSnap = await getDocs(employeeQuery);
+
+      if (employeeSnap.empty) {
+        showMessage("Employee not found", false);
+        return;
+      }
+
+      let foundEmployee = null;
+
+      employeeSnap.docs.forEach(function(docSnap) {
+        const emp = docSnap.data();
+
+        const storedPin =
+          String(
+            emp.pin ||
+            emp.PIN ||
+            emp.employeePin ||
+            emp.password ||
+            ""
+          ).trim();
+
+        const active =
+          String(emp.active || "Yes").trim();
+
+        if (
+          storedPin === pin &&
+          active !== "No" &&
+          active !== "false"
+        ) {
+          foundEmployee = {
+            id: docSnap.id,
+            employeeId: emp.employeeId || employeeId,
+            firstName: emp.firstName || emp.FirstName || "",
+            lastName: emp.lastName || emp.LastName || "",
+            employeeName:
+              emp.employeeName ||
+              emp.name ||
+              ((emp.firstName || "") + " " + (emp.lastName || "")).trim(),
+            pin: storedPin,
+            role: emp.role || "",
+            department: emp.department || ""
+          };
+        }
+      });
+
+      if (!foundEmployee) {
+        showMessage("Wrong PIN or inactive employee", false);
+        return;
+      }
+
+      sessionStorage.setItem(
+        "currentEmployee",
+        JSON.stringify(foundEmployee)
+      );
+
+      window.location.href = "schedule.html";
+
+    } catch (error) {
+      showMessage("Connection error", false);
+    }
+  }
+
+  /* INDEX-D4: SHOW MESSAGE */
+  function showMessage(text, success) {
+    const message =
+      document.getElementById("message");
+
+    message.style.display = "block";
+
+    if (success) {
+      message.style.background = "#edf9ef";
+      message.style.color = "#1c7a32";
+    } else {
+      message.style.background = "#ffecec";
+      message.style.color = "#c62828";
+    }
+
+    message.innerHTML = text;
+  }
+
+  /* INDEX-D5: ENTER KEY LOGIN */
+  document
+    .getElementById("employeeId")
+    .addEventListener("keydown", function(event) {
+      if (event.key === "Enter") {
+        login();
+      }
+    });
+
+  document
+    .getElementById("pin")
+    .addEventListener("keydown", function(event) {
+      if (event.key === "Enter") {
+        login();
+      }
+    });
+
+  window.login = login;
+
+</script>
 
 </body>
 </html>
