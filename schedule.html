@@ -1,4 +1,4 @@
-<!-- Purpose: Unified Dashboard with Global Date Picker -->
+<!-- Purpose: Unified Dashboard with Welcome Header and Global Date -->
 <!-- Location: schedule.html -->
 
 <!DOCTYPE html>
@@ -14,9 +14,9 @@
     .view-tag { display: inline-block; background: black; color: white; padding: 4px 10px; border-radius: 8px; font-size: 12px; margin-bottom: 12px; }
     .view-center { text-align: center; }
     h2, h3 { text-align: center; margin-top: 0; }
-    h2 { font-size: 30px; }
+    h2 { font-size: 28px; margin-bottom: 10px; }
     h3 { font-size: 24px; }
-    input, select, textarea { width: 100%; font-size: 22px; padding: 14px; margin: 10px 0 18px; border-radius: 14px; border: 1px solid #ccc; }
+    input[type="date"] { width: 100%; font-size: 20px; padding: 12px; margin: 5px 0 20px; border-radius: 14px; border: 1px solid #ccc; text-align: center; }
     button { width: 100%; border: none; border-radius: 14px; background: #1976d2; color: white; font-size: 22px; font-weight: bold; padding: 16px; margin: 8px 0; cursor: pointer; }
     .back { background: #555; }
     .hidden { display: none !important; }
@@ -28,7 +28,10 @@
 <body>
 
 <div class="card">
-  <!-- GLOBAL DATE PICKER (Available on all views) -->
+  <!-- WELCOME HEADER (Moved to top) -->
+  <h2 id="employeeName">Welcome</h2>
+
+  <!-- GLOBAL DATE PICKER -->
   <div class="view-center">
     <label style="font-weight: bold; font-size: 14px;">Selected Work Date:</label>
     <input type="date" id="globalWorkDate" onchange="updateDate(this.value)">
@@ -37,14 +40,13 @@
   <!-- VIEW 1: ASSIGNMENT SELECTION -->
   <div id="assignmentScreen">
     <div class="view-center"><div class="view-tag">VIEW 1</div></div>
-    <h2 id="employeeName"></h2>
     <button onclick="chooseAssignment('Housekeeper 1')">Housekeeper 1</button>
     <button onclick="chooseAssignment('Housekeeper 2')">Housekeeper 2</button>
     <button onclick="chooseAssignment('Laundry')">Laundry</button>
     <button class="back" onclick="logout()">LOGOUT</button>
   </div>
 
-  <!-- VIEW 3: TASK LIST (Place your Category/Task HTML here) -->
+  <!-- VIEW 3: TASK LIST -->
   <div id="categoryScreen" class="hidden">
     <div class="view-center"><div class="view-tag">VIEW 3</div></div>
     <h3 id="displayAssignment"></h3>
@@ -65,16 +67,14 @@ if (!sessionData) window.location.href = "index.html";
 let currentEmployee = sessionData.firstName;
 let currentEmployeeId = sessionData.employeeId;
 let currentAssignment = "";
-let currentWorkDateValue = new Date().toISOString().split('T')[0]; // Default to today
+let currentWorkDateValue = new Date().toISOString().split('T')[0];
 
-// Set Initial Date UI
+// Initialize UI
 document.getElementById("globalWorkDate").value = currentWorkDateValue;
 document.getElementById("employeeName").innerText = "Welcome, " + currentEmployee;
 
 function updateDate(newDate) {
     currentWorkDateValue = newDate;
-    console.log("Date updated to:", currentWorkDateValue);
-    // Refresh tasks automatically if we are already in View 3
     if (!document.getElementById("categoryScreen").classList.contains("hidden")) {
         loadTasks();
     }
@@ -83,17 +83,13 @@ function updateDate(newDate) {
 function chooseAssignment(assignment) {
     currentAssignment = assignment;
     document.getElementById("displayAssignment").innerText = assignment;
-    
-    // Hide View 1, Show View 3
     document.getElementById("assignmentScreen").classList.add("hidden");
     document.getElementById("categoryScreen").classList.remove("hidden");
-    
     loadTasks();
 }
 
 async function loadTasks() {
-    console.log("Fetching tasks for:", currentAssignment, "on", currentWorkDateValue);
-    // Add your apiCall logic here to populate View 3
+    console.log("Loading tasks for:", currentAssignment, "Date:", currentWorkDateValue);
 }
 
 function logout() {
