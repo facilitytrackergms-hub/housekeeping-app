@@ -285,32 +285,32 @@
 
   </div>
 
-  <!-- SCHEDULE-F1: VIEW 3/4/5/6 - AREA / ROOM SCREEN -->
-  <div id="view3" class="hidden">
+<!-- SCHEDULE-F1: VIEW 3/4/5/6 - AREA / ROOM SCREEN -->
+<div id="view3" class="hidden">
 
-    <div class="view-center">
-      <div class="view-tag" id="areaViewTag">VIEW 3</div>
-    </div>
+  <div class="view-center">
+    <div class="view-tag" id="areaViewTag">VIEW 3</div>
+  </div>
 
-    <div id="areaBigDatePickerBox" class="top-date-box hidden">
-      <input
-        type="date"
-        id="bigDatePicker"
-        onchange="changeWorkDateFromBigPicker()"
-      >
-    </div>
-
-    <button id="completeAllCategoryButton" class="green" onclick="completeWholeCategory()">
-      ALL
-    </button>
-
+  <div id="areaBigDatePickerBox" class="top-date-box hidden">
     <h3 id="areaDateTitle"></h3>
 
-    <div id="areaButtons" class="rooms-grid"></div>
-
-    <button class="back" onclick="backToCategories()">BACK</button>
-
+    <input
+      type="date"
+      id="bigDatePicker"
+      onchange="changeWorkDateFromBigPicker()"
+    >
   </div>
+
+  <button id="completeAllCategoryButton" class="green" onclick="completeWholeCategory()">
+    ALL
+  </button>
+
+  <div id="areaButtons" class="rooms-grid"></div>
+
+  <button class="back" onclick="backToCategories()">BACK</button>
+
+</div>
 
   <!-- SCHEDULE-G1: VIEW 7 - TASK COMPLETION SCREEN -->
   <div id="view4" class="hidden">
