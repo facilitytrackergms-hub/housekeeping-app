@@ -119,26 +119,6 @@
       margin-bottom: 12px;
     }
 
-    .filter-box {
-      background: #f7f7f7;
-      padding: 12px;
-      border-radius: 14px;
-      margin: 10px 0;
-      text-align: left;
-    }
-
-    .filter-box label {
-      display: block;
-      font-size: 18px;
-      margin: 8px 0;
-    }
-
-    .filter-box input[type="checkbox"] {
-      width: auto;
-      margin-right: 8px;
-      transform: scale(1.2);
-    }
-
     .edit-banner {
       background: #fff3cd;
       color: #7a5500;
@@ -146,6 +126,15 @@
       border-radius: 12px;
       font-weight: bold;
       margin-bottom: 10px;
+    }
+
+    .path-box {
+      background: #eef2f7;
+      padding: 10px;
+      border-radius: 12px;
+      font-size: 18px;
+      margin-bottom: 12px;
+      font-weight: bold;
     }
   </style>
 </head>
@@ -162,7 +151,7 @@
     </div>
 
     <button onclick="showEmployees()">Employees</button>
-    <button onclick="showTasks()">Tasks</button>
+    <button onclick="showAreas()">Areas</button>
     <button onclick="showLogs()">Task Logs</button>
     <button onclick="showRoomLabels()">Room Labels</button>
 
@@ -194,17 +183,59 @@
     <button class="gray" onclick="showDashboard()">BACK</button>
   </div>
 
-  <div id="tasksView" class="hidden">
-    <h1>Tasks</h1>
+  <div id="areasScheduleView" class="hidden">
+    <h1>Areas</h1>
 
     <button class="gray" onclick="showDashboard()">BACK</button>
+
+    <h2>Choose Schedule</h2>
+
+    <button onclick="selectAreaSchedule('HK Schedule 1')">HK Schedule 1</button>
+    <button onclick="selectAreaSchedule('HK Schedule 2')">HK Schedule 2</button>
+    <button onclick="selectAreaSchedule('Laundry')">Laundry</button>
+  </div>
+
+  <div id="areasCategoryView" class="hidden">
+    <h1>Areas</h1>
+
+    <button class="gray" onclick="showAreas()">BACK</button>
+
+    <div class="path-box" id="categoryPath"></div>
+
+    <h2>Choose Area Type</h2>
+
+    <div id="categoryButtons"></div>
+  </div>
+
+  <div id="subAreaView" class="hidden">
+    <h1>Sub Areas</h1>
+
+    <button class="gray" onclick="backToAreaCategories()">BACK</button>
+
+    <div class="path-box" id="subAreaPath"></div>
+
+    <input id="subAreaSearch" placeholder="Search room / sub area" oninput="loadSubAreas()">
+
+    <h2>Sub Area List</h2>
+
+    <div id="subAreaList"></div>
+
+    <button class="green" onclick="openNewSubArea()">ADD NEW SUB AREA</button>
+  </div>
+
+  <div id="taskManagerView" class="hidden">
+    <h1>Area Tasks</h1>
+
+    <button class="gray" onclick="backToSubAreas()">BACK</button>
+
+    <div class="path-box" id="taskManagerPath"></div>
 
     <div id="taskEditBanner" class="edit-banner hidden">
       Editing task
     </div>
 
     <select id="taskAssignment">
-      <option value="">Select Daily Task</option>
+      <option value="">Select Schedule</option>
       <option value="HK Schedule 1">HK Schedule 1</option>
       <option value="HK Schedule 2">HK Schedule 2</option>
       <option value="Laundry">Laundry</option>
@@ -215,7 +246,7 @@
     <input id="taskName" placeholder="Task Name">
 
     <select id="taskSchedule">
-      <option value="">Select Schedule</option>
+      <option value="">Select Day</option>
       <option value="Daily">Daily</option>
       <option value="Monday">Monday</option>
       <option value="Tuesday">Tuesday</option>
@@ -241,52 +272,11 @@
 
     <h2>Task List</h2>
 
-    <input id="taskSearch" placeholder="Search room or task name" oninput="loadTasks()">
+    <input id="taskSearch" placeholder="Search task name" oninput="loadAreaTasks()">
 
-    <select id="taskFilter" onchange="loadTasks()">
-      <option value="ALL">Show All Daily Tasks</option>
-      <option value="HK Schedule 1">HK Schedule 1</option>
-      <option value="HK Schedule 2">HK Schedule 2</option>
-      <option value="Laundry">Laundry</option>
-    </select>
+    <div id="areaTaskList"></div>
 
-    <div class="filter-box">
-      <h3>Search Categories</h3>
-
-      <label>
-        <input type="checkbox" class="categoryFilter" value="Common Area" onchange="loadTasks()">
-        Common Area
-      </label>
-
-      <label>
-        <input type="checkbox" class="categoryFilter" value="Weekly Room" onchange="loadTasks()">
-        Weekly Room
-      </label>
-
-      <label>
-        <input type="checkbox" class="categoryFilter" value="Daily Room" onchange="loadTasks()">
-        Daily Room
-      </label>
-
-      <label>
-        <input type="checkbox" class="categoryFilter" value="Dehumidifier" onchange="loadTasks()">
-        Dehumidifier
-      </label>
-
-      <label>
-        <input type="checkbox" class="categoryFilter" value="Weekly Laundry" onchange="loadTasks()">
-        Weekly Laundry
-      </label>
-
-      <label>
-        <input type="checkbox" class="categoryFilter" value="Daily Laundry Check" onchange="loadTasks()">
-        Daily Laundry Check
-      </label>
-    </div>
-
-    <div id="tasksList"></div>
-
-    <button class="gray" onclick="showDashboard()">BACK</button>
+    <button class="gray" onclick="backToSubAreas()">BACK</button>
   </div>
 
   <div id="logsView" class="hidden">
@@ -384,6 +374,9 @@
     window.location.href = "index.html";
   }
 
+  let selectedSchedule = "";
+  let selectedCategory = "";
+  let selectedSubArea = "";
   let editingTaskId = "";
   let allLoadedTasks = [];
 
@@ -400,7 +393,10 @@
   function hideAllViews() {
     document.getElementById("dashboardView").classList.add("hidden");
     document.getElementById("employeesView").classList.add("hidden");
-    document.getElementById("tasksView").classList.add("hidden");
+    document.getElementById("areasScheduleView").classList.add("hidden");
+    document.getElementById("areasCategoryView").classList.add("hidden");
+    document.getElementById("subAreaView").classList.add("hidden");
+    document.getElementById("taskManagerView").classList.add("hidden");
     document.getElementById("logsView").classList.add("hidden");
     document.getElementById("roomLabelsView").classList.add("hidden");
   }
@@ -416,24 +412,430 @@
     loadEmployees();
   }
 
-  function showTasks() {
-    hideAllViews();
-    document.getElementById("tasksView").classList.remove("hidden");
+  function showAreas() {
+    selectedSchedule = "";
+    selectedCategory = "";
+    selectedSubArea = "";
     cancelTaskEdit();
-    loadTasks();
+
+    hideAllViews();
+    document.getElementById("areasScheduleView").classList.remove("hidden");
   }
 
-  function showLogs() {
+  function selectAreaSchedule(schedule) {
+    selectedSchedule = schedule;
+    selectedCategory = "";
+    selectedSubArea = "";
+
     hideAllViews();
-    document.getElementById("logsView").classList.remove("hidden");
-    loadLogs();
+    document.getElementById("areasCategoryView").classList.remove("hidden");
+
+    document.getElementById("categoryPath").innerText =
+      selectedSchedule;
+
+    drawCategoryButtons();
   }
 
-  function showRoomLabels() {
+  function drawCategoryButtons() {
+    const box = document.getElementById("categoryButtons");
+    box.innerHTML = "";
+
+    let categories = [];
+
+    if (selectedSchedule === "Laundry") {
+      categories = ["Weekly Laundry", "Daily Laundry Check"];
+    } else {
+      categories = ["Common Area", "Weekly Room", "Daily Room", "Dehumidifier"];
+    }
+
+    categories.forEach(function(category) {
+      const btn = document.createElement("button");
+      btn.innerText = category;
+
+      btn.onclick = function() {
+        selectedCategory = category;
+        selectedSubArea = "";
+        showSubAreas();
+      };
+
+      box.appendChild(btn);
+    });
+  }
+
+  function backToAreaCategories() {
     hideAllViews();
-    document.getElementById("roomLabelsView").classList.remove("hidden");
-    clearRoomForm();
-    loadRoomLabels();
+    document.getElementById("areasCategoryView").classList.remove("hidden");
+  }
+
+  function showSubAreas() {
+    hideAllViews();
+    document.getElementById("subAreaView").classList.remove("hidden");
+
+    document.getElementById("subAreaPath").innerText =
+      selectedSchedule + " / " + selectedCategory;
+
+    document.getElementById("subAreaSearch").value = "";
+
+    loadSubAreas();
+  }
+
+  function backToSubAreas() {
+    hideAllViews();
+    document.getElementById("subAreaView").classList.remove("hidden");
+    loadSubAreas();
+  }
+
+  async function loadSubAreas() {
+    const box = document.getElementById("subAreaList");
+    const search = document.getElementById("subAreaSearch").value.trim().toLowerCase();
+
+    box.innerHTML = "Loading...";
+
+    const snap = await getDocs(collection(db, "tasks"));
+
+    const areaMap = {};
+
+    snap.docs.forEach(function(docSnap) {
+      const item = docSnap.data();
+
+      if (item.assignment !== selectedSchedule) return;
+      if (item.category !== selectedCategory) return;
+
+      const area = String(item.area || "").trim();
+
+      if (!area) return;
+
+      if (search && !area.toLowerCase().includes(search)) return;
+
+      if (!areaMap[area]) {
+        areaMap[area] = 0;
+      }
+
+      areaMap[area]++;
+    });
+
+    const areas = Object.keys(areaMap).sort(function(a, b) {
+      const aNum = Number(a);
+      const bNum = Number(b);
+
+      if (!isNaN(aNum) && !isNaN(bNum)) {
+        return aNum - bNum;
+      }
+
+      return a.localeCompare(b);
+    });
+
+    box.innerHTML = "";
+
+    areas.forEach(function(area) {
+      const div = document.createElement("div");
+      div.className = "item-card";
+
+      div.innerHTML =
+        "<b>" + area + "</b><br>" +
+        "Tasks: " + areaMap[area] + "<br>" +
+        '<button onclick="openSubArea(\'' + escapeText(area) + '\')">OPEN</button>';
+
+      box.appendChild(div);
+    });
+
+    if (box.innerHTML === "") {
+      box.innerHTML = "<h3>No sub areas found.</h3>";
+    }
+  }
+
+  function openNewSubArea() {
+    selectedSubArea = "";
+    openTaskManager("");
+  }
+
+  function openSubArea(area) {
+    selectedSubArea = area;
+    openTaskManager(area);
+  }
+
+  function openTaskManager(area) {
+    hideAllViews();
+    document.getElementById("taskManagerView").classList.remove("hidden");
+
+    document.getElementById("taskManagerPath").innerText =
+      selectedSchedule + " / " + selectedCategory +
+      (area ? " / " + area : "");
+
+    cancelTaskEdit();
+
+    document.getElementById("taskAssignment").value = selectedSchedule;
+    document.getElementById("taskCategory").value = selectedCategory;
+    document.getElementById("taskArea").value = area || "";
+
+    loadAreaTasks();
+  }
+
+  async function loadAreaTasks() {
+    const box = document.getElementById("areaTaskList");
+    const search = document.getElementById("taskSearch").value.trim().toLowerCase();
+
+    box.innerHTML = "Loading...";
+
+    const snap = await getDocs(collection(db, "tasks"));
+
+    allLoadedTasks = [];
+
+    snap.docs.forEach(function(docSnap) {
+      const item = docSnap.data();
+
+      if (item.assignment !== selectedSchedule) return;
+      if (item.category !== selectedCategory) return;
+
+      if (selectedSubArea && item.area !== selectedSubArea) return;
+
+      if (search) {
+        const text =
+          String(item.area || "").toLowerCase() + " " +
+          String(item.task || "").toLowerCase();
+
+        if (!text.includes(search)) return;
+      }
+
+      allLoadedTasks.push({
+        id: docSnap.id,
+        data: item
+      });
+    });
+
+    allLoadedTasks.sort(function(a, b) {
+      const aTime =
+        a.data.updatedAt && a.data.updatedAt.seconds
+          ? a.data.updatedAt.seconds
+          : a.data.createdAt && a.data.createdAt.seconds
+            ? a.data.createdAt.seconds
+            : 0;
+
+      const bTime =
+        b.data.updatedAt && b.data.updatedAt.seconds
+          ? b.data.updatedAt.seconds
+          : b.data.createdAt && b.data.createdAt.seconds
+            ? b.data.createdAt.seconds
+            : 0;
+
+      return bTime - aTime;
+    });
+
+    box.innerHTML = "";
+
+    allLoadedTasks.forEach(function(item) {
+      const task = item.data;
+
+      const div = document.createElement("div");
+      div.className = "item-card";
+
+      div.innerHTML =
+        "<b>" + (task.area || "") + "</b><br>" +
+        "Task: " + (task.task || "") + "<br>" +
+        "Assignment: " + (task.assignment || "") + "<br>" +
+        "Schedule: " + (task.schedule || "") + "<br>" +
+        "Category: " + (task.category || "") + "<br>" +
+        '<button class="yellow" onclick="startEditTask(\'' + item.id + '\')">EDIT TASK</button>' +
+        '<button class="red" onclick="deleteTask(\'' + item.id + '\')">DELETE TASK</button>';
+
+      box.appendChild(div);
+    });
+
+    if (box.innerHTML === "") {
+      box.innerHTML = "<h3>No tasks found.</h3>";
+    }
+  }
+
+  async function saveTask() {
+    const assignment = document.getElementById("taskAssignment").value;
+    const area = document.getElementById("taskArea").value.trim();
+    const task = document.getElementById("taskName").value.trim();
+    const schedule = document.getElementById("taskSchedule").value;
+    const category = document.getElementById("taskCategory").value;
+
+    if (!assignment || !area || !task || !schedule || !category) {
+      alert("Fill schedule, room/area, task name, day, and category.");
+      return;
+    }
+
+    const conflict = await findHousekeepingConflict(
+      assignment,
+      category,
+      area,
+      task,
+      editingTaskId
+    );
+
+    if (conflict && !editingTaskId) {
+      const moveIt = confirm(
+        "This task already exists in " + conflict.assignment +
+        ". Move it to " + assignment + " instead of creating a duplicate?"
+      );
+
+      if (!moveIt) return;
+
+      await updateDoc(doc(db, "tasks", conflict.id), {
+        assignment: assignment,
+        category: category,
+        area: area,
+        task: task,
+        schedule: schedule,
+        active: "Yes",
+        updatedAt: serverTimestamp()
+      });
+
+      selectedSchedule = assignment;
+      selectedCategory = category;
+      selectedSubArea = area;
+
+      clearTaskForm();
+      openTaskManager(area);
+      return;
+    }
+
+    if (conflict && editingTaskId) {
+      alert(
+        "This task already exists in " + conflict.assignment +
+        ". A housekeeping task can only be in one HK schedule."
+      );
+      return;
+    }
+
+    const taskData = {
+      assignment: assignment,
+      area: area,
+      task: task,
+      schedule: schedule,
+      category: category,
+      status: "pending",
+      active: "Yes",
+      updatedAt: serverTimestamp()
+    };
+
+    if (editingTaskId) {
+      await updateDoc(doc(db, "tasks", editingTaskId), taskData);
+    } else {
+      taskData.createdAt = serverTimestamp();
+      await addDoc(collection(db, "tasks"), taskData);
+    }
+
+    selectedSchedule = assignment;
+    selectedCategory = category;
+    selectedSubArea = area;
+
+    cancelTaskEdit();
+    openTaskManager(area);
+  }
+
+  async function findHousekeepingConflict(assignment, category, area, taskName, currentId) {
+    const isHK =
+      assignment === "HK Schedule 1" ||
+      assignment === "HK Schedule 2";
+
+    if (!isHK) return null;
+
+    const snap = await getDocs(collection(db, "tasks"));
+
+    const cleanArea = String(area).trim().toLowerCase();
+    const cleanTask = String(taskName).trim().toLowerCase();
+    const cleanCategory = String(category).trim().toLowerCase();
+
+    let conflict = null;
+
+    snap.docs.forEach(function(docSnap) {
+      if (conflict) return;
+      if (docSnap.id === currentId) return;
+
+      const item = docSnap.data();
+
+      const itemAssignment = String(item.assignment || "").trim();
+
+      const itemIsHK =
+        itemAssignment === "HK Schedule 1" ||
+        itemAssignment === "HK Schedule 2";
+
+      if (!itemIsHK) return;
+
+      const itemArea = String(item.area || "").trim().toLowerCase();
+      const itemTask = String(item.task || "").trim().toLowerCase();
+      const itemCategory = String(item.category || "").trim().toLowerCase();
+
+      if (
+        itemArea === cleanArea &&
+        itemTask === cleanTask &&
+        itemCategory === cleanCategory
+      ) {
+        conflict = {
+          id: docSnap.id,
+          assignment: itemAssignment
+        };
+      }
+    });
+
+    return conflict;
+  }
+
+  async function startEditTask(id) {
+    const snap = await getDocs(collection(db, "tasks"));
+
+    snap.docs.forEach(function(docSnap) {
+      if (docSnap.id !== id) return;
+
+      const task = docSnap.data();
+
+      editingTaskId = id;
+
+      document.getElementById("taskAssignment").value = task.assignment || "";
+      document.getElementById("taskArea").value = task.area || "";
+      document.getElementById("taskName").value = task.task || "";
+      document.getElementById("taskSchedule").value = task.schedule || "";
+      document.getElementById("taskCategory").value = task.category || "";
+
+      document.getElementById("saveTaskButton").innerText = "SAVE TASK";
+
+      document.getElementById("taskEditBanner").innerText =
+        "Editing: " + (task.area || "") + " - " + (task.task || "");
+
+      document.getElementById("taskEditBanner").classList.remove("hidden");
+      document.getElementById("cancelTaskEditButton").classList.remove("hidden");
+
+      window.scrollTo({
+        top: 0,
+        behavior: "smooth"
+      });
+    });
+  }
+
+  function clearTaskForm() {
+    document.getElementById("taskAssignment").value = selectedSchedule || "";
+    document.getElementById("taskArea").value = selectedSubArea || "";
+    document.getElementById("taskName").value = "";
+    document.getElementById("taskSchedule").value = "";
+    document.getElementById("taskCategory").value = selectedCategory || "";
+  }
+
+  function cancelTaskEdit() {
+    editingTaskId = "";
+
+    document.getElementById("saveTaskButton").innerText = "ADD TASK";
+    document.getElementById("taskEditBanner").classList.add("hidden");
+    document.getElementById("cancelTaskEditButton").classList.add("hidden");
+
+    if (document.getElementById("taskAssignment")) {
+      clearTaskForm();
+    }
+  }
+
+  async function deleteTask(id) {
+    if (!confirm("Delete this task?")) return;
+
+    await deleteDoc(doc(db, "tasks", id));
+
+    if (editingTaskId === id) {
+      cancelTaskEdit();
+    }
+
+    loadAreaTasks();
   }
 
   async function addEmployee() {
@@ -519,237 +921,6 @@
     loadEmployees();
   }
 
-  async function saveTask() {
-    const assignment = document.getElementById("taskAssignment").value;
-    const area = document.getElementById("taskArea").value.trim();
-    const task = document.getElementById("taskName").value.trim();
-    const schedule = document.getElementById("taskSchedule").value;
-    const category = document.getElementById("taskCategory").value;
-
-    if (!assignment || !area || !task || !schedule || !category) {
-      alert("Fill daily task, room/area, task name, schedule, and category.");
-      return;
-    }
-
-    const duplicateMessage = await checkTaskConflict(
-      assignment,
-      area,
-      task,
-      editingTaskId
-    );
-
-    if (duplicateMessage) {
-      alert(duplicateMessage);
-      return;
-    }
-
-    const taskData = {
-      assignment: assignment,
-      area: area,
-      task: task,
-      schedule: schedule,
-      category: category,
-      status: "pending",
-      active: "Yes",
-      updatedAt: serverTimestamp()
-    };
-
-    if (editingTaskId) {
-      await updateDoc(doc(db, "tasks", editingTaskId), taskData);
-    } else {
-      taskData.createdAt = serverTimestamp();
-      await addDoc(collection(db, "tasks"), taskData);
-    }
-
-    cancelTaskEdit();
-    loadTasks();
-  }
-
-  async function checkTaskConflict(assignment, area, taskName, currentId) {
-    const snap = await getDocs(collection(db, "tasks"));
-
-    const cleanArea = String(area).trim().toLowerCase();
-    const cleanTask = String(taskName).trim().toLowerCase();
-
-    const isHousekeeping =
-      assignment === "HK Schedule 1" ||
-      assignment === "HK Schedule 2";
-
-    let conflict = "";
-
-    snap.docs.forEach(function(docSnap) {
-      if (conflict) return;
-      if (docSnap.id === currentId) return;
-
-      const item = docSnap.data();
-
-      const itemArea = String(item.area || "").trim().toLowerCase();
-      const itemTask = String(item.task || "").trim().toLowerCase();
-      const itemAssignment = String(item.assignment || "").trim();
-
-      if (itemArea !== cleanArea || itemTask !== cleanTask) return;
-
-      const itemIsHousekeeping =
-        itemAssignment === "HK Schedule 1" ||
-        itemAssignment === "HK Schedule 2";
-
-      if (isHousekeeping && itemIsHousekeeping) {
-        conflict =
-          "This room/task already exists in " + itemAssignment +
-          ". A housekeeping task can only be in one HK Schedule.";
-      }
-    });
-
-    return conflict;
-  }
-
-  function clearTaskForm() {
-    document.getElementById("taskAssignment").value = "";
-    document.getElementById("taskArea").value = "";
-    document.getElementById("taskName").value = "";
-    document.getElementById("taskSchedule").value = "";
-    document.getElementById("taskCategory").value = "";
-  }
-
-  function cancelTaskEdit() {
-    editingTaskId = "";
-
-    clearTaskForm();
-
-    document.getElementById("saveTaskButton").innerText = "ADD TASK";
-    document.getElementById("taskEditBanner").classList.add("hidden");
-    document.getElementById("cancelTaskEditButton").classList.add("hidden");
-  }
-
-  async function startEditTask(id) {
-    const snap = await getDocs(collection(db, "tasks"));
-
-    snap.docs.forEach(function(docSnap) {
-      if (docSnap.id !== id) return;
-
-      const task = docSnap.data();
-
-      editingTaskId = id;
-
-      document.getElementById("taskAssignment").value = task.assignment || "";
-      document.getElementById("taskArea").value = task.area || "";
-      document.getElementById("taskName").value = task.task || "";
-      document.getElementById("taskSchedule").value = task.schedule || "";
-      document.getElementById("taskCategory").value = task.category || "";
-
-      document.getElementById("saveTaskButton").innerText = "SAVE TASK";
-      document.getElementById("taskEditBanner").innerText =
-        "Editing: " + (task.area || "") + " - " + (task.task || "");
-      document.getElementById("taskEditBanner").classList.remove("hidden");
-      document.getElementById("cancelTaskEditButton").classList.remove("hidden");
-
-      window.scrollTo({
-        top: 0,
-        behavior: "smooth"
-      });
-    });
-  }
-
-  function getSelectedCategoryFilters() {
-    const selected = [];
-
-    document.querySelectorAll(".categoryFilter").forEach(function(box) {
-      if (box.checked) {
-        selected.push(box.value);
-      }
-    });
-
-    return selected;
-  }
-
-  async function loadTasks() {
-    const box = document.getElementById("tasksList");
-    const filter = document.getElementById("taskFilter").value;
-    const search = document.getElementById("taskSearch").value.trim().toLowerCase();
-    const selectedCategories = getSelectedCategoryFilters();
-
-    box.innerHTML = "Loading...";
-
-    const snap = await getDocs(collection(db, "tasks"));
-
-    allLoadedTasks = [];
-
-    snap.docs.forEach(function(docSnap) {
-      const task = docSnap.data();
-
-      allLoadedTasks.push({
-        id: docSnap.id,
-        data: task
-      });
-    });
-
-    allLoadedTasks.sort(function(a, b) {
-      const aTime =
-        a.data.updatedAt?.seconds ||
-        a.data.createdAt?.seconds ||
-        0;
-
-      const bTime =
-        b.data.updatedAt?.seconds ||
-        b.data.createdAt?.seconds ||
-        0;
-
-      return bTime - aTime;
-    });
-
-    box.innerHTML = "";
-
-    allLoadedTasks.forEach(function(item) {
-      const task = item.data;
-
-      if (filter !== "ALL" && task.assignment !== filter) return;
-
-      if (
-        selectedCategories.length > 0 &&
-        !selectedCategories.includes(task.category)
-      ) {
-        return;
-      }
-
-      const searchText =
-        String(task.area || "").toLowerCase() + " " +
-        String(task.task || "").toLowerCase() + " " +
-        String(task.category || "").toLowerCase();
-
-      if (search && !searchText.includes(search)) return;
-
-      const div = document.createElement("div");
-      div.className = "item-card";
-
-      div.innerHTML =
-        "<b>" + (task.area || "") + "</b><br>" +
-        "Task: " + (task.task || "") + "<br>" +
-        "Assignment: " + (task.assignment || "") + "<br>" +
-        "Schedule: " + (task.schedule || "") + "<br>" +
-        "Category: " + (task.category || "") + "<br>" +
-        '<button class="yellow" onclick="startEditTask(\'' + item.id + '\')">EDIT TASK</button>' +
-        '<button class="red" onclick="deleteTask(\'' + item.id + '\')">DELETE TASK</button>';
-
-      box.appendChild(div);
-    });
-
-    if (box.innerHTML === "") {
-      box.innerHTML = "<h3>No tasks found.</h3>";
-    }
-  }
-
-  async function deleteTask(id) {
-    if (!confirm("Delete this task?")) return;
-
-    await deleteDoc(doc(db, "tasks", id));
-
-    if (editingTaskId === id) {
-      cancelTaskEdit();
-    }
-
-    loadTasks();
-  }
-
   async function loadLogs() {
     const box = document.getElementById("logsList");
     box.innerHTML = "Loading...";
@@ -763,8 +934,8 @@
     });
 
     logs.sort(function(a, b) {
-      const aTime = a.timestamp?.seconds || 0;
-      const bTime = b.timestamp?.seconds || 0;
+      const aTime = a.timestamp && a.timestamp.seconds ? a.timestamp.seconds : 0;
+      const bTime = b.timestamp && b.timestamp.seconds ? b.timestamp.seconds : 0;
 
       return bTime - aTime;
     });
@@ -938,6 +1109,10 @@
     return mm + "/" + dd + "/" + yyyy;
   }
 
+  function escapeText(text) {
+    return String(text).replace(/'/g, "\\'");
+  }
+
   function logout() {
     sessionStorage.clear();
     window.location.href = "index.html";
@@ -945,20 +1120,28 @@
 
   window.showDashboard = showDashboard;
   window.showEmployees = showEmployees;
-  window.showTasks = showTasks;
+  window.showAreas = showAreas;
   window.showLogs = showLogs;
   window.showRoomLabels = showRoomLabels;
+
+  window.selectAreaSchedule = selectAreaSchedule;
+  window.showSubAreas = showSubAreas;
+  window.backToAreaCategories = backToAreaCategories;
+  window.backToSubAreas = backToSubAreas;
+  window.loadSubAreas = loadSubAreas;
+  window.openSubArea = openSubArea;
+  window.openNewSubArea = openNewSubArea;
+
+  window.saveTask = saveTask;
+  window.loadAreaTasks = loadAreaTasks;
+  window.startEditTask = startEditTask;
+  window.cancelTaskEdit = cancelTaskEdit;
+  window.deleteTask = deleteTask;
 
   window.addEmployee = addEmployee;
   window.loadEmployees = loadEmployees;
   window.toggleEmployeeActive = toggleEmployeeActive;
   window.deleteEmployee = deleteEmployee;
-
-  window.saveTask = saveTask;
-  window.loadTasks = loadTasks;
-  window.deleteTask = deleteTask;
-  window.startEditTask = startEditTask;
-  window.cancelTaskEdit = cancelTaskEdit;
 
   window.loadLogs = loadLogs;
 
