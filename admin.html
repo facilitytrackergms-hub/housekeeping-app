@@ -368,6 +368,20 @@
 
       <datalist id="taskNameOptions"></datalist>
 
+      <div id="adminTaskScheduleBox" class="hidden">
+        <label>Schedule Day</label>
+        <select id="adminTaskScheduleInput">
+          <option value="">Select day</option>
+          <option>Monday</option>
+          <option>Tuesday</option>
+          <option>Wednesday</option>
+          <option>Thursday</option>
+          <option>Friday</option>
+          <option>Saturday</option>
+          <option>Sunday</option>
+        </select>
+      </div>
+
       <div class="button-row">
         <button class="green" onclick="saveAdminSubTask()">SAVE ROOM</button>
         <button id="saveAllWeeklyButton" class="yellow hidden" onclick="saveAdminSubTaskToAllWeeklyRooms()">SAVE ALL</button>
@@ -1029,7 +1043,11 @@
     document.getElementById("adminTaskNameInput").value =
       task.task || "";
 
+    document.getElementById("adminTaskScheduleInput").value =
+      task.schedule || "";
+
     setSaveAllWeeklyButtonVisibility();
+    setTaskScheduleBoxVisibility();
     updateAssignmentTitles();
 
     document.getElementById("adminSubtaskEditor").classList.remove("hidden");
@@ -1051,8 +1069,10 @@
       "New Sub Task";
 
     document.getElementById("adminTaskNameInput").value = "";
+    document.getElementById("adminTaskScheduleInput").value = "";
 
     setSaveAllWeeklyButtonVisibility();
+    setTaskScheduleBoxVisibility();
     updateAssignmentTitles();
 
     document.getElementById("adminSubtaskEditor").classList.remove("hidden");
@@ -1081,6 +1101,16 @@
       btn.classList.remove("hidden");
     } else {
       btn.classList.add("hidden");
+    }
+  }
+
+  function setTaskScheduleBoxVisibility() {
+    const box = document.getElementById("adminTaskScheduleBox");
+
+    if (selectedCategory === "Weekly Room" || selectedCategory === "Weekly Laundry") {
+      box.classList.remove("hidden");
+    } else {
+      box.classList.add("hidden");
     }
   }
 
@@ -1145,7 +1175,14 @@
     const category = document.getElementById("adminEditCategoryInput").value.trim();
 
     const taskName = document.getElementById("adminTaskNameInput").value.trim();
-    const schedule = getDefaultScheduleForCategory(category);
+
+    let schedule = "";
+
+    try {
+      schedule = getScheduleForSubTask(category);
+    } catch (error) {
+      return;
+    }
 
     if (!area || !assignment || !category || !taskName) {
       alert("Fill area, assignment, and task name.");
@@ -1199,7 +1236,14 @@
     const assignment = document.getElementById("adminEditAssignmentInput").value.trim();
     const category = document.getElementById("adminEditCategoryInput").value.trim();
     const taskName = document.getElementById("adminTaskNameInput").value.trim();
-    const schedule = getDefaultScheduleForCategory(category);
+
+    let schedule = "";
+
+    try {
+      schedule = getScheduleForSubTask(category);
+    } catch (error) {
+      return;
+    }
 
     if (!assignment || !category || !taskName) {
       alert("Fill assignment and task name.");
@@ -1538,6 +1582,21 @@
   function getDefaultScheduleForCategory(category) {
     if (category === "Weekly Room" || category === "Weekly Laundry") {
       return currentWorkDayName || "weekly";
+    }
+
+    return "daily";
+  }
+
+  function getScheduleForSubTask(category) {
+    if (category === "Weekly Room" || category === "Weekly Laundry") {
+      const selectedDay = document.getElementById("adminTaskScheduleInput").value;
+
+      if (!selectedDay) {
+        alert("Select schedule day.");
+        throw new Error("Missing schedule day");
+      }
+
+      return selectedDay;
     }
 
     return "daily";
