@@ -59,6 +59,11 @@
       margin-bottom: 10px;
     }
 
+    label {
+      font-size: 18px;
+      font-weight: bold;
+    }
+
     input, select, textarea {
       width: 100%;
       font-size: 20px;
@@ -101,11 +106,6 @@
     }
 
     .back {
-      background: #555 !important;
-      color: white !important;
-    }
-
-    .gray {
       background: #555 !important;
       color: white !important;
     }
@@ -170,7 +170,8 @@
       padding: 10px;
     }
 
-    #message {
+    #adminMessage,
+    #employeeMessage {
       text-align: center;
       font-size: 18px;
       font-weight: bold;
@@ -214,7 +215,7 @@
 
 <div class="card">
 
-  <div id="view2">
+  <div id="adminView2">
 
     <div class="view-center">
       <div class="view-tag">ADMIN VIEW 2</div>
@@ -223,12 +224,12 @@
     <h2>Admin Dashboard</h2>
 
     <label>Assignment</label>
-    <input id="assignmentInput" value="Housekeeping">
+    <input id="adminAssignmentInput" value="HK Schedule 1">
 
-    <button onclick="openCategory('Common Area')">COMMON AREA</button>
-    <button onclick="openCategory('Weekly Room')">WEEKLY ROOM</button>
-    <button onclick="openCategory('Daily Room')">DAILY ROOM</button>
-    <button onclick="openCategory('Dehumidifier')">DEHUMIDIFIER</button>
+    <button onclick="openAdminCategory('Common Area')">COMMON AREA</button>
+    <button onclick="openAdminCategory('Weekly Room')">WEEKLY ROOM</button>
+    <button onclick="openAdminCategory('Daily Room')">DAILY ROOM</button>
+    <button onclick="openAdminCategory('Dehumidifier')">DEHUMIDIFIER</button>
 
     <button class="yellow" onclick="openEmployees()">EMPLOYEES</button>
 
@@ -236,53 +237,57 @@
 
   </div>
 
-  <div id="view3" class="hidden">
+  <div id="adminAreaView" class="hidden">
 
     <div class="view-center">
       <div class="view-tag">ADMIN VIEW 3</div>
     </div>
 
-    <h2 id="categoryTitle"></h2>
+    <h2 id="adminCategoryTitle"></h2>
 
-    <button class="green" onclick="openNewAreaTask()">ADD NEW AREA TASK</button>
+    <button class="green" onclick="openNewAdminArea()">
+      ADD NEW AREA
+    </button>
 
-    <div id="areaButtons" class="rooms-grid"></div>
+    <div id="adminAreaButtons" class="rooms-grid"></div>
 
     <button class="back" onclick="backToAdminHome()">BACK</button>
 
   </div>
 
-  <div id="view4" class="hidden">
+  <div id="adminAreaEditorView" class="hidden">
 
     <div class="view-center">
-      <div class="view-tag">ADMIN EDIT TASK</div>
+      <div class="view-tag">ADMIN AREA EDIT</div>
     </div>
 
-    <h2 id="areaTitle"></h2>
+    <h2 id="adminAreaEditorTitle">Area Editor</h2>
 
     <label>Area Name</label>
-    <input id="editAreaInput">
+    <input id="adminEditAreaInput">
+
+    <label>Assignment</label>
+    <input id="adminEditAssignmentInput">
 
     <label>Category</label>
-    <select id="editCategoryInput">
+    <select id="adminEditCategoryInput">
       <option>Common Area</option>
       <option>Weekly Room</option>
       <option>Daily Room</option>
       <option>Dehumidifier</option>
     </select>
 
-    <label>Assignment</label>
-    <input id="editAssignmentInput">
-
     <h3>Sub Tasks</h3>
 
-    <div id="subtaskList"></div>
+    <div id="adminSubtaskList"></div>
 
-    <h3>Add Sub Task</h3>
+    <h3>Add New Sub Task</h3>
 
-    <input id="newTaskNameInput" placeholder="Sub task name">
+    <label>Sub Task Name</label>
+    <input id="adminNewTaskInput" placeholder="Example: Clean sink">
 
-    <select id="newTaskScheduleInput">
+    <label>Schedule Day</label>
+    <select id="adminNewScheduleInput">
       <option value="daily">daily</option>
       <option value="Sunday">Sunday</option>
       <option value="Monday">Monday</option>
@@ -293,19 +298,28 @@
       <option value="Saturday">Saturday</option>
     </select>
 
-    <button class="green" onclick="addSubTask()">ADD SUB TASK</button>
+    <label>Schedule Date</label>
+    <input id="adminNewDateInput" type="date">
 
-    <button class="green" onclick="saveAreaChanges()">SAVE AREA CHANGES</button>
+    <label>Start Time</label>
+    <input id="adminNewStartTimeInput" type="time">
 
-    <button class="red" onclick="deleteWholeArea()">DELETE WHOLE AREA</button>
+    <label>End Time</label>
+    <input id="adminNewEndTimeInput" type="time">
 
-    <p id="message"></p>
+    <button class="green" onclick="addAdminSubtask()">ADD SUB TASK</button>
 
-    <button class="back" onclick="backToAreas()">BACK</button>
+    <button class="green" onclick="saveAdminAreaChanges()">SAVE AREA CHANGES</button>
+
+    <button class="red" onclick="deleteAdminArea()">DELETE WHOLE AREA</button>
+
+    <p id="adminMessage"></p>
+
+    <button class="back" onclick="backToAdminAreas()">BACK</button>
 
   </div>
 
-  <div id="view5" class="hidden">
+  <div id="adminEmployeesView" class="hidden">
 
     <div class="view-center">
       <div class="view-tag">ADMIN EMPLOYEES</div>
@@ -321,7 +335,7 @@
 
   </div>
 
-  <div id="view6" class="hidden">
+  <div id="adminEmployeeEditorView" class="hidden">
 
     <div class="view-center">
       <div class="view-tag">EDIT EMPLOYEE</div>
@@ -398,11 +412,12 @@
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
 
-  let selectedCategory = "";
-  let selectedArea = "";
-  let selectedAssignment = "";
-  let currentAreaTasks = [];
-  let allCategoryTasks = [];
+  let adminSelectedCategory = "";
+  let adminSelectedAssignment = "";
+  let adminSelectedArea = "";
+
+  let adminAllCategoryTasks = [];
+  let adminCurrentAreaTasks = [];
 
   let currentEmployeeId = "";
   let currentEmployeeData = null;
@@ -415,73 +430,81 @@
     document.getElementById("loadingScreen").classList.add("hidden");
   }
 
-  function showView(num) {
-    [2, 3, 4, 5, 6].forEach(function(viewNumber) {
-      document.getElementById("view" + viewNumber).classList.add("hidden");
+  function showAdminView(viewId) {
+    [
+      "adminView2",
+      "adminAreaView",
+      "adminAreaEditorView",
+      "adminEmployeesView",
+      "adminEmployeeEditorView"
+    ].forEach(function(id) {
+      document.getElementById(id).classList.add("hidden");
     });
 
-    document.getElementById("view" + num).classList.remove("hidden");
+    document.getElementById(viewId).classList.remove("hidden");
   }
 
-  function getAssignment() {
-    return document.getElementById("assignmentInput").value.trim() || "Housekeeping";
+  function getAdminAssignment() {
+    return document.getElementById("adminAssignmentInput").value.trim() || "HK Schedule 1";
   }
 
-  async function openCategory(category) {
-    selectedCategory = category;
-    selectedAssignment = getAssignment();
+  async function openAdminCategory(category) {
+    adminSelectedCategory = category;
+    adminSelectedAssignment = getAdminAssignment();
 
-    document.getElementById("categoryTitle").innerText = category;
+    document.getElementById("adminCategoryTitle").innerText = category;
 
-    await loadCategoryAreas();
+    await loadAdminCategoryAreas();
 
-    showView(3);
+    showAdminView("adminAreaView");
   }
 
-  async function loadCategoryAreas() {
+  async function loadAdminCategoryAreas() {
     showLoading();
 
     const taskQuery = query(
       collection(db, "tasks"),
-      where("assignment", "==", selectedAssignment),
-      where("category", "==", selectedCategory)
+      where("assignment", "==", adminSelectedAssignment),
+      where("category", "==", adminSelectedCategory)
     );
 
     const taskSnap = await getDocs(taskQuery);
 
-    allCategoryTasks = taskSnap.docs.map(function(taskDoc) {
+    adminAllCategoryTasks = taskSnap.docs.map(function(taskDoc) {
       return {
         id: taskDoc.id,
         ...taskDoc.data()
       };
     });
 
-    drawAreaButtons();
+    drawAdminAreaButtons();
 
     hideLoading();
   }
 
-  function drawAreaButtons() {
-    const box = document.getElementById("areaButtons");
+  function drawAdminAreaButtons() {
+    const box = document.getElementById("adminAreaButtons");
     box.innerHTML = "";
 
-    const areas = [...new Set(allCategoryTasks.map(function(task) {
+    const areas = [...new Set(adminAllCategoryTasks.map(function(task) {
       return task.area;
     }))];
 
     areas.forEach(function(area) {
-      const areaTasks = allCategoryTasks.filter(function(task) {
+      const areaTasks = adminAllCategoryTasks.filter(function(task) {
         return task.area === area;
       });
 
       const btn = document.createElement("button");
 
+      btn.className = "red";
+
       btn.innerHTML =
-        '<div class="room-number">' + area + '</div>' +
+        '<div class="room-number">' + escapeHtml(area) + '</div>' +
         '<div class="room-counter">' + areaTasks.length + ' TASKS</div>';
 
       btn.onclick = function() {
-        openAreaEditor(area);
+        openAdminAreaEditor(area);
       };
 
       box.appendChild(btn);
@@ -494,54 +517,61 @@
     }
   }
 
-  function openAreaEditor(area) {
-    selectedArea = area;
+  function openAdminAreaEditor(area) {
+    adminSelectedArea = area;
 
-    currentAreaTasks = allCategoryTasks.filter(function(task) {
+    adminCurrentAreaTasks = adminAllCategoryTasks.filter(function(task) {
       return task.area === area;
     });
 
-    document.getElementById("areaTitle").innerText = area;
-    document.getElementById("editAreaInput").value = area;
-    document.getElementById("editCategoryInput").value = selectedCategory;
-    document.getElementById("editAssignmentInput").value = selectedAssignment;
-    document.getElementById("message").innerText = "";
+    document.getElementById("adminAreaEditorTitle").innerText = area;
+    document.getElementById("adminEditAreaInput").value = area;
+    document.getElementById("adminEditAssignmentInput").value = adminSelectedAssignment;
+    document.getElementById("adminEditCategoryInput").value = adminSelectedCategory;
+    document.getElementById("adminMessage").innerText = "";
+    document.getElementById("adminNewTaskInput").value = "";
+    document.getElementById("adminNewDateInput").value = "";
+    document.getElementById("adminNewStartTimeInput").value = "";
+    document.getElementById("adminNewEndTimeInput").value = "";
 
-    drawSubTasks();
+    drawAdminSubtasks();
 
-    showView(4);
+    showAdminView("adminAreaEditorView");
   }
 
-  function openNewAreaTask() {
-    selectedArea = "";
-    currentAreaTasks = [];
+  function openNewAdminArea() {
+    adminSelectedArea = "";
+    adminCurrentAreaTasks = [];
 
-    document.getElementById("areaTitle").innerText = "New Area Task";
-    document.getElementById("editAreaInput").value = "";
-    document.getElementById("editCategoryInput").value = selectedCategory;
-    document.getElementById("editAssignmentInput").value = selectedAssignment;
-    document.getElementById("newTaskNameInput").value = "";
-    document.getElementById("message").innerText = "";
+    document.getElementById("adminAreaEditorTitle").innerText = "New Area";
+    document.getElementById("adminEditAreaInput").value = "";
+    document.getElementById("adminEditAssignmentInput").value = adminSelectedAssignment;
+    document.getElementById("adminEditCategoryInput").value = adminSelectedCategory;
+    document.getElementById("adminMessage").innerText = "";
+    document.getElementById("adminNewTaskInput").value = "";
+    document.getElementById("adminNewDateInput").value = "";
+    document.getElementById("adminNewStartTimeInput").value = "";
+    document.getElementById("adminNewEndTimeInput").value = "";
 
-    drawSubTasks();
+    drawAdminSubtasks();
 
-    showView(4);
+    showAdminView("adminAreaEditorView");
   }
 
-  function drawSubTasks() {
-    const box = document.getElementById("subtaskList");
+  function drawAdminSubtasks() {
+    const box = document.getElementById("adminSubtaskList");
     box.innerHTML = "";
 
-    currentAreaTasks.forEach(function(task, index) {
+    adminCurrentAreaTasks.forEach(function(task, index) {
       const div = document.createElement("div");
       div.className = "task-card";
 
       div.innerHTML =
-        '<label>Task Name</label>' +
-        '<input id="taskName_' + index + '" value="' + escapeHtml(task.task || "") + '">' +
+        '<label>Sub Task Name</label>' +
+        '<input id="adminTaskName_' + index + '" value="' + escapeHtml(task.task || "") + '">' +
 
-        '<label>Schedule</label>' +
-        '<select id="taskSchedule_' + index + '">' +
+        '<label>Schedule Day</label>' +
+        '<select id="adminTaskSchedule_' + index + '">' +
           '<option value="daily">daily</option>' +
           '<option value="Sunday">Sunday</option>' +
           '<option value="Monday">Monday</option>' +
@@ -552,23 +582,41 @@
           '<option value="Saturday">Saturday</option>' +
         '</select>' +
 
+        '<label>Schedule Date</label>' +
+        '<input id="adminTaskDate_' + index + '" type="date">' +
+
+        '<label>Start Time</label>' +
+        '<input id="adminTaskStartTime_' + index + '" type="time">' +
+
+        '<label>End Time</label>' +
+        '<input id="adminTaskEndTime_' + index + '" type="time">' +
+
         '<label>Active</label>' +
-        '<select id="taskActive_' + index + '">' +
+        '<select id="adminTaskActive_' + index + '">' +
           '<option value="true">true</option>' +
           '<option value="false">false</option>' +
         '</select>' +
 
         '<div class="small-row">' +
-          '<button class="green" onclick="saveSingleTask(' + index + ')">SAVE</button>' +
-          '<button class="red" onclick="deleteSingleTask(' + index + ')">DELETE</button>' +
+          '<button class="green" onclick="saveAdminSingleTask(' + index + ')">SAVE</button>' +
+          '<button class="red" onclick="deleteAdminSingleTask(' + index + ')">DELETE</button>' +
         '</div>';
 
       box.appendChild(div);
 
-      document.getElementById("taskSchedule_" + index).value =
+      document.getElementById("adminTaskSchedule_" + index).value =
         task.schedule || "daily";
 
-      document.getElementById("taskActive_" + index).value =
+      document.getElementById("adminTaskDate_" + index).value =
+        task.scheduleDate || "";
+
+      document.getElementById("adminTaskStartTime_" + index).value =
+        task.startTime || "";
+
+      document.getElementById("adminTaskEndTime_" + index).value =
+        task.endTime || "";
+
+      document.getElementById("adminTaskActive_" + index).value =
         task.active === false || task.active === "No" ? "false" : "true";
     });
 
@@ -579,15 +627,19 @@
     }
   }
 
-  async function addSubTask() {
-    const area = document.getElementById("editAreaInput").value.trim();
-    const category = document.getElementById("editCategoryInput").value.trim();
-    const assignment = document.getElementById("editAssignmentInput").value.trim();
-    const taskName = document.getElementById("newTaskNameInput").value.trim();
-    const schedule = document.getElementById("newTaskScheduleInput").value;
+  async function addAdminSubtask() {
+    const area = document.getElementById("adminEditAreaInput").value.trim();
+    const assignment = document.getElementById("adminEditAssignmentInput").value.trim();
+    const category = document.getElementById("adminEditCategoryInput").value.trim();
 
-    if (!area || !category || !assignment || !taskName) {
-      alert("Fill area, category, assignment, and sub task.");
+    const taskName = document.getElementById("adminNewTaskInput").value.trim();
+    const schedule = document.getElementById("adminNewScheduleInput").value;
+    const scheduleDate = document.getElementById("adminNewDateInput").value;
+    const startTime = document.getElementById("adminNewStartTimeInput").value;
+    const endTime = document.getElementById("adminNewEndTimeInput").value;
+
+    if (!area || !assignment || !category || !taskName) {
+      alert("Fill area, assignment, category, and sub task name.");
       return;
     }
 
@@ -599,34 +651,41 @@
       area: area,
       task: taskName,
       schedule: schedule,
+      scheduleDate: scheduleDate,
+      startTime: startTime,
+      endTime: endTime,
       active: true,
       updatedAt: serverTimestamp()
     });
 
-    document.getElementById("newTaskNameInput").value = "";
+    adminSelectedArea = area;
+    adminSelectedAssignment = assignment;
+    adminSelectedCategory = category;
 
-    selectedArea = area;
-    selectedCategory = category;
-    selectedAssignment = assignment;
+    document.getElementById("adminAssignmentInput").value = assignment;
 
-    await loadCategoryAreas();
-    openAreaEditor(area);
+    await loadAdminCategoryAreas();
+    openAdminAreaEditor(area);
 
     hideLoading();
   }
 
-  async function saveSingleTask(index) {
-    const task = currentAreaTasks[index];
+  async function saveAdminSingleTask(index) {
+    const task = adminCurrentAreaTasks[index];
 
-    const area = document.getElementById("editAreaInput").value.trim();
-    const category = document.getElementById("editCategoryInput").value.trim();
-    const assignment = document.getElementById("editAssignmentInput").value.trim();
-    const taskName = document.getElementById("taskName_" + index).value.trim();
-    const schedule = document.getElementById("taskSchedule_" + index).value;
-    const active = document.getElementById("taskActive_" + index).value === "true";
+    const area = document.getElementById("adminEditAreaInput").value.trim();
+    const assignment = document.getElementById("adminEditAssignmentInput").value.trim();
+    const category = document.getElementById("adminEditCategoryInput").value.trim();
 
-    if (!area || !category || !assignment || !taskName) {
-      alert("Fill all fields.");
+    const taskName = document.getElementById("adminTaskName_" + index).value.trim();
+    const schedule = document.getElementById("adminTaskSchedule_" + index).value;
+    const scheduleDate = document.getElementById("adminTaskDate_" + index).value;
+    const startTime = document.getElementById("adminTaskStartTime_" + index).value;
+    const endTime = document.getElementById("adminTaskEndTime_" + index).value;
+    const active = document.getElementById("adminTaskActive_" + index).value === "true";
+
+    if (!area || !assignment || !category || !taskName) {
+      alert("Fill all required fields.");
       return;
     }
 
@@ -638,47 +697,53 @@
       area: area,
       task: taskName,
       schedule: schedule,
+      scheduleDate: scheduleDate,
+      startTime: startTime,
+      endTime: endTime,
       active: active,
       updatedAt: serverTimestamp()
     });
 
-    selectedArea = area;
-    selectedCategory = category;
-    selectedAssignment = assignment;
+    adminSelectedArea = area;
+    adminSelectedAssignment = assignment;
+    adminSelectedCategory = category;
 
-    document.getElementById("assignmentInput").value = assignment;
+    document.getElementById("adminAssignmentInput").value = assignment;
 
-    await loadCategoryAreas();
-    openAreaEditor(area);
+    await loadAdminCategoryAreas();
+    openAdminAreaEditor(area);
 
     hideLoading();
 
-    document.getElementById("message").innerText = "Saved.";
+    document.getElementById("adminMessage").innerText = "Saved.";
   }
 
-  async function saveAreaChanges() {
-    const area = document.getElementById("editAreaInput").value.trim();
-    const category = document.getElementById("editCategoryInput").value.trim();
-    const assignment = document.getElementById("editAssignmentInput").value.trim();
+  async function saveAdminAreaChanges() {
+    const area = document.getElementById("adminEditAreaInput").value.trim();
+    const assignment = document.getElementById("adminEditAssignmentInput").value.trim();
+    const category = document.getElementById("adminEditCategoryInput").value.trim();
 
-    if (!area || !category || !assignment) {
-      alert("Fill area, category, and assignment.");
+    if (!area || !assignment || !category) {
+      alert("Fill area, assignment, and category.");
       return;
     }
 
-    if (currentAreaTasks.length === 0) {
+    if (adminCurrentAreaTasks.length === 0) {
       alert("Add at least one sub task.");
       return;
     }
 
     showLoading();
 
-    for (let i = 0; i < currentAreaTasks.length; i++) {
-      const task = currentAreaTasks[i];
+    for (let i = 0; i < adminCurrentAreaTasks.length; i++) {
+      const task = adminCurrentAreaTasks[i];
 
-      const taskName = document.getElementById("taskName_" + i).value.trim();
-      const schedule = document.getElementById("taskSchedule_" + i).value;
-      const active = document.getElementById("taskActive_" + i).value === "true";
+      const taskName = document.getElementById("adminTaskName_" + i).value.trim();
+      const schedule = document.getElementById("adminTaskSchedule_" + i).value;
+      const scheduleDate = document.getElementById("adminTaskDate_" + i).value;
+      const startTime = document.getElementById("adminTaskStartTime_" + i).value;
+      const endTime = document.getElementById("adminTaskEndTime_" + i).value;
+      const active = document.getElementById("adminTaskActive_" + i).value === "true";
 
       await updateDoc(doc(db, "tasks", task.id), {
         assignment: assignment,
@@ -686,47 +751,52 @@
         area: area,
         task: taskName,
         schedule: schedule,
+        scheduleDate: scheduleDate,
+        startTime: startTime,
+        endTime: endTime,
         active: active,
         updatedAt: serverTimestamp()
       });
     }
 
-    selectedArea = area;
-    selectedCategory = category;
-    selectedAssignment = assignment;
+    adminSelectedArea = area;
+    adminSelectedAssignment = assignment;
+    adminSelectedCategory = category;
 
-    document.getElementById("assignmentInput").value = assignment;
+    document.getElementById("adminAssignmentInput").value = assignment;
 
-    await loadCategoryAreas();
-    openAreaEditor(area);
+    await loadAdminCategoryAreas();
+    openAdminAreaEditor(area);
 
     hideLoading();
 
-    document.getElementById("message").innerText = "Area saved.";
+    document.getElementById("adminMessage").innerText = "Area saved.";
   }
 
-  async function deleteSingleTask(index) {
-    const task = currentAreaTasks[index];
+  async function deleteAdminSingleTask(index) {
+    const task = adminCurrentAreaTasks[index];
 
-    const ok = confirm("Delete this task?");
+    const ok = confirm("Delete this sub task?");
     if (!ok) return;
 
     showLoading();
 
     await deleteDoc(doc(db, "tasks", task.id));
 
-    await loadCategoryAreas();
+    await loadAdminCategoryAreas();
 
-    if (selectedArea) {
-      openAreaEditor(selectedArea);
+    if (adminSelectedArea) {
+      openAdminAreaEditor(adminSelectedArea);
+    } else {
+      showAdminView("adminAreaView");
     }
 
     hideLoading();
   }
 
-  async function deleteWholeArea() {
-    if (currentAreaTasks.length === 0) {
-      backToAreas();
+  async function deleteAdminArea() {
+    if (adminCurrentAreaTasks.length === 0) {
+      backToAdminAreas();
       return;
     }
 
@@ -735,15 +805,20 @@
 
     showLoading();
 
-    for (let i = 0; i < currentAreaTasks.length; i++) {
-      await deleteDoc(doc(db, "tasks", currentAreaTasks[i].id));
+    for (let i = 0; i < adminCurrentAreaTasks.length; i++) {
+      await deleteDoc(doc(db, "tasks", adminCurrentAreaTasks[i].id));
     }
 
-    await loadCategoryAreas();
+    await loadAdminCategoryAreas();
 
     hideLoading();
 
-    showView(3);
+    showAdminView("adminAreaView");
+  }
+
+  async function backToAdminAreas() {
+    await loadAdminCategoryAreas();
+    showAdminView("adminAreaView");
   }
 
   async function openEmployees() {
@@ -771,8 +846,8 @@
         "Employee";
 
       btn.innerHTML =
-        '<div class="room-number">' + name + '</div>' +
-        '<div class="room-counter">PIN: ' + (emp.pin || "") + '</div>';
+        '<div class="room-number">' + escapeHtml(name) + '</div>' +
+        '<div class="room-counter">PIN: ' + escapeHtml(emp.pin || "") + '</div>';
 
       btn.onclick = function() {
         openEmployeeEditor(emp);
@@ -789,7 +864,7 @@
 
     hideLoading();
 
-    showView(5);
+    showAdminView("adminEmployeesView");
   }
 
   function openNewEmployee() {
@@ -805,7 +880,7 @@
     document.getElementById("empActive").value = "true";
     document.getElementById("employeeMessage").innerText = "";
 
-    showView(6);
+    showAdminView("adminEmployeeEditorView");
   }
 
   function openEmployeeEditor(emp) {
@@ -828,7 +903,7 @@
       emp.active === false ? "false" : "true";
     document.getElementById("employeeMessage").innerText = "";
 
-    showView(6);
+    showAdminView("adminEmployeeEditorView");
   }
 
   async function saveEmployee() {
@@ -888,12 +963,7 @@
   }
 
   function backToAdminHome() {
-    showView(2);
-  }
-
-  async function backToAreas() {
-    await loadCategoryAreas();
-    showView(3);
+    showAdminView("adminView2");
   }
 
   function goLogin() {
@@ -908,19 +978,22 @@
       .replace(/"/g, "&quot;");
   }
 
-  window.openCategory = openCategory;
-  window.openNewAreaTask = openNewAreaTask;
-  window.addSubTask = addSubTask;
-  window.saveSingleTask = saveSingleTask;
-  window.saveAreaChanges = saveAreaChanges;
-  window.deleteSingleTask = deleteSingleTask;
-  window.deleteWholeArea = deleteWholeArea;
+  window.openAdminCategory = openAdminCategory;
+  window.openNewAdminArea = openNewAdminArea;
+  window.openAdminAreaEditor = openAdminAreaEditor;
+  window.addAdminSubtask = addAdminSubtask;
+  window.saveAdminSingleTask = saveAdminSingleTask;
+  window.saveAdminAreaChanges = saveAdminAreaChanges;
+  window.deleteAdminSingleTask = deleteAdminSingleTask;
+  window.deleteAdminArea = deleteAdminArea;
+  window.backToAdminAreas = backToAdminAreas;
+
   window.openEmployees = openEmployees;
   window.openNewEmployee = openNewEmployee;
   window.saveEmployee = saveEmployee;
   window.deleteEmployee = deleteEmployee;
+
   window.backToAdminHome = backToAdminHome;
-  window.backToAreas = backToAreas;
   window.goLogin = goLogin;
 
 </script>
