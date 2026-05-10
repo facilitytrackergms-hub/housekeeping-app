@@ -201,7 +201,8 @@
     }
 
     #adminMessage,
-    #employeeMessage {
+    #employeeMessage,
+    #reassignMessage {
       text-align: center;
       font-size: 16px;
       font-weight: bold;
@@ -348,6 +349,20 @@
       <option>Daily Laundry Check</option>
     </select>
 
+    <div id="adminAreaScheduleBox" class="hidden">
+      <label>Schedule Day</label>
+      <select id="adminAreaScheduleInput" onchange="changeAdminAreaScheduleDay()">
+        <option value="">Select day</option>
+        <option>Monday</option>
+        <option>Tuesday</option>
+        <option>Wednesday</option>
+        <option>Thursday</option>
+        <option>Friday</option>
+        <option>Saturday</option>
+        <option>Sunday</option>
+      </select>
+    </div>
+
     <h3>Sub Tasks</h3>
 
     <button class="green" onclick="openNewAdminSubTask()">ADD NEW SUB TASK</button>
@@ -396,7 +411,7 @@
 
     <div class="button-row-three">
       <button class="green" onclick="saveAdminAreaOnly()">SAVE</button>
-      <button class="red" onclick="deleteAdminArea()">DELETE AREA</button>
+      <button class="red" id="deleteAreaButton" onclick="deleteAdminArea()">DELETE AREA</button>
       <button class="back" onclick="backToAdminAreas()">BACK</button>
     </div>
 
@@ -480,10 +495,118 @@
 
   </div>
 
+  <!-- =========================
+       12 - ADMIN VIEW 10 - REASSIGN AREAS
+  ========================== -->
+
+  <div id="adminReassignView" class="hidden">
+
+    <div class="view-center">
+      <div class="view-tag">ADMIN VIEW 10</div>
+    </div>
+
+    <h2>Reassign Areas</h2>
+
+    <label>From Assignment</label>
+    <select id="reassignFromAssignment" onchange="loadReassignAreas()">
+      <option>HK Schedule 1</option>
+      <option>HK Schedule 2</option>
+      <option>Laundry</option>
+    </select>
+
+    <label>Category</label>
+    <select id="reassignFromCategory" onchange="drawReassignAreas()">
+      <option value="">Select category</option>
+      <option>Common Area</option>
+      <option>Weekly Room</option>
+      <option>Daily Room</option>
+      <option>Dehumidifier</option>
+      <option>Weekly Laundry</option>
+      <option>Daily Laundry Check</option>
+    </select>
+
+    <input id="reassignSearchInput" placeholder="Search area" oninput="drawReassignAreas()">
+
+    <div id="reassignAreaButtons" class="rooms-grid"></div>
+
+    <button class="back" onclick="backToAdminCategories()">BACK</button>
+
+  </div>
+
+  <!-- =========================
+       13 - ADMIN VIEW 10-1 - MOVE / RESCHEDULE AREA
+  ========================== -->
+
+  <div id="adminReassignEditView" class="hidden">
+
+    <div class="view-center">
+      <div class="view-tag">ADMIN VIEW 10-1</div>
+    </div>
+
+    <h2>Move / Reschedule</h2>
+
+    <label>Current Area</label>
+    <input id="reassignCurrentAreaInput" disabled>
+
+    <label>Move To Assignment</label>
+    <select id="reassignToAssignment">
+      <option>HK Schedule 1</option>
+      <option>HK Schedule 2</option>
+      <option>Laundry</option>
+    </select>
+
+    <label>Move To Category</label>
+    <select id="reassignToCategory">
+      <option>Common Area</option>
+      <option>Weekly Room</option>
+      <option>Daily Room</option>
+      <option>Dehumidifier</option>
+      <option>Weekly Laundry</option>
+      <option>Daily Laundry Check</option>
+    </select>
+
+    <label>Move To Area Name</label>
+    <input id="reassignToAreaInput">
+
+    <label>From Schedule Day</label>
+    <select id="reassignFromDay">
+      <option value="">All / Not weekly</option>
+      <option>Monday</option>
+      <option>Tuesday</option>
+      <option>Wednesday</option>
+      <option>Thursday</option>
+      <option>Friday</option>
+      <option>Saturday</option>
+      <option>Sunday</option>
+    </select>
+
+    <label>To Schedule Day</label>
+    <select id="reassignToDay">
+      <option value="">Keep same / Not weekly</option>
+      <option>Monday</option>
+      <option>Tuesday</option>
+      <option>Wednesday</option>
+      <option>Thursday</option>
+      <option>Friday</option>
+      <option>Saturday</option>
+      <option>Sunday</option>
+    </select>
+
+    <div class="button-row">
+      <button class="green" onclick="saveReassignArea()">SAVE CHANGE</button>
+      <button class="red" onclick="deleteReassignSelected()">DELETE SELECTED</button>
+    </div>
+
+    <p id="reassignMessage"></p>
+
+    <button class="back" onclick="openReassignView()">BACK</button>
+
+  </div>
+
 </div>
 
 <!-- =========================
-     12 - LOADING SCREEN HTML
+     14 - LOADING SCREEN HTML
 ========================== -->
 
 <div id="loadingScreen" class="loading-bg hidden">
@@ -493,7 +616,7 @@
 <script type="module">
 
   /* =========================
-     13 - FIREBASE IMPORTS
+     15 - FIREBASE IMPORTS
   ========================== */
 
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
@@ -512,7 +635,7 @@
   } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
   /* =========================
-     14 - FIREBASE CONFIG
+     16 - FIREBASE CONFIG
   ========================== */
 
   const firebaseConfig = {
@@ -529,7 +652,7 @@
   const db = getFirestore(app);
 
   /* =========================
-     15 - SESSION DATA
+     17 - SESSION DATA
   ========================== */
 
   const sessionData = JSON.parse(sessionStorage.getItem("currentEmployee"));
@@ -539,7 +662,7 @@
   }
 
   /* =========================
-     16 - GLOBAL ADMIN VARIABLES
+     18 - GLOBAL ADMIN VARIABLES
   ========================== */
 
   let currentAssignment =
@@ -551,6 +674,7 @@
 
   let selectedCategory = "";
   let selectedArea = "";
+  let selectedAreaScheduleDay = "";
   let adminAreaSearchTerm = "";
 
   let allTasksForDay = [];
@@ -563,8 +687,11 @@
   let currentEditingTaskIndex = -1;
   let originalEditingTaskName = "";
 
+  let reassignTasks = [];
+  let reassignSelectedArea = "";
+
   /* =========================
-     17 - ADMIN STARTUP
+     19 - ADMIN STARTUP
   ========================== */
 
   startAdmin();
@@ -576,7 +703,7 @@
   }
 
   /* =========================
-     18 - LOADING FUNCTIONS
+     20 - LOADING FUNCTIONS
   ========================== */
 
   function showLoading() {
@@ -588,7 +715,7 @@
   }
 
   /* =========================
-     19 - VIEW SWITCHING
+     21 - VIEW SWITCHING
   ========================== */
 
   function showAdminView(viewId) {
@@ -597,7 +724,9 @@
       "adminAreaView",
       "adminEditView",
       "adminEmployeesView",
-      "adminEmployeeEditView"
+      "adminEmployeeEditView",
+      "adminReassignView",
+      "adminReassignEditView"
     ].forEach(function(id) {
       document.getElementById(id).classList.add("hidden");
     });
@@ -624,7 +753,7 @@
   }
 
   /* =========================
-     20 - DATE FUNCTIONS
+     22 - DATE FUNCTIONS
   ========================== */
 
   function getTodayISO() {
@@ -668,7 +797,7 @@
   }
 
   /* =========================
-     21 - ASSIGNMENT CHANGE
+     23 - ASSIGNMENT CHANGE
   ========================== */
 
   async function changeAdminAssignment() {
@@ -678,7 +807,7 @@
   }
 
   /* =========================
-     22 - LOAD TASKS FROM FIRESTORE
+     24 - LOAD TASKS FROM FIRESTORE
   ========================== */
 
   async function loadAdminTasks() {
@@ -741,7 +870,7 @@
   }
 
   /* =========================
-     23 - UPDATE TASK NAME OPTIONS
+     25 - UPDATE TASK NAME OPTIONS
   ========================== */
 
   function updateTaskNameOptions() {
@@ -766,7 +895,7 @@
   }
 
   /* =========================
-     24 - DRAW CATEGORY BUTTONS
+     26 - DRAW CATEGORY BUTTONS
   ========================== */
 
   function drawAdminCategories() {
@@ -775,8 +904,8 @@
 
     const buttons =
       currentAssignment === "Laundry"
-        ? ["Weekly Laundry", "Daily Laundry Check", "Employees", "Logout"]
-        : ["Common Area", "Weekly Room", "Daily Room", "Dehumidifier", "Employees", "Logout"];
+        ? ["Weekly Laundry", "Daily Laundry Check", "Reassign", "Employees", "Logout"]
+        : ["Common Area", "Weekly Room", "Daily Room", "Dehumidifier", "Reassign", "Employees", "Logout"];
 
     buttons.forEach(function(item) {
       const btn = document.createElement("button");
@@ -791,6 +920,8 @@
 
         if (item === "Employees") {
           btn.onclick = openEmployees;
+        } else if (item === "Reassign") {
+          btn.onclick = openReassignView;
         } else {
           btn.onclick = function() {
             selectedCategory = item;
@@ -807,7 +938,7 @@
   }
 
   /* =========================
-     25 - DRAW AREA BUTTONS
+     27 - DRAW AREA BUTTONS
   ========================== */
 
   function drawAdminAreaButtons(category) {
@@ -883,7 +1014,7 @@
   }
 
   /* =========================
-     26 - SEARCH AREAS
+     28 - SEARCH AREAS
   ========================== */
 
   function searchAdminAreas() {
@@ -904,7 +1035,7 @@
   }
 
   /* =========================
-     27 - AREA VIEW NUMBER LABEL
+     29 - AREA VIEW NUMBER LABEL
   ========================== */
 
   function setAdminAreaViewTag(category) {
@@ -928,7 +1059,7 @@
   }
 
   /* =========================
-     28 - WEEKLY DATE PICKER VISIBILITY
+     30 - WEEKLY DATE PICKER VISIBILITY
   ========================== */
 
   function setAdminAreaDatePickerVisibility(category) {
@@ -945,7 +1076,7 @@
   }
 
   /* =========================
-     29 - OPEN EXISTING AREA EDITOR
+     31 - OPEN EXISTING AREA EDITOR
   ========================== */
 
   function openAdminEditArea(area) {
@@ -956,14 +1087,21 @@
         return task.area === area && task.category === selectedCategory;
       });
 
+    selectedAreaScheduleDay = "";
+
+    if (selectedCategory === "Weekly Room" || selectedCategory === "Weekly Laundry") {
+      selectedAreaScheduleDay = currentWorkDayName;
+    }
+
     document.getElementById("adminEditTitle").innerText = area;
     document.getElementById("adminEditAreaInput").value = area;
     document.getElementById("adminEditAssignmentInput").value = currentAssignment;
     document.getElementById("adminEditCategoryInput").value = selectedCategory;
+    document.getElementById("adminAreaScheduleInput").value = selectedAreaScheduleDay;
     document.getElementById("adminMessage").innerText = "";
 
     updateAssignmentTitles();
-
+    setAreaScheduleBoxVisibility();
     closeAdminSubTaskEditor();
     drawAdminSubTaskButtons();
 
@@ -971,21 +1109,27 @@
   }
 
   /* =========================
-     30 - OPEN NEW AREA EDITOR
+     32 - OPEN NEW AREA EDITOR
   ========================== */
 
   function openNewAdminArea() {
     selectedArea = "";
     currentAreaTasks = [];
+    selectedAreaScheduleDay = "";
+
+    if (selectedCategory === "Weekly Room" || selectedCategory === "Weekly Laundry") {
+      selectedAreaScheduleDay = currentWorkDayName;
+    }
 
     document.getElementById("adminEditTitle").innerText = "New Area";
     document.getElementById("adminEditAreaInput").value = "";
     document.getElementById("adminEditAssignmentInput").value = "";
     document.getElementById("adminEditCategoryInput").value = selectedCategory;
+    document.getElementById("adminAreaScheduleInput").value = selectedAreaScheduleDay;
     document.getElementById("adminMessage").innerText = "";
 
     updateAssignmentTitles();
-
+    setAreaScheduleBoxVisibility();
     closeAdminSubTaskEditor();
     drawAdminSubTaskButtons();
 
@@ -993,14 +1137,53 @@
   }
 
   /* =========================
-     31 - DRAW SUB TASK BUTTONS
+     33 - AREA SCHEDULE DAY
+  ========================== */
+
+  function setAreaScheduleBoxVisibility() {
+    const box = document.getElementById("adminAreaScheduleBox");
+    const deleteButton = document.getElementById("deleteAreaButton");
+
+    if (selectedCategory === "Weekly Room" || selectedCategory === "Weekly Laundry") {
+      box.classList.remove("hidden");
+      deleteButton.innerText = "DELETE DAY";
+    } else {
+      box.classList.add("hidden");
+      deleteButton.innerText = "DELETE AREA";
+    }
+  }
+
+  function changeAdminAreaScheduleDay() {
+    selectedAreaScheduleDay =
+      document.getElementById("adminAreaScheduleInput").value;
+
+    closeAdminSubTaskEditor();
+    drawAdminSubTaskButtons();
+  }
+
+  /* =========================
+     34 - DRAW SUB TASK BUTTONS
   ========================== */
 
   function drawAdminSubTaskButtons() {
     const box = document.getElementById("adminSubtaskButtons");
     box.innerHTML = "";
 
-    currentAreaTasks.forEach(function(task, index) {
+    let tasksToShow = currentAreaTasks;
+
+    if (selectedCategory === "Weekly Room" || selectedCategory === "Weekly Laundry") {
+      tasksToShow =
+        currentAreaTasks.filter(function(task) {
+          return task.schedule === selectedAreaScheduleDay;
+        });
+    }
+
+    tasksToShow.forEach(function(task) {
+      const realIndex =
+        currentAreaTasks.findIndex(function(item) {
+          return item.id === task.id;
+        });
+
       const btn = document.createElement("button");
 
       btn.className = "red";
@@ -1010,7 +1193,7 @@
         '<div class="room-counter">' + escapeHtml(task.schedule || "") + '</div>';
 
       btn.onclick = function() {
-        openAdminSubTaskEditor(index);
+        openAdminSubTaskEditor(realIndex);
       };
 
       box.appendChild(btn);
@@ -1024,7 +1207,7 @@
   }
 
   /* =========================
-     32 - OPEN SUB TASK EDITOR
+     35 - OPEN SUB TASK EDITOR
   ========================== */
 
   function openAdminSubTaskEditor(index) {
@@ -1054,7 +1237,7 @@
   }
 
   /* =========================
-     33 - OPEN NEW SUB TASK
+     36 - OPEN NEW SUB TASK
   ========================== */
 
   function openNewAdminSubTask() {
@@ -1069,7 +1252,7 @@
       "New Sub Task";
 
     document.getElementById("adminTaskNameInput").value = "";
-    document.getElementById("adminTaskScheduleInput").value = "";
+    document.getElementById("adminTaskScheduleInput").value = selectedAreaScheduleDay || "";
 
     setSaveAllWeeklyButtonVisibility();
     setTaskScheduleBoxVisibility();
@@ -1079,7 +1262,7 @@
   }
 
   /* =========================
-     34 - CLOSE SUB TASK EDITOR
+     37 - CLOSE SUB TASK EDITOR
   ========================== */
 
   function closeAdminSubTaskEditor() {
@@ -1091,7 +1274,7 @@
   }
 
   /* =========================
-     35 - SAVE ALL WEEKLY BUTTON VISIBILITY
+     38 - SAVE ALL WEEKLY BUTTON VISIBILITY
   ========================== */
 
   function setSaveAllWeeklyButtonVisibility() {
@@ -1115,7 +1298,7 @@
   }
 
   /* =========================
-     36 - SAVE AREA ONLY
+     39 - SAVE AREA ONLY
   ========================== */
 
   async function saveAdminAreaOnly() {
@@ -1166,7 +1349,7 @@
   }
 
   /* =========================
-     37 - SAVE SUB TASK
+     40 - SAVE SUB TASK
   ========================== */
 
   async function saveAdminSubTask() {
@@ -1217,8 +1400,10 @@
     currentAssignment = assignment;
     selectedCategory = category;
     selectedArea = area;
+    selectedAreaScheduleDay = schedule;
 
     document.getElementById("adminAssignmentSelect").value = assignment;
+    document.getElementById("adminAreaScheduleInput").value = schedule;
 
     await loadAdminTasks();
     openAdminEditArea(area);
@@ -1229,7 +1414,7 @@
   }
 
   /* =========================
-     38 - SAVE SUB TASK TO ALL WEEKLY ROOMS
+     41 - SAVE SUB TASK TO ALL WEEKLY ROOMS
   ========================== */
 
   async function saveAdminSubTaskToAllWeeklyRooms() {
@@ -1281,7 +1466,8 @@
             task.assignment === assignment &&
             task.category === category &&
             task.area === area &&
-            task.task === taskNameToMatch
+            task.task === taskNameToMatch &&
+            task.schedule === schedule
           );
         });
 
@@ -1308,6 +1494,7 @@
 
     currentAssignment = assignment;
     selectedCategory = category;
+    selectedAreaScheduleDay = schedule;
 
     await loadAdminTasks();
     openAdminEditArea(selectedArea);
@@ -1318,7 +1505,7 @@
   }
 
   /* =========================
-     39 - DELETE SUB TASK
+     42 - DELETE SUB TASK
   ========================== */
 
   async function deleteAdminSubTask() {
@@ -1346,7 +1533,7 @@
   }
 
   /* =========================
-     40 - DELETE WHOLE AREA
+     43 - DELETE WHOLE AREA / DAY
   ========================== */
 
   async function deleteAdminArea() {
@@ -1355,24 +1542,50 @@
       return;
     }
 
-    const ok = confirm("Delete this whole area and all sub tasks?");
+    let tasksToDelete = currentAreaTasks;
+    let confirmText = "Delete this whole area and all sub tasks?";
+
+    if (selectedCategory === "Weekly Room" || selectedCategory === "Weekly Laundry") {
+      if (!selectedAreaScheduleDay) {
+        alert("Select schedule day.");
+        return;
+      }
+
+      tasksToDelete =
+        currentAreaTasks.filter(function(task) {
+          return task.schedule === selectedAreaScheduleDay;
+        });
+
+      confirmText = "Delete only " + selectedAreaScheduleDay + " tasks for this room?";
+    }
+
+    if (tasksToDelete.length === 0) {
+      alert("No tasks found for this day.");
+      return;
+    }
+
+    const ok = confirm(confirmText);
     if (!ok) return;
 
     showLoading();
 
-    for (let i = 0; i < currentAreaTasks.length; i++) {
-      await deleteDoc(doc(db, "tasks", currentAreaTasks[i].id));
+    for (let i = 0; i < tasksToDelete.length; i++) {
+      await deleteDoc(doc(db, "tasks", tasksToDelete[i].id));
     }
 
     await loadAdminTasks();
 
-    hideLoading();
+    if (selectedArea) {
+      openAdminEditArea(selectedArea);
+    } else {
+      showAdminView("adminAreaView");
+    }
 
-    showAdminView("adminAreaView");
+    hideLoading();
   }
 
   /* =========================
-     41 - BACK BUTTONS
+     44 - BACK BUTTONS
   ========================== */
 
   async function backToAdminAreas() {
@@ -1388,7 +1601,7 @@
   }
 
   /* =========================
-     42 - OPEN EMPLOYEES
+     45 - OPEN EMPLOYEES
   ========================== */
 
   async function openEmployees() {
@@ -1440,7 +1653,7 @@
   }
 
   /* =========================
-     43 - OPEN NEW EMPLOYEE
+     46 - OPEN NEW EMPLOYEE
   ========================== */
 
   function openNewEmployee() {
@@ -1461,7 +1674,7 @@
   }
 
   /* =========================
-     44 - OPEN EXISTING EMPLOYEE
+     47 - OPEN EXISTING EMPLOYEE
   ========================== */
 
   function openEmployeeEditor(emp) {
@@ -1489,7 +1702,7 @@
   }
 
   /* =========================
-     45 - SAVE EMPLOYEE
+     48 - SAVE EMPLOYEE
   ========================== */
 
   async function saveEmployee() {
@@ -1533,7 +1746,7 @@
   }
 
   /* =========================
-     46 - DELETE EMPLOYEE
+     49 - DELETE EMPLOYEE
   ========================== */
 
   async function deleteEmployee() {
@@ -1555,7 +1768,226 @@
   }
 
   /* =========================
-     47 - LOGOUT
+     50 - REASSIGN VIEW
+  ========================== */
+
+  async function openReassignView() {
+    document.getElementById("reassignFromAssignment").value = currentAssignment;
+    document.getElementById("reassignFromCategory").value = "";
+    document.getElementById("reassignSearchInput").value = "";
+    document.getElementById("reassignAreaButtons").innerHTML = "";
+
+    await loadReassignAreas();
+
+    showAdminView("adminReassignView");
+  }
+
+  async function loadReassignAreas() {
+    const fromAssignment = document.getElementById("reassignFromAssignment").value;
+
+    showLoading();
+
+    const taskQuery = query(
+      collection(db, "tasks"),
+      where("assignment", "==", fromAssignment)
+    );
+
+    const taskSnap = await getDocs(taskQuery);
+
+    reassignTasks =
+      taskSnap.docs.map(function(taskDoc) {
+        return {
+          id: taskDoc.id,
+          ...taskDoc.data()
+        };
+      });
+
+    hideLoading();
+
+    drawReassignAreas();
+  }
+
+  function drawReassignAreas() {
+    const box = document.getElementById("reassignAreaButtons");
+    box.innerHTML = "";
+
+    const category = document.getElementById("reassignFromCategory").value;
+    const search = document.getElementById("reassignSearchInput").value.trim().toLowerCase();
+
+    if (!category) return;
+
+    let areas =
+      [...new Set(reassignTasks.filter(function(task) {
+        return task.category === category;
+      }).map(function(task) {
+        return task.area;
+      }).filter(function(area) {
+        return String(area || "").trim() !== "";
+      }))];
+
+    if (search) {
+      areas =
+        areas.filter(function(area) {
+          return String(area || "").toLowerCase().includes(search);
+        });
+    }
+
+    areas.forEach(function(area) {
+      const count =
+        reassignTasks.filter(function(task) {
+          return task.category === category && task.area === area;
+        }).length;
+
+      const btn = document.createElement("button");
+
+      btn.className = "red";
+
+      btn.innerHTML =
+        '<div class="room-number">' + escapeHtml(area) + '</div>' +
+        '<div class="room-counter">' + count + ' TASKS</div>';
+
+      btn.onclick = function() {
+        openReassignEdit(area);
+      };
+
+      box.appendChild(btn);
+    });
+  }
+
+  /* =========================
+     51 - REASSIGN EDIT VIEW
+  ========================== */
+
+  function openReassignEdit(area) {
+    const fromAssignment = document.getElementById("reassignFromAssignment").value;
+    const fromCategory = document.getElementById("reassignFromCategory").value;
+
+    reassignSelectedArea = area;
+
+    document.getElementById("reassignCurrentAreaInput").value = area;
+    document.getElementById("reassignToAssignment").value = fromAssignment;
+    document.getElementById("reassignToCategory").value = fromCategory;
+    document.getElementById("reassignToAreaInput").value = area;
+    document.getElementById("reassignFromDay").value = "";
+    document.getElementById("reassignToDay").value = "";
+    document.getElementById("reassignMessage").innerText = "";
+
+    showAdminView("adminReassignEditView");
+  }
+
+  async function saveReassignArea() {
+    const fromAssignment = document.getElementById("reassignFromAssignment").value;
+    const fromCategory = document.getElementById("reassignFromCategory").value;
+
+    const toAssignment = document.getElementById("reassignToAssignment").value;
+    const toCategory = document.getElementById("reassignToCategory").value;
+    const toArea = document.getElementById("reassignToAreaInput").value.trim();
+
+    const fromDay = document.getElementById("reassignFromDay").value;
+    const toDay = document.getElementById("reassignToDay").value;
+
+    if (!fromAssignment || !fromCategory || !reassignSelectedArea || !toAssignment || !toCategory || !toArea) {
+      alert("Fill all required fields.");
+      return;
+    }
+
+    let tasksToUpdate =
+      reassignTasks.filter(function(task) {
+        return (
+          task.assignment === fromAssignment &&
+          task.category === fromCategory &&
+          task.area === reassignSelectedArea
+        );
+      });
+
+    if (fromDay) {
+      tasksToUpdate =
+        tasksToUpdate.filter(function(task) {
+          return task.schedule === fromDay;
+        });
+    }
+
+    if (tasksToUpdate.length === 0) {
+      alert("No tasks found.");
+      return;
+    }
+
+    const ok = confirm("Save changes to " + tasksToUpdate.length + " tasks?");
+    if (!ok) return;
+
+    showLoading();
+
+    for (let i = 0; i < tasksToUpdate.length; i++) {
+      const updateData = {
+        assignment: toAssignment,
+        category: toCategory,
+        area: toArea,
+        updatedAt: serverTimestamp()
+      };
+
+      if (toDay) {
+        updateData.schedule = toDay;
+      }
+
+      await updateDoc(doc(db, "tasks", tasksToUpdate[i].id), updateData);
+    }
+
+    currentAssignment = toAssignment;
+    document.getElementById("adminAssignmentSelect").value = currentAssignment;
+
+    await loadAdminTasks();
+    await loadReassignAreas();
+
+    hideLoading();
+
+    document.getElementById("reassignMessage").innerText = "Saved.";
+  }
+
+  async function deleteReassignSelected() {
+    const fromAssignment = document.getElementById("reassignFromAssignment").value;
+    const fromCategory = document.getElementById("reassignFromCategory").value;
+    const fromDay = document.getElementById("reassignFromDay").value;
+
+    let tasksToDelete =
+      reassignTasks.filter(function(task) {
+        return (
+          task.assignment === fromAssignment &&
+          task.category === fromCategory &&
+          task.area === reassignSelectedArea
+        );
+      });
+
+    if (fromDay) {
+      tasksToDelete =
+        tasksToDelete.filter(function(task) {
+          return task.schedule === fromDay;
+        });
+    }
+
+    if (tasksToDelete.length === 0) {
+      alert("No tasks found.");
+      return;
+    }
+
+    const ok = confirm("Delete " + tasksToDelete.length + " selected tasks?");
+    if (!ok) return;
+
+    showLoading();
+
+    for (let i = 0; i < tasksToDelete.length; i++) {
+      await deleteDoc(doc(db, "tasks", tasksToDelete[i].id));
+    }
+
+    await loadAdminTasks();
+    await loadReassignAreas();
+
+    hideLoading();
+
+    showAdminView("adminReassignView");
+  }
+
+  /* =========================
+     52 - LOGOUT
   ========================== */
 
   function logout() {
@@ -1564,7 +1996,7 @@
   }
 
   /* =========================
-     48 - HTML ESCAPE HELPER
+     53 - HTML ESCAPE HELPER
   ========================== */
 
   function escapeHtml(value) {
@@ -1576,7 +2008,7 @@
   }
 
   /* =========================
-     49 - DEFAULT SCHEDULE HELPER
+     54 - DEFAULT SCHEDULE HELPER
   ========================== */
 
   function getDefaultScheduleForCategory(category) {
@@ -1603,15 +2035,16 @@
   }
 
   /* =========================
-     50 - WINDOW FUNCTIONS - DATE / ASSIGNMENT
+     55 - WINDOW FUNCTIONS - DATE / ASSIGNMENT
   ========================== */
 
   window.changeAdminWorkDateFromBigPicker = changeAdminWorkDateFromBigPicker;
   window.changeAdminAssignment = changeAdminAssignment;
   window.searchAdminAreas = searchAdminAreas;
+  window.changeAdminAreaScheduleDay = changeAdminAreaScheduleDay;
 
   /* =========================
-     51 - WINDOW FUNCTIONS - ADMIN TASKS
+     56 - WINDOW FUNCTIONS - ADMIN TASKS
   ========================== */
 
   window.openNewAdminArea = openNewAdminArea;
@@ -1627,7 +2060,7 @@
   window.backToAdminCategories = backToAdminCategories;
 
   /* =========================
-     52 - WINDOW FUNCTIONS - EMPLOYEES
+     57 - WINDOW FUNCTIONS - EMPLOYEES
   ========================== */
 
   window.openEmployees = openEmployees;
@@ -1636,7 +2069,17 @@
   window.deleteEmployee = deleteEmployee;
 
   /* =========================
-     53 - WINDOW FUNCTIONS - LOGOUT
+     58 - WINDOW FUNCTIONS - REASSIGN
+  ========================== */
+
+  window.openReassignView = openReassignView;
+  window.loadReassignAreas = loadReassignAreas;
+  window.drawReassignAreas = drawReassignAreas;
+  window.saveReassignArea = saveReassignArea;
+  window.deleteReassignSelected = deleteReassignSelected;
+
+  /* =========================
+     59 - WINDOW FUNCTIONS - LOGOUT
   ========================== */
 
   window.logout = logout;
