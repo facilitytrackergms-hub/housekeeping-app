@@ -202,8 +202,7 @@
     }
 
     #adminMessage,
-    #employeeMessage,
-    #assignmentMessage {
+    #employeeMessage {
       text-align: center;
       font-size: 16px;
       font-weight: bold;
@@ -266,42 +265,20 @@
     </div>
 
     <h2 id="adminName">Welcome, Admin</h2>
-    <h3 id="currentAssignmentTitle">HK Schedule 1</h3>
+
+    <label>Assignment</label>
+    <select id="adminAssignmentSelect" onchange="changeAdminAssignment()">
+      <option>HK Schedule 1</option>
+      <option>HK Schedule 2</option>
+      <option>Laundry</option>
+    </select>
 
     <div id="adminCategoryButtons" class="rooms-grid"></div>
 
   </div>
 
   <!-- =========================
-       09 - ADMIN VIEW 2-1 - ASSIGNMENTS
-  ========================== -->
-
-  <div id="adminAssignmentView" class="hidden">
-
-    <div class="view-center">
-      <div class="view-tag">ADMIN VIEW 2-1</div>
-    </div>
-
-    <h2>Assignments</h2>
-
-    <label>Current Assignment</label>
-    <select id="adminAssignmentSelect" onchange="changeAdminAssignment()"></select>
-
-    <input id="newAssignmentInput" placeholder="New assignment name">
-
-    <div class="button-row">
-      <button class="green" onclick="addAssignment()">ADD</button>
-      <button class="red" onclick="deleteSelectedAssignment()">DELETE</button>
-    </div>
-
-    <p id="assignmentMessage"></p>
-
-    <button class="back" onclick="backToAdminCategories()">BACK</button>
-
-  </div>
-
-  <!-- =========================
-       10 - ADMIN VIEW 3 / 4 / 5 / 6 - AREA LIST
+       09 - ADMIN VIEW 3 / 4 / 5 / 6 - AREA LIST
   ========================== -->
 
   <div id="adminAreaView" class="hidden">
@@ -333,7 +310,7 @@
   </div>
 
   <!-- =========================
-       11 - ADMIN VIEW 7 - EDIT AREA / TASKS
+       10 - ADMIN VIEW 7 - EDIT AREA / TASKS
   ========================== -->
 
   <div id="adminEditView" class="hidden">
@@ -348,7 +325,12 @@
     <input id="adminEditAreaInput">
 
     <label>Assignment</label>
-    <select id="adminEditAssignmentInput"></select>
+    <select id="adminEditAssignmentInput">
+      <option value="">Select assignment</option>
+      <option>HK Schedule 1</option>
+      <option>HK Schedule 2</option>
+      <option>Laundry</option>
+    </select>
 
     <select id="adminEditCategoryInput" class="hidden">
       <option value="">Select category</option>
@@ -398,7 +380,7 @@
   </div>
 
   <!-- =========================
-       12 - ADMIN VIEW 8 - EMPLOYEES LIST
+       11 - ADMIN VIEW 8 - EMPLOYEES LIST
   ========================== -->
 
   <div id="adminEmployeesView" class="hidden">
@@ -418,7 +400,7 @@
   </div>
 
   <!-- =========================
-       13 - ADMIN VIEW 9 - EDIT EMPLOYEE
+       12 - ADMIN VIEW 9 - EDIT EMPLOYEE
   ========================== -->
 
   <div id="adminEmployeeEditView" class="hidden">
@@ -439,7 +421,12 @@
     <input id="empPin">
 
     <label>Assignment</label>
-    <select id="empAssignment"></select>
+    <select id="empAssignment">
+      <option value="">Select assignment</option>
+      <option>HK Schedule 1</option>
+      <option>HK Schedule 2</option>
+      <option>Laundry</option>
+    </select>
 
     <label>Role</label>
     <select id="empRole">
@@ -469,7 +456,7 @@
 </div>
 
 <!-- =========================
-     14 - LOADING SCREEN HTML
+     13 - LOADING SCREEN HTML
 ========================== -->
 
 <div id="loadingScreen" class="loading-bg hidden">
@@ -479,7 +466,7 @@
 <script type="module">
 
   /* =========================
-     15 - FIREBASE IMPORTS
+     14 - FIREBASE IMPORTS
   ========================== */
 
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
@@ -498,7 +485,7 @@
   } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
   /* =========================
-     16 - FIREBASE CONFIG
+     15 - FIREBASE CONFIG
   ========================== */
 
   const firebaseConfig = {
@@ -515,7 +502,7 @@
   const db = getFirestore(app);
 
   /* =========================
-     17 - SESSION DATA
+     16 - SESSION DATA
   ========================== */
 
   const sessionData = JSON.parse(sessionStorage.getItem("currentEmployee"));
@@ -531,7 +518,7 @@
     "Admin";
 
   /* =========================
-     18 - GLOBAL ADMIN VARIABLES
+     17 - GLOBAL ADMIN VARIABLES
   ========================== */
 
   let currentAssignment =
@@ -549,13 +536,12 @@
   let currentAreaTasks = [];
 
   let currentEmployeeId = "";
-  let assignmentList = [];
 
   let currentEditingTaskId = "";
   let currentEditingTaskIndex = -1;
 
   /* =========================
-     19 - ADMIN STARTUP
+     18 - ADMIN STARTUP
   ========================== */
 
   document.getElementById("adminName").innerText =
@@ -564,15 +550,13 @@
   startAdmin();
 
   async function startAdmin() {
-    await loadAssignments();
-    renderAllAssignmentSelects();
     document.getElementById("adminAssignmentSelect").value = currentAssignment;
     await loadAdminTasks();
     showAdminView("adminView2");
   }
 
   /* =========================
-     20 - LOADING FUNCTIONS
+     19 - LOADING FUNCTIONS
   ========================== */
 
   function showLoading() {
@@ -584,13 +568,12 @@
   }
 
   /* =========================
-     21 - VIEW SWITCHING
+     20 - VIEW SWITCHING
   ========================== */
 
   function showAdminView(viewId) {
     [
       "adminView2",
-      "adminAssignmentView",
       "adminAreaView",
       "adminEditView",
       "adminEmployeesView",
@@ -603,7 +586,7 @@
   }
 
   /* =========================
-     22 - DATE FUNCTIONS
+     21 - DATE FUNCTIONS
   ========================== */
 
   function getTodayISO() {
@@ -647,165 +630,23 @@
   }
 
   /* =========================
-     23 - ASSIGNMENT FUNCTIONS
+     22 - ASSIGNMENT CHANGE
   ========================== */
-
-  async function loadAssignments() {
-    assignmentList = [];
-
-    const snap = await getDocs(collection(db, "assignments"));
-
-    snap.docs.forEach(function(itemDoc) {
-      const data = itemDoc.data();
-      const name = String(data.name || "").trim();
-
-      if (name) {
-        assignmentList.push({
-          id: itemDoc.id,
-          name: name
-        });
-      }
-    });
-
-    if (assignmentList.length === 0) {
-      assignmentList = [
-        { id: "", name: "HK Schedule 1" },
-        { id: "", name: "HK Schedule 2" },
-        { id: "", name: "Laundry" }
-      ];
-    }
-  }
-
-  function renderAllAssignmentSelects() {
-    renderAssignmentSelect("adminAssignmentSelect", false);
-    renderAssignmentSelect("adminEditAssignmentInput", true);
-    renderAssignmentSelect("empAssignment", true);
-  }
-
-  function renderAssignmentSelect(selectId, includeBlank) {
-    const select = document.getElementById(selectId);
-    select.innerHTML = "";
-
-    if (includeBlank) {
-      const blank = document.createElement("option");
-      blank.value = "";
-      blank.innerText = "Select assignment";
-      select.appendChild(blank);
-    }
-
-    assignmentList.forEach(function(item) {
-      const option = document.createElement("option");
-      option.value = item.name;
-      option.innerText = item.name;
-      select.appendChild(option);
-    });
-  }
-
-  function openAssignmentManager() {
-    renderAllAssignmentSelects();
-    document.getElementById("adminAssignmentSelect").value = currentAssignment;
-    document.getElementById("assignmentMessage").innerText = "";
-    showAdminView("adminAssignmentView");
-  }
 
   async function changeAdminAssignment() {
     currentAssignment = document.getElementById("adminAssignmentSelect").value;
     await loadAdminTasks();
-    showAdminView("adminAssignmentView");
-  }
-
-  async function addAssignment() {
-    const input = document.getElementById("newAssignmentInput");
-    const name = input.value.trim();
-
-    if (!name) {
-      alert("Enter assignment name.");
-      return;
-    }
-
-    const exists = assignmentList.some(function(item) {
-      return item.name.toLowerCase() === name.toLowerCase();
-    });
-
-    if (exists) {
-      alert("Assignment already exists.");
-      return;
-    }
-
-    showLoading();
-
-    await addDoc(collection(db, "assignments"), {
-      name: name,
-      active: true,
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp()
-    });
-
-    input.value = "";
-    currentAssignment = name;
-
-    await loadAssignments();
-    renderAllAssignmentSelects();
-
-    document.getElementById("adminAssignmentSelect").value = name;
-
-    await loadAdminTasks();
-
-    hideLoading();
-
-    document.getElementById("assignmentMessage").innerText = "Saved.";
-  }
-
-  async function deleteSelectedAssignment() {
-    const selected = document.getElementById("adminAssignmentSelect").value;
-
-    if (!selected) {
-      alert("Select assignment.");
-      return;
-    }
-
-    const ok = confirm("Delete assignment: " + selected + "? This will not delete tasks already saved with that assignment.");
-    if (!ok) return;
-
-    const assignmentItem = assignmentList.find(function(item) {
-      return item.name === selected;
-    });
-
-    showLoading();
-
-    if (assignmentItem && assignmentItem.id) {
-      await deleteDoc(doc(db, "assignments", assignmentItem.id));
-    }
-
-    await loadAssignments();
-    renderAllAssignmentSelects();
-
-    if (assignmentList.length > 0) {
-      currentAssignment = assignmentList[0].name;
-    } else {
-      currentAssignment = "HK Schedule 1";
-    }
-
-    document.getElementById("adminAssignmentSelect").value = currentAssignment;
-
-    await loadAdminTasks();
-
-    hideLoading();
-
-    document.getElementById("assignmentMessage").innerText = "Deleted.";
+    showAdminView("adminView2");
   }
 
   /* =========================
-     24 - LOAD TASKS FROM FIRESTORE
+     23 - LOAD TASKS FROM FIRESTORE
   ========================== */
 
   async function loadAdminTasks() {
     showLoading();
 
     updateDateDisplay();
-
-    document.getElementById("currentAssignmentTitle").innerText =
-      currentAssignment;
 
     document.getElementById("adminAreaDateTitle").innerText =
       currentWorkDayName;
@@ -858,7 +699,7 @@
   }
 
   /* =========================
-     24-1 - UPDATE TASK NAME OPTIONS
+     23-1 - UPDATE TASK NAME OPTIONS
   ========================== */
 
   function updateTaskNameOptions() {
@@ -883,7 +724,7 @@
   }
 
   /* =========================
-     25 - DRAW CATEGORY BUTTONS
+     24 - DRAW CATEGORY BUTTONS
   ========================== */
 
   function drawAdminCategories() {
@@ -892,8 +733,8 @@
 
     const buttons =
       currentAssignment === "Laundry"
-        ? ["Assignments", "Weekly Laundry", "Daily Laundry Check", "Employees", "Logout"]
-        : ["Assignments", "Common Area", "Weekly Room", "Daily Room", "Dehumidifier", "Employees", "Logout"];
+        ? ["Weekly Laundry", "Daily Laundry Check", "Employees", "Logout"]
+        : ["Common Area", "Weekly Room", "Daily Room", "Dehumidifier", "Employees", "Logout"];
 
     buttons.forEach(function(item) {
       const btn = document.createElement("button");
@@ -906,9 +747,7 @@
       } else {
         btn.className = "yellow";
 
-        if (item === "Assignments") {
-          btn.onclick = openAssignmentManager;
-        } else if (item === "Employees") {
+        if (item === "Employees") {
           btn.onclick = openEmployees;
         } else {
           btn.onclick = function() {
@@ -924,7 +763,7 @@
   }
 
   /* =========================
-     26 - DRAW AREA BUTTONS
+     25 - DRAW AREA BUTTONS
   ========================== */
 
   function drawAdminAreaButtons(category) {
@@ -979,7 +818,7 @@
   }
 
   /* =========================
-     27 - AREA VIEW NUMBER LABEL
+     26 - AREA VIEW NUMBER LABEL
   ========================== */
 
   function setAdminAreaViewTag(category) {
@@ -1003,7 +842,7 @@
   }
 
   /* =========================
-     28 - WEEKLY DATE PICKER VISIBILITY
+     27 - WEEKLY DATE PICKER VISIBILITY
   ========================== */
 
   function setAdminAreaDatePickerVisibility(category) {
@@ -1020,7 +859,7 @@
   }
 
   /* =========================
-     29 - OPEN EXISTING AREA EDITOR
+     28 - OPEN EXISTING AREA EDITOR
   ========================== */
 
   function openAdminEditArea(area) {
@@ -1044,7 +883,7 @@
   }
 
   /* =========================
-     30 - OPEN NEW AREA EDITOR
+     29 - OPEN NEW AREA EDITOR
   ========================== */
 
   function openNewAdminArea() {
@@ -1064,7 +903,7 @@
   }
 
   /* =========================
-     31 - DRAW SUB TASK BUTTONS
+     30 - DRAW SUB TASK BUTTONS
   ========================== */
 
   function drawAdminSubTaskButtons() {
@@ -1095,7 +934,7 @@
   }
 
   /* =========================
-     32 - OPEN SUB TASK EDITOR
+     31 - OPEN SUB TASK EDITOR
   ========================== */
 
   function openAdminSubTaskEditor(index) {
@@ -1117,7 +956,7 @@
   }
 
   /* =========================
-     33 - OPEN NEW SUB TASK
+     32 - OPEN NEW SUB TASK
   ========================== */
 
   function openNewAdminSubTask() {
@@ -1136,7 +975,7 @@
   }
 
   /* =========================
-     34 - CLOSE SUB TASK EDITOR
+     33 - CLOSE SUB TASK EDITOR
   ========================== */
 
   function closeAdminSubTaskEditor() {
@@ -1147,7 +986,7 @@
   }
 
   /* =========================
-     35 - SAVE AREA ONLY
+     34 - SAVE AREA ONLY
   ========================== */
 
   async function saveAdminAreaOnly() {
@@ -1197,7 +1036,7 @@
   }
 
   /* =========================
-     36 - SAVE SUB TASK
+     35 - SAVE SUB TASK
   ========================== */
 
   async function saveAdminSubTask() {
@@ -1253,7 +1092,7 @@
   }
 
   /* =========================
-     37 - DELETE SUB TASK
+     36 - DELETE SUB TASK
   ========================== */
 
   async function deleteAdminSubTask() {
@@ -1281,7 +1120,7 @@
   }
 
   /* =========================
-     38 - DELETE WHOLE AREA
+     37 - DELETE WHOLE AREA
   ========================== */
 
   async function deleteAdminArea() {
@@ -1307,7 +1146,7 @@
   }
 
   /* =========================
-     39 - BACK BUTTONS
+     38 - BACK BUTTONS
   ========================== */
 
   async function backToAdminAreas() {
@@ -1323,7 +1162,7 @@
   }
 
   /* =========================
-     40 - OPEN EMPLOYEES
+     39 - OPEN EMPLOYEES
   ========================== */
 
   async function openEmployees() {
@@ -1373,13 +1212,11 @@
   }
 
   /* =========================
-     41 - OPEN NEW EMPLOYEE
+     40 - OPEN NEW EMPLOYEE
   ========================== */
 
   function openNewEmployee() {
     currentEmployeeId = "";
-
-    renderAllAssignmentSelects();
 
     document.getElementById("employeeEditTitle").innerText = "New Employee";
     document.getElementById("empFirstName").value = "";
@@ -1394,13 +1231,11 @@
   }
 
   /* =========================
-     42 - OPEN EXISTING EMPLOYEE
+     41 - OPEN EXISTING EMPLOYEE
   ========================== */
 
   function openEmployeeEditor(emp) {
     currentEmployeeId = emp.id;
-
-    renderAllAssignmentSelects();
 
     const name =
       ((emp.firstName || "") + " " + (emp.lastName || "")).trim() ||
@@ -1422,7 +1257,7 @@
   }
 
   /* =========================
-     43 - SAVE EMPLOYEE
+     42 - SAVE EMPLOYEE
   ========================== */
 
   async function saveEmployee() {
@@ -1466,7 +1301,7 @@
   }
 
   /* =========================
-     44 - DELETE EMPLOYEE
+     43 - DELETE EMPLOYEE
   ========================== */
 
   async function deleteEmployee() {
@@ -1488,7 +1323,7 @@
   }
 
   /* =========================
-     45 - LOGOUT
+     44 - LOGOUT
   ========================== */
 
   function logout() {
@@ -1497,7 +1332,7 @@
   }
 
   /* =========================
-     46 - HTML ESCAPE HELPER
+     45 - HTML ESCAPE HELPER
   ========================== */
 
   function escapeHtml(value) {
@@ -1509,7 +1344,7 @@
   }
 
   /* =========================
-     47 - DEFAULT SCHEDULE HELPER
+     46 - DEFAULT SCHEDULE HELPER
   ========================== */
 
   function getDefaultScheduleForCategory(category) {
@@ -1521,17 +1356,14 @@
   }
 
   /* =========================
-     48 - WINDOW FUNCTIONS - DATE / ASSIGNMENT
+     47 - WINDOW FUNCTIONS - DATE / ASSIGNMENT
   ========================== */
 
   window.changeAdminWorkDateFromBigPicker = changeAdminWorkDateFromBigPicker;
   window.changeAdminAssignment = changeAdminAssignment;
-  window.openAssignmentManager = openAssignmentManager;
-  window.addAssignment = addAssignment;
-  window.deleteSelectedAssignment = deleteSelectedAssignment;
 
   /* =========================
-     49 - WINDOW FUNCTIONS - ADMIN TASKS
+     48 - WINDOW FUNCTIONS - ADMIN TASKS
   ========================== */
 
   window.openNewAdminArea = openNewAdminArea;
@@ -1546,7 +1378,7 @@
   window.backToAdminCategories = backToAdminCategories;
 
   /* =========================
-     50 - WINDOW FUNCTIONS - EMPLOYEES
+     49 - WINDOW FUNCTIONS - EMPLOYEES
   ========================== */
 
   window.openEmployees = openEmployees;
@@ -1555,7 +1387,7 @@
   window.deleteEmployee = deleteEmployee;
 
   /* =========================
-     51 - WINDOW FUNCTIONS - LOGOUT
+     50 - WINDOW FUNCTIONS - LOGOUT
   ========================== */
 
   window.logout = logout;
