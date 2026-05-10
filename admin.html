@@ -81,10 +81,6 @@
       border: 1px solid #ccc;
     }
 
-    textarea {
-      min-height: 70px;
-    }
-
     button {
       width: 100%;
       border: none;
@@ -131,7 +127,7 @@
     }
 
     /* =========================
-       04 - AREA BUTTON GRID
+       04 - BUTTON GRIDS
     ========================== */
 
     .rooms-grid {
@@ -167,18 +163,6 @@
       margin-top: 2px;
     }
 
-    /* =========================
-       05 - ADMIN EDIT TASK CARDS
-    ========================== */
-
-    .task-card {
-      border: 1px solid #ccc;
-      border-radius: 14px;
-      padding: 10px;
-      margin: 8px 0;
-      background: #fafafa;
-    }
-
     .button-row {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -203,6 +187,18 @@
       font-size: 14px;
       padding: 10px 4px;
       margin: 0;
+    }
+
+    /* =========================
+       05 - ADMIN EDIT TASK CARDS
+    ========================== */
+
+    .task-card {
+      border: 1px solid #ccc;
+      border-radius: 14px;
+      padding: 10px;
+      margin: 8px 0;
+      background: #fafafa;
     }
 
     #adminMessage,
@@ -270,8 +266,25 @@
     </div>
 
     <h2 id="adminName">Welcome, Admin</h2>
+    <h3 id="currentAssignmentTitle">HK Schedule 1</h3>
 
-    <label>Assignment</label>
+    <div id="adminCategoryButtons" class="rooms-grid"></div>
+
+  </div>
+
+  <!-- =========================
+       09 - ADMIN VIEW 2-1 - ASSIGNMENTS
+  ========================== -->
+
+  <div id="adminAssignmentView" class="hidden">
+
+    <div class="view-center">
+      <div class="view-tag">ADMIN VIEW 2-1</div>
+    </div>
+
+    <h2>Assignments</h2>
+
+    <label>Current Assignment</label>
     <select id="adminAssignmentSelect" onchange="changeAdminAssignment()"></select>
 
     <input id="newAssignmentInput" placeholder="New assignment name">
@@ -283,17 +296,12 @@
 
     <p id="assignmentMessage"></p>
 
-    <div id="adminCategoryButtons"></div>
-
-    <div class="button-row">
-      <button class="yellow" onclick="openEmployees()">EMPLOYEES</button>
-      <button class="back" onclick="logout()">LOGOUT</button>
-    </div>
+    <button class="back" onclick="backToAdminCategories()">BACK</button>
 
   </div>
 
   <!-- =========================
-       09 - ADMIN VIEW 3 / 4 / 5 / 6 - AREA LIST
+       10 - ADMIN VIEW 3 / 4 / 5 / 6 - AREA LIST
   ========================== -->
 
   <div id="adminAreaView" class="hidden">
@@ -325,7 +333,7 @@
   </div>
 
   <!-- =========================
-       10 - ADMIN VIEW 7 - EDIT AREA / TASKS
+       11 - ADMIN VIEW 7 - EDIT AREA / TASKS
   ========================== -->
 
   <div id="adminEditView" class="hidden">
@@ -390,7 +398,7 @@
   </div>
 
   <!-- =========================
-       11 - ADMIN VIEW 8 - EMPLOYEES LIST
+       12 - ADMIN VIEW 8 - EMPLOYEES LIST
   ========================== -->
 
   <div id="adminEmployeesView" class="hidden">
@@ -410,7 +418,7 @@
   </div>
 
   <!-- =========================
-       12 - ADMIN VIEW 9 - EDIT EMPLOYEE
+       13 - ADMIN VIEW 9 - EDIT EMPLOYEE
   ========================== -->
 
   <div id="adminEmployeeEditView" class="hidden">
@@ -461,7 +469,7 @@
 </div>
 
 <!-- =========================
-     13 - LOADING SCREEN HTML
+     14 - LOADING SCREEN HTML
 ========================== -->
 
 <div id="loadingScreen" class="loading-bg hidden">
@@ -471,7 +479,7 @@
 <script type="module">
 
   /* =========================
-     14 - FIREBASE IMPORTS
+     15 - FIREBASE IMPORTS
   ========================== */
 
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
@@ -490,7 +498,7 @@
   } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
   /* =========================
-     15 - FIREBASE CONFIG
+     16 - FIREBASE CONFIG
   ========================== */
 
   const firebaseConfig = {
@@ -507,7 +515,7 @@
   const db = getFirestore(app);
 
   /* =========================
-     16 - SESSION DATA
+     17 - SESSION DATA
   ========================== */
 
   const sessionData = JSON.parse(sessionStorage.getItem("currentEmployee"));
@@ -523,7 +531,7 @@
     "Admin";
 
   /* =========================
-     17 - GLOBAL ADMIN VARIABLES
+     18 - GLOBAL ADMIN VARIABLES
   ========================== */
 
   let currentAssignment =
@@ -547,7 +555,7 @@
   let currentEditingTaskIndex = -1;
 
   /* =========================
-     18 - ADMIN STARTUP
+     19 - ADMIN STARTUP
   ========================== */
 
   document.getElementById("adminName").innerText =
@@ -564,7 +572,7 @@
   }
 
   /* =========================
-     19 - LOADING FUNCTIONS
+     20 - LOADING FUNCTIONS
   ========================== */
 
   function showLoading() {
@@ -576,12 +584,13 @@
   }
 
   /* =========================
-     20 - VIEW SWITCHING
+     21 - VIEW SWITCHING
   ========================== */
 
   function showAdminView(viewId) {
     [
       "adminView2",
+      "adminAssignmentView",
       "adminAreaView",
       "adminEditView",
       "adminEmployeesView",
@@ -594,7 +603,7 @@
   }
 
   /* =========================
-     21 - DATE FUNCTIONS
+     22 - DATE FUNCTIONS
   ========================== */
 
   function getTodayISO() {
@@ -638,7 +647,7 @@
   }
 
   /* =========================
-     22 - ASSIGNMENT FUNCTIONS
+     23 - ASSIGNMENT FUNCTIONS
   ========================== */
 
   async function loadAssignments() {
@@ -692,10 +701,17 @@
     });
   }
 
+  function openAssignmentManager() {
+    renderAllAssignmentSelects();
+    document.getElementById("adminAssignmentSelect").value = currentAssignment;
+    document.getElementById("assignmentMessage").innerText = "";
+    showAdminView("adminAssignmentView");
+  }
+
   async function changeAdminAssignment() {
     currentAssignment = document.getElementById("adminAssignmentSelect").value;
     await loadAdminTasks();
-    showAdminView("adminView2");
+    showAdminView("adminAssignmentView");
   }
 
   async function addAssignment() {
@@ -737,7 +753,7 @@
 
     hideLoading();
 
-    document.getElementById("assignmentMessage").innerText = "Assignment added.";
+    document.getElementById("assignmentMessage").innerText = "Saved.";
   }
 
   async function deleteSelectedAssignment() {
@@ -776,17 +792,20 @@
 
     hideLoading();
 
-    document.getElementById("assignmentMessage").innerText = "Assignment deleted.";
+    document.getElementById("assignmentMessage").innerText = "Deleted.";
   }
 
   /* =========================
-     23 - LOAD TASKS FROM FIRESTORE
+     24 - LOAD TASKS FROM FIRESTORE
   ========================== */
 
   async function loadAdminTasks() {
     showLoading();
 
     updateDateDisplay();
+
+    document.getElementById("currentAssignmentTitle").innerText =
+      currentAssignment;
 
     document.getElementById("adminAreaDateTitle").innerText =
       currentWorkDayName;
@@ -839,7 +858,7 @@
   }
 
   /* =========================
-     23-1 - UPDATE TASK NAME OPTIONS
+     24-1 - UPDATE TASK NAME OPTIONS
   ========================== */
 
   function updateTaskNameOptions() {
@@ -864,36 +883,48 @@
   }
 
   /* =========================
-     24 - DRAW CATEGORY BUTTONS
+     25 - DRAW CATEGORY BUTTONS
   ========================== */
 
   function drawAdminCategories() {
     const box = document.getElementById("adminCategoryButtons");
     box.innerHTML = "";
 
-    const categories =
+    const buttons =
       currentAssignment === "Laundry"
-        ? ["Weekly Laundry", "Daily Laundry Check"]
-        : ["Common Area", "Weekly Room", "Daily Room", "Dehumidifier"];
+        ? ["Assignments", "Weekly Laundry", "Daily Laundry Check", "Employees", "Logout"]
+        : ["Assignments", "Common Area", "Weekly Room", "Daily Room", "Dehumidifier", "Employees", "Logout"];
 
-    categories.forEach(function(category) {
+    buttons.forEach(function(item) {
       const btn = document.createElement("button");
 
-      btn.innerText = category;
-      btn.className = "yellow";
+      btn.innerText = item;
 
-      btn.onclick = function() {
-        selectedCategory = category;
-        drawAdminAreaButtons(category);
-        showAdminView("adminAreaView");
-      };
+      if (item === "Logout") {
+        btn.className = "back";
+        btn.onclick = logout;
+      } else {
+        btn.className = "yellow";
+
+        if (item === "Assignments") {
+          btn.onclick = openAssignmentManager;
+        } else if (item === "Employees") {
+          btn.onclick = openEmployees;
+        } else {
+          btn.onclick = function() {
+            selectedCategory = item;
+            drawAdminAreaButtons(item);
+            showAdminView("adminAreaView");
+          };
+        }
+      }
 
       box.appendChild(btn);
     });
   }
 
   /* =========================
-     25 - DRAW AREA BUTTONS
+     26 - DRAW AREA BUTTONS
   ========================== */
 
   function drawAdminAreaButtons(category) {
@@ -948,7 +979,7 @@
   }
 
   /* =========================
-     26 - AREA VIEW NUMBER LABEL
+     27 - AREA VIEW NUMBER LABEL
   ========================== */
 
   function setAdminAreaViewTag(category) {
@@ -972,7 +1003,7 @@
   }
 
   /* =========================
-     27 - WEEKLY DATE PICKER VISIBILITY
+     28 - WEEKLY DATE PICKER VISIBILITY
   ========================== */
 
   function setAdminAreaDatePickerVisibility(category) {
@@ -989,7 +1020,7 @@
   }
 
   /* =========================
-     28 - OPEN EXISTING AREA EDITOR
+     29 - OPEN EXISTING AREA EDITOR
   ========================== */
 
   function openAdminEditArea(area) {
@@ -1013,7 +1044,7 @@
   }
 
   /* =========================
-     29 - OPEN NEW AREA EDITOR
+     30 - OPEN NEW AREA EDITOR
   ========================== */
 
   function openNewAdminArea() {
@@ -1033,7 +1064,7 @@
   }
 
   /* =========================
-     30 - DRAW SUB TASK BUTTONS
+     31 - DRAW SUB TASK BUTTONS
   ========================== */
 
   function drawAdminSubTaskButtons() {
@@ -1064,7 +1095,7 @@
   }
 
   /* =========================
-     31 - OPEN SUB TASK EDITOR
+     32 - OPEN SUB TASK EDITOR
   ========================== */
 
   function openAdminSubTaskEditor(index) {
@@ -1086,7 +1117,7 @@
   }
 
   /* =========================
-     32 - OPEN NEW SUB TASK
+     33 - OPEN NEW SUB TASK
   ========================== */
 
   function openNewAdminSubTask() {
@@ -1105,7 +1136,7 @@
   }
 
   /* =========================
-     33 - CLOSE SUB TASK EDITOR
+     34 - CLOSE SUB TASK EDITOR
   ========================== */
 
   function closeAdminSubTaskEditor() {
@@ -1116,7 +1147,7 @@
   }
 
   /* =========================
-     34 - SAVE AREA ONLY
+     35 - SAVE AREA ONLY
   ========================== */
 
   async function saveAdminAreaOnly() {
@@ -1166,7 +1197,7 @@
   }
 
   /* =========================
-     35 - SAVE SUB TASK
+     36 - SAVE SUB TASK
   ========================== */
 
   async function saveAdminSubTask() {
@@ -1222,7 +1253,7 @@
   }
 
   /* =========================
-     36 - DELETE SUB TASK
+     37 - DELETE SUB TASK
   ========================== */
 
   async function deleteAdminSubTask() {
@@ -1250,7 +1281,7 @@
   }
 
   /* =========================
-     37 - DELETE WHOLE AREA
+     38 - DELETE WHOLE AREA
   ========================== */
 
   async function deleteAdminArea() {
@@ -1276,7 +1307,7 @@
   }
 
   /* =========================
-     38 - BACK BUTTONS
+     39 - BACK BUTTONS
   ========================== */
 
   async function backToAdminAreas() {
@@ -1292,7 +1323,7 @@
   }
 
   /* =========================
-     39 - OPEN EMPLOYEES
+     40 - OPEN EMPLOYEES
   ========================== */
 
   async function openEmployees() {
@@ -1342,7 +1373,7 @@
   }
 
   /* =========================
-     40 - OPEN NEW EMPLOYEE
+     41 - OPEN NEW EMPLOYEE
   ========================== */
 
   function openNewEmployee() {
@@ -1363,7 +1394,7 @@
   }
 
   /* =========================
-     41 - OPEN EXISTING EMPLOYEE
+     42 - OPEN EXISTING EMPLOYEE
   ========================== */
 
   function openEmployeeEditor(emp) {
@@ -1391,7 +1422,7 @@
   }
 
   /* =========================
-     42 - SAVE EMPLOYEE
+     43 - SAVE EMPLOYEE
   ========================== */
 
   async function saveEmployee() {
@@ -1435,7 +1466,7 @@
   }
 
   /* =========================
-     43 - DELETE EMPLOYEE
+     44 - DELETE EMPLOYEE
   ========================== */
 
   async function deleteEmployee() {
@@ -1457,7 +1488,7 @@
   }
 
   /* =========================
-     44 - LOGOUT
+     45 - LOGOUT
   ========================== */
 
   function logout() {
@@ -1466,7 +1497,7 @@
   }
 
   /* =========================
-     45 - HTML ESCAPE HELPER
+     46 - HTML ESCAPE HELPER
   ========================== */
 
   function escapeHtml(value) {
@@ -1478,7 +1509,7 @@
   }
 
   /* =========================
-     46 - DEFAULT SCHEDULE HELPER
+     47 - DEFAULT SCHEDULE HELPER
   ========================== */
 
   function getDefaultScheduleForCategory(category) {
@@ -1490,16 +1521,17 @@
   }
 
   /* =========================
-     47 - WINDOW FUNCTIONS - DATE / ASSIGNMENT
+     48 - WINDOW FUNCTIONS - DATE / ASSIGNMENT
   ========================== */
 
   window.changeAdminWorkDateFromBigPicker = changeAdminWorkDateFromBigPicker;
   window.changeAdminAssignment = changeAdminAssignment;
+  window.openAssignmentManager = openAssignmentManager;
   window.addAssignment = addAssignment;
   window.deleteSelectedAssignment = deleteSelectedAssignment;
 
   /* =========================
-     48 - WINDOW FUNCTIONS - ADMIN TASKS
+     49 - WINDOW FUNCTIONS - ADMIN TASKS
   ========================== */
 
   window.openNewAdminArea = openNewAdminArea;
@@ -1514,7 +1546,7 @@
   window.backToAdminCategories = backToAdminCategories;
 
   /* =========================
-     49 - WINDOW FUNCTIONS - EMPLOYEES
+     50 - WINDOW FUNCTIONS - EMPLOYEES
   ========================== */
 
   window.openEmployees = openEmployees;
@@ -1523,7 +1555,7 @@
   window.deleteEmployee = deleteEmployee;
 
   /* =========================
-     50 - WINDOW FUNCTIONS - LOGOUT
+     51 - WINDOW FUNCTIONS - LOGOUT
   ========================== */
 
   window.logout = logout;
