@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html>
+
 <head>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin Dashboard</title>
@@ -12,77 +13,81 @@
     body {
       margin: 0;
       font-family: Arial, sans-serif;
-      background: #eef2f7;
+      background: #f2f2f2;
       min-height: 100vh;
       display: flex;
       justify-content: center;
       align-items: flex-start;
-      padding: 12px;
+      padding: 10px 8px;
     }
 
     .card {
       width: 100%;
-      max-width: 460px;
+      max-width: 430px;
       background: white;
-      border-radius: 24px;
-      padding: 20px;
-      box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+      border-radius: 20px;
+      padding: 16px;
+      box-shadow: 0 4px 18px rgba(0,0,0,0.18);
+    }
+
+    .view-tag {
+      display: inline-block;
+      background: black;
+      color: white;
+      padding: 4px 10px;
+      border-radius: 8px;
+      font-size: 12px;
+      margin-bottom: 8px;
+    }
+
+    .view-center {
       text-align: center;
     }
 
-    h1 {
-      color: #1847d1;
-      font-size: 32px;
-      margin: 0 0 20px;
+    h2, h3 {
+      text-align: center;
+      margin-top: 0;
     }
 
     h2 {
       font-size: 24px;
-      margin: 8px 0 16px;
+      margin-bottom: 10px;
     }
 
     h3 {
       font-size: 20px;
-      margin: 14px 0 8px;
-    }
-
-    button {
-      width: 100%;
-      padding: 16px;
-      font-size: 22px;
-      font-weight: bold;
-      border: none;
-      border-radius: 16px;
-      background: #2e5cff;
-      color: white;
-      cursor: pointer;
-      margin: 7px 0;
+      margin-bottom: 10px;
     }
 
     input, select, textarea {
       width: 100%;
-      padding: 14px;
       font-size: 20px;
+      padding: 12px;
+      margin: 8px 0 14px;
       border-radius: 14px;
       border: 1px solid #ccc;
-      margin: 6px 0;
-      background: white;
     }
 
     textarea {
-      min-height: 75px;
+      min-height: 80px;
     }
 
-    .gray {
-      background: #555 !important;
-    }
-
-    .red {
-      background: #c62828 !important;
+    button {
+      width: 100%;
+      border: none;
+      border-radius: 14px;
+      background: #1976d2;
+      color: white;
+      font-size: 20px;
+      font-weight: bold;
+      padding: 14px;
+      margin: 6px 0;
+      cursor: pointer;
     }
 
     .green {
       background: #2e7d32 !important;
+      color: white !important;
     }
 
     .yellow {
@@ -90,51 +95,117 @@
       color: black !important;
     }
 
+    .red {
+      background: #c62828 !important;
+      color: white !important;
+    }
+
+    .back {
+      background: #555 !important;
+      color: white !important;
+    }
+
+    .gray {
+      background: #555 !important;
+      color: white !important;
+    }
+
     .hidden {
       display: none !important;
     }
 
-    .item-card {
-      background: #f2f2f2;
+    .rooms-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .rooms-grid button {
+      width: 100%;
+      min-height: 64px;
+      font-size: 18px;
+      padding: 8px 6px;
+      line-height: 1.1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
       border-radius: 14px;
+      margin: 0;
+    }
+
+    .room-number {
+      font-size: 22px;
+      font-weight: bold;
+      line-height: 1.1;
+    }
+
+    .room-counter {
+      font-size: 15px;
+      font-weight: bold;
+      margin-top: 3px;
+    }
+
+    .task-card {
+      border: 1px solid #ccc;
+      border-radius: 16px;
       padding: 12px;
       margin: 10px 0;
-      text-align: left;
-      font-size: 17px;
-      line-height: 1.4;
+      background: #fafafa;
     }
 
-    .item-card button {
-      font-size: 17px;
-      padding: 10px;
-      border-radius: 12px;
-      margin-top: 8px;
+    .task-card h3 {
+      margin-bottom: 6px;
     }
 
-    .top-info {
-      background: #edf2ff;
+    .small-row {
+      display: flex;
+      gap: 8px;
+    }
+
+    .small-row button {
+      flex: 1;
+      font-size: 16px;
       padding: 10px;
-      border-radius: 12px;
+    }
+
+    #message {
+      text-align: center;
       font-size: 18px;
-      margin-bottom: 12px;
+      font-weight: bold;
     }
 
-    .edit-banner {
-      background: #fff3cd;
-      color: #7a5500;
-      padding: 10px;
-      border-radius: 12px;
-      font-weight: bold;
-      margin-bottom: 10px;
+    .loading-bg {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(255,255,255,0.70);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 99999;
     }
 
-    .path-box {
-      background: #eef2f7;
-      padding: 10px;
-      border-radius: 12px;
-      font-size: 18px;
-      margin-bottom: 12px;
-      font-weight: bold;
+    .spinner {
+      width: 70px;
+      height: 70px;
+      border: 8px solid #ddd;
+      border-top: 8px solid #1976d2;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      from {
+        transform: rotate(0deg);
+      }
+
+      to {
+        transform: rotate(360deg);
+      }
     }
   </style>
 </head>
@@ -143,200 +214,158 @@
 
 <div class="card">
 
-  <div id="dashboardView">
-    <h1>Admin Dashboard</h1>
+  <div id="view2">
 
-    <div class="top-info" id="adminInfo">
-      Admin
+    <div class="view-center">
+      <div class="view-tag">ADMIN VIEW 2</div>
     </div>
 
-    <button onclick="showEmployees()">Employees</button>
-    <button onclick="showAreas()">Areas</button>
-    <button onclick="showLogs()">Task Logs</button>
-    <button onclick="showRoomLabels()">Room Labels</button>
+    <h2>Admin Dashboard</h2>
 
-    <button class="gray" onclick="logout()">LOGOUT</button>
+    <label>Assignment</label>
+    <input id="assignmentInput" value="Housekeeping">
+
+    <button onclick="openCategory('Common Area')">COMMON AREA</button>
+    <button onclick="openCategory('Weekly Room')">WEEKLY ROOM</button>
+    <button onclick="openCategory('Daily Room')">DAILY ROOM</button>
+    <button onclick="openCategory('Dehumidifier')">DEHUMIDIFIER</button>
+
+    <button class="yellow" onclick="openEmployees()">EMPLOYEES</button>
+
+    <button class="back" onclick="goLogin()">BACK TO LOGIN</button>
+
   </div>
 
-  <div id="employeesView" class="hidden">
-    <h1>Employees</h1>
+  <div id="view3" class="hidden">
 
-    <button class="gray" onclick="showDashboard()">BACK</button>
-
-    <input id="empFirstName" placeholder="First Name">
-    <input id="empEmployeeId" placeholder="Employee ID">
-    <input id="empPin" placeholder="PIN" type="number">
-
-    <select id="empRole">
-      <option value="">Select Role</option>
-      <option value="Housekeeping">Housekeeping</option>
-      <option value="Admin">Admin</option>
-      <option value="Laundry">Laundry</option>
-    </select>
-
-    <button class="green" onclick="addEmployee()">ADD EMPLOYEE</button>
-
-    <h2>Employee List</h2>
-
-    <div id="employeesList"></div>
-
-    <button class="gray" onclick="showDashboard()">BACK</button>
-  </div>
-
-  <div id="areasScheduleView" class="hidden">
-    <h1>Areas</h1>
-
-    <button class="gray" onclick="showDashboard()">BACK</button>
-
-    <h2>Choose Schedule</h2>
-
-   <button onclick="window.selectAreaSchedule('HK Schedule 1')">HK Schedule 1</button>
-<button onclick="window.selectAreaSchedule('HK Schedule 2')">HK Schedule 2</button>
-<button onclick="window.selectAreaSchedule('Laundry')">Laundry</button>
-  </div>
-
-  <div id="areasCategoryView" class="hidden">
-    <h1>Areas</h1>
-
-    <button class="gray" onclick="showAreas()">BACK</button>
-
-    <div class="path-box" id="categoryPath"></div>
-
-    <h2>Choose Area Type</h2>
-
-    <div id="categoryButtons"></div>
-  </div>
-
-  <div id="subAreaView" class="hidden">
-    <h1>Sub Areas</h1>
-
-    <button class="gray" onclick="backToAreaCategories()">BACK</button>
-
-    <div class="path-box" id="subAreaPath"></div>
-
-    <input id="subAreaSearch" placeholder="Search room / sub area" oninput="loadSubAreas()">
-
-    <h2>Sub Area List</h2>
-
-    <div id="subAreaList"></div>
-
-    <button class="green" onclick="openNewSubArea()">ADD NEW SUB AREA</button>
-  </div>
-
-  <div id="taskManagerView" class="hidden">
-    <h1>Area Tasks</h1>
-
-    <button class="gray" onclick="backToSubAreas()">BACK</button>
-
-    <div class="path-box" id="taskManagerPath"></div>
-
-    <div id="taskEditBanner" class="edit-banner hidden">
-      Editing task
+    <div class="view-center">
+      <div class="view-tag">ADMIN VIEW 3</div>
     </div>
 
-    <select id="taskAssignment">
-      <option value="">Select Schedule</option>
-      <option value="HK Schedule 1">HK Schedule 1</option>
-      <option value="HK Schedule 2">HK Schedule 2</option>
-      <option value="Laundry">Laundry</option>
+    <h2 id="categoryTitle"></h2>
+
+    <button class="green" onclick="openNewAreaTask()">ADD NEW AREA TASK</button>
+
+    <div id="areaButtons" class="rooms-grid"></div>
+
+    <button class="back" onclick="backToAdminHome()">BACK</button>
+
+  </div>
+
+  <div id="view4" class="hidden">
+
+    <div class="view-center">
+      <div class="view-tag">ADMIN EDIT TASK</div>
+    </div>
+
+    <h2 id="areaTitle"></h2>
+
+    <label>Area Name</label>
+    <input id="editAreaInput">
+
+    <label>Category</label>
+    <select id="editCategoryInput">
+      <option>Common Area</option>
+      <option>Weekly Room</option>
+      <option>Daily Room</option>
+      <option>Dehumidifier</option>
     </select>
 
-    <input id="taskArea" placeholder="Room / Area">
+    <label>Assignment</label>
+    <input id="editAssignmentInput">
 
-    <input id="taskName" placeholder="Task Name">
+    <h3>Sub Tasks</h3>
 
-    <select id="taskSchedule">
-      <option value="">Select Day</option>
-      <option value="Daily">Daily</option>
+    <div id="subtaskList"></div>
+
+    <h3>Add Sub Task</h3>
+
+    <input id="newTaskNameInput" placeholder="Sub task name">
+
+    <select id="newTaskScheduleInput">
+      <option value="daily">daily</option>
+      <option value="Sunday">Sunday</option>
       <option value="Monday">Monday</option>
       <option value="Tuesday">Tuesday</option>
       <option value="Wednesday">Wednesday</option>
       <option value="Thursday">Thursday</option>
       <option value="Friday">Friday</option>
       <option value="Saturday">Saturday</option>
-      <option value="Sunday">Sunday</option>
     </select>
 
-    <select id="taskCategory">
-      <option value="">Select Category</option>
-      <option value="Common Area">Common Area</option>
-      <option value="Weekly Room">Weekly Room</option>
-      <option value="Daily Room">Daily Room</option>
-      <option value="Dehumidifier">Dehumidifier</option>
-      <option value="Weekly Laundry">Weekly Laundry</option>
-      <option value="Daily Laundry Check">Daily Laundry Check</option>
-    </select>
+    <button class="green" onclick="addSubTask()">ADD SUB TASK</button>
 
-    <button id="saveTaskButton" class="green" onclick="saveTask()">ADD TASK</button>
-    <button id="cancelTaskEditButton" class="gray hidden" onclick="cancelTaskEdit()">CANCEL EDIT</button>
+    <button class="green" onclick="saveAreaChanges()">SAVE AREA CHANGES</button>
 
-    <h2>Task List</h2>
+    <button class="red" onclick="deleteWholeArea()">DELETE WHOLE AREA</button>
 
-    <input id="taskSearch" placeholder="Search task name" oninput="loadAreaTasks()">
+    <p id="message"></p>
 
-    <div id="areaTaskList"></div>
+    <button class="back" onclick="backToAreas()">BACK</button>
 
-    <button class="gray" onclick="backToSubAreas()">BACK</button>
   </div>
 
-  <div id="logsView" class="hidden">
-    <h1>Task Logs</h1>
+  <div id="view5" class="hidden">
 
-    <button class="gray" onclick="showDashboard()">BACK</button>
+    <div class="view-center">
+      <div class="view-tag">ADMIN EMPLOYEES</div>
+    </div>
 
-    <button onclick="loadLogs()">REFRESH LOGS</button>
+    <h2>Employees</h2>
 
-    <div id="logsList"></div>
+    <button class="green" onclick="openNewEmployee()">ADD EMPLOYEE</button>
 
-    <button class="gray" onclick="showDashboard()">BACK</button>
+    <div id="employeeList"></div>
+
+    <button class="back" onclick="backToAdminHome()">BACK</button>
+
   </div>
 
-  <div id="roomLabelsView" class="hidden">
-    <h1>Room Labels</h1>
+  <div id="view6" class="hidden">
 
-    <button class="gray" onclick="showDashboard()">BACK</button>
+    <div class="view-center">
+      <div class="view-tag">EDIT EMPLOYEE</div>
+    </div>
 
-    <input id="roomNumber" placeholder="Room Number">
+    <h2 id="employeeEditTitle">Employee</h2>
 
-    <select id="occupiedStatus">
-      <option value="">Select Occupancy</option>
-      <option value="Full">Full</option>
-      <option value="Empty">Empty</option>
+    <label>First Name</label>
+    <input id="empFirstName">
+
+    <label>Last Name</label>
+    <input id="empLastName">
+
+    <label>PIN</label>
+    <input id="empPin">
+
+    <label>Assignment</label>
+    <input id="empAssignment">
+
+    <label>Role</label>
+    <select id="empRole">
+      <option value="employee">employee</option>
+      <option value="admin">admin</option>
     </select>
 
-    <select id="moldRisk">
-      <option value="">Select Mold Status</option>
-      <option value="No Mold">No Mold</option>
-      <option value="Mold Watch">Mold Watch</option>
-      <option value="High Mold Risk">High Mold Risk</option>
+    <label>Active</label>
+    <select id="empActive">
+      <option value="true">true</option>
+      <option value="false">false</option>
     </select>
 
-    <select id="smellStatus">
-      <option value="">Select Smell Status</option>
-      <option value="No Smell">No Smell</option>
-      <option value="Smelly">Smelly</option>
-    </select>
+    <button class="green" onclick="saveEmployee()">SAVE EMPLOYEE</button>
+    <button class="red" onclick="deleteEmployee()">DELETE EMPLOYEE</button>
 
-    <textarea id="labelNotes" placeholder="Notes"></textarea>
+    <p id="employeeMessage"></p>
 
-    <button class="green" onclick="saveRoomLabel()">SAVE ROOM LABEL</button>
-    <button class="yellow" onclick="resetRoomLabel()">RESET ROOM FOR NEW RESIDENT</button>
+    <button class="back" onclick="openEmployees()">BACK</button>
 
-    <h2>Search Rooms</h2>
-
-    <select id="roomFilter" onchange="loadRoomLabels()">
-      <option value="ALL">Show All Rooms</option>
-      <option value="Empty">Show Empty Rooms</option>
-      <option value="Mold">Show Mold Risk Rooms</option>
-      <option value="Smelly">Show Smelly Rooms</option>
-      <option value="MoldSmelly">Show Mold + Smelly Rooms</option>
-    </select>
-
-    <div id="roomLabelsList"></div>
-
-    <button class="gray" onclick="showDashboard()">BACK</button>
   </div>
 
+</div>
+
+<div id="loadingScreen" class="loading-bg hidden">
+  <div class="spinner"></div>
 </div>
 
 <script type="module">
@@ -346,10 +375,11 @@
   import {
     getFirestore,
     collection,
-    addDoc,
+    query,
+    where,
     getDocs,
     doc,
-    setDoc,
+    addDoc,
     updateDoc,
     deleteDoc,
     serverTimestamp
@@ -368,789 +398,530 @@
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
 
-  const sessionData = JSON.parse(sessionStorage.getItem("currentEmployee"));
-
-  if (!sessionData || sessionData.role !== "Admin") {
-    window.location.href = "index.html";
-  }
-
-  let selectedSchedule = "";
   let selectedCategory = "";
-  let selectedSubArea = "";
-  let editingTaskId = "";
-  let allLoadedTasks = [];
+  let selectedArea = "";
+  let selectedAssignment = "";
+  let currentAreaTasks = [];
+  let allCategoryTasks = [];
 
-  document.getElementById("adminInfo").innerText =
-    "Logged in as: " + (sessionData.firstName || "Admin");
+  let currentEmployeeId = "";
+  let currentEmployeeData = null;
 
-  document.querySelectorAll("input, textarea, select").forEach(function(field) {
-    field.setAttribute("autocomplete", "off");
-    field.setAttribute("autocorrect", "off");
-    field.setAttribute("autocapitalize", "off");
-    field.setAttribute("spellcheck", "false");
-  });
-
-  function hideAllViews() {
-    document.getElementById("dashboardView").classList.add("hidden");
-    document.getElementById("employeesView").classList.add("hidden");
-    document.getElementById("areasScheduleView").classList.add("hidden");
-    document.getElementById("areasCategoryView").classList.add("hidden");
-    document.getElementById("subAreaView").classList.add("hidden");
-    document.getElementById("taskManagerView").classList.add("hidden");
-    document.getElementById("logsView").classList.add("hidden");
-    document.getElementById("roomLabelsView").classList.add("hidden");
+  function showLoading() {
+    document.getElementById("loadingScreen").classList.remove("hidden");
   }
 
-  function showDashboard() {
-    hideAllViews();
-    document.getElementById("dashboardView").classList.remove("hidden");
+  function hideLoading() {
+    document.getElementById("loadingScreen").classList.add("hidden");
   }
 
-  function showEmployees() {
-    hideAllViews();
-    document.getElementById("employeesView").classList.remove("hidden");
-    loadEmployees();
+  function showView(num) {
+    [2, 3, 4, 5, 6].forEach(function(viewNumber) {
+      document.getElementById("view" + viewNumber).classList.add("hidden");
+    });
+
+    document.getElementById("view" + num).classList.remove("hidden");
   }
 
-  function showAreas() {
-    selectedSchedule = "";
-    selectedCategory = "";
-    selectedSubArea = "";
-    cancelTaskEdit();
-
-    hideAllViews();
-    document.getElementById("areasScheduleView").classList.remove("hidden");
+  function getAssignment() {
+    return document.getElementById("assignmentInput").value.trim() || "Housekeeping";
   }
 
-  function selectAreaSchedule(schedule) {
-    selectedSchedule = schedule;
-    selectedCategory = "";
-    selectedSubArea = "";
+  async function openCategory(category) {
+    selectedCategory = category;
+    selectedAssignment = getAssignment();
 
-    hideAllViews();
-    document.getElementById("areasCategoryView").classList.remove("hidden");
+    document.getElementById("categoryTitle").innerText = category;
 
-    document.getElementById("categoryPath").innerText =
-      selectedSchedule;
+    await loadCategoryAreas();
 
-    drawCategoryButtons();
+    showView(3);
   }
 
-  function drawCategoryButtons() {
-    const box = document.getElementById("categoryButtons");
+  async function loadCategoryAreas() {
+    showLoading();
+
+    const taskQuery = query(
+      collection(db, "tasks"),
+      where("assignment", "==", selectedAssignment),
+      where("category", "==", selectedCategory)
+    );
+
+    const taskSnap = await getDocs(taskQuery);
+
+    allCategoryTasks = taskSnap.docs.map(function(taskDoc) {
+      return {
+        id: taskDoc.id,
+        ...taskDoc.data()
+      };
+    });
+
+    drawAreaButtons();
+
+    hideLoading();
+  }
+
+  function drawAreaButtons() {
+    const box = document.getElementById("areaButtons");
     box.innerHTML = "";
 
-    let categories = [];
+    const areas = [...new Set(allCategoryTasks.map(function(task) {
+      return task.area;
+    }))];
 
-    if (selectedSchedule === "Laundry") {
-      categories = ["Weekly Laundry", "Daily Laundry Check"];
-    } else {
-      categories = ["Common Area", "Weekly Room", "Daily Room", "Dehumidifier"];
-    }
+    areas.forEach(function(area) {
+      const areaTasks = allCategoryTasks.filter(function(task) {
+        return task.area === area;
+      });
 
-    categories.forEach(function(category) {
       const btn = document.createElement("button");
-      btn.innerText = category;
+
+      btn.innerHTML =
+        '<div class="room-number">' + area + '</div>' +
+        '<div class="room-counter">' + areaTasks.length + ' TASKS</div>';
 
       btn.onclick = function() {
-        selectedCategory = category;
-        selectedSubArea = "";
-        showSubAreas();
+        openAreaEditor(area);
       };
 
       box.appendChild(btn);
     });
-  }
-
-  function backToAreaCategories() {
-    hideAllViews();
-    document.getElementById("areasCategoryView").classList.remove("hidden");
-  }
-
-  function showSubAreas() {
-    hideAllViews();
-    document.getElementById("subAreaView").classList.remove("hidden");
-
-    document.getElementById("subAreaPath").innerText =
-      selectedSchedule + " / " + selectedCategory;
-
-    document.getElementById("subAreaSearch").value = "";
-
-    loadSubAreas();
-  }
-
-  function backToSubAreas() {
-    hideAllViews();
-    document.getElementById("subAreaView").classList.remove("hidden");
-    loadSubAreas();
-  }
-
-  async function loadSubAreas() {
-    const box = document.getElementById("subAreaList");
-    const search = document.getElementById("subAreaSearch").value.trim().toLowerCase();
-
-    box.innerHTML = "Loading...";
-
-    const snap = await getDocs(collection(db, "tasks"));
-
-    const areaMap = {};
-
-    snap.docs.forEach(function(docSnap) {
-      const item = docSnap.data();
-
-      if (item.assignment !== selectedSchedule) return;
-      if (item.category !== selectedCategory) return;
-
-      const area = String(item.area || "").trim();
-
-      if (!area) return;
-
-      if (search && !area.toLowerCase().includes(search)) return;
-
-      if (!areaMap[area]) {
-        areaMap[area] = 0;
-      }
-
-      areaMap[area]++;
-    });
-
-    const areas = Object.keys(areaMap).sort(function(a, b) {
-      const aNum = Number(a);
-      const bNum = Number(b);
-
-      if (!isNaN(aNum) && !isNaN(bNum)) {
-        return aNum - bNum;
-      }
-
-      return a.localeCompare(b);
-    });
-
-    box.innerHTML = "";
-
-    areas.forEach(function(area) {
-      const div = document.createElement("div");
-      div.className = "item-card";
-
-      div.innerHTML =
-        "<b>" + area + "</b><br>" +
-        "Tasks: " + areaMap[area] + "<br>" +
-        '<button onclick="openSubArea(\'' + escapeText(area) + '\')">OPEN</button>';
-
-      box.appendChild(div);
-    });
 
     if (box.innerHTML === "") {
-      box.innerHTML = "<h3>No sub areas found.</h3>";
+      const msg = document.createElement("h3");
+      msg.innerText = "No tasks found.";
+      box.appendChild(msg);
     }
   }
 
-  function openNewSubArea() {
-    selectedSubArea = "";
-    openTaskManager("");
-  }
+  function openAreaEditor(area) {
+    selectedArea = area;
 
-  function openSubArea(area) {
-    selectedSubArea = area;
-    openTaskManager(area);
-  }
-
-  function openTaskManager(area) {
-    hideAllViews();
-    document.getElementById("taskManagerView").classList.remove("hidden");
-
-    document.getElementById("taskManagerPath").innerText =
-      selectedSchedule + " / " + selectedCategory +
-      (area ? " / " + area : "");
-
-    cancelTaskEdit();
-
-    document.getElementById("taskAssignment").value = selectedSchedule;
-    document.getElementById("taskCategory").value = selectedCategory;
-    document.getElementById("taskArea").value = area || "";
-
-    loadAreaTasks();
-  }
-
-  async function loadAreaTasks() {
-    const box = document.getElementById("areaTaskList");
-    const search = document.getElementById("taskSearch").value.trim().toLowerCase();
-
-    box.innerHTML = "Loading...";
-
-    const snap = await getDocs(collection(db, "tasks"));
-
-    allLoadedTasks = [];
-
-    snap.docs.forEach(function(docSnap) {
-      const item = docSnap.data();
-
-      if (item.assignment !== selectedSchedule) return;
-      if (item.category !== selectedCategory) return;
-
-      if (selectedSubArea && item.area !== selectedSubArea) return;
-
-      if (search) {
-        const text =
-          String(item.area || "").toLowerCase() + " " +
-          String(item.task || "").toLowerCase();
-
-        if (!text.includes(search)) return;
-      }
-
-      allLoadedTasks.push({
-        id: docSnap.id,
-        data: item
-      });
+    currentAreaTasks = allCategoryTasks.filter(function(task) {
+      return task.area === area;
     });
 
-    allLoadedTasks.sort(function(a, b) {
-      const aTime =
-        a.data.updatedAt && a.data.updatedAt.seconds
-          ? a.data.updatedAt.seconds
-          : a.data.createdAt && a.data.createdAt.seconds
-            ? a.data.createdAt.seconds
-            : 0;
+    document.getElementById("areaTitle").innerText = area;
+    document.getElementById("editAreaInput").value = area;
+    document.getElementById("editCategoryInput").value = selectedCategory;
+    document.getElementById("editAssignmentInput").value = selectedAssignment;
+    document.getElementById("message").innerText = "";
 
-      const bTime =
-        b.data.updatedAt && b.data.updatedAt.seconds
-          ? b.data.updatedAt.seconds
-          : b.data.createdAt && b.data.createdAt.seconds
-            ? b.data.createdAt.seconds
-            : 0;
+    drawSubTasks();
 
-      return bTime - aTime;
-    });
+    showView(4);
+  }
 
+  function openNewAreaTask() {
+    selectedArea = "";
+    currentAreaTasks = [];
+
+    document.getElementById("areaTitle").innerText = "New Area Task";
+    document.getElementById("editAreaInput").value = "";
+    document.getElementById("editCategoryInput").value = selectedCategory;
+    document.getElementById("editAssignmentInput").value = selectedAssignment;
+    document.getElementById("newTaskNameInput").value = "";
+    document.getElementById("message").innerText = "";
+
+    drawSubTasks();
+
+    showView(4);
+  }
+
+  function drawSubTasks() {
+    const box = document.getElementById("subtaskList");
     box.innerHTML = "";
 
-    allLoadedTasks.forEach(function(item) {
-      const task = item.data;
-
+    currentAreaTasks.forEach(function(task, index) {
       const div = document.createElement("div");
-      div.className = "item-card";
+      div.className = "task-card";
 
       div.innerHTML =
-        "<b>" + (task.area || "") + "</b><br>" +
-        "Task: " + (task.task || "") + "<br>" +
-        "Assignment: " + (task.assignment || "") + "<br>" +
-        "Schedule: " + (task.schedule || "") + "<br>" +
-        "Category: " + (task.category || "") + "<br>" +
-        '<button class="yellow" onclick="startEditTask(\'' + item.id + '\')">EDIT TASK</button>' +
-        '<button class="red" onclick="deleteTask(\'' + item.id + '\')">DELETE TASK</button>';
+        '<label>Task Name</label>' +
+        '<input id="taskName_' + index + '" value="' + escapeHtml(task.task || "") + '">' +
+
+        '<label>Schedule</label>' +
+        '<select id="taskSchedule_' + index + '">' +
+          '<option value="daily">daily</option>' +
+          '<option value="Sunday">Sunday</option>' +
+          '<option value="Monday">Monday</option>' +
+          '<option value="Tuesday">Tuesday</option>' +
+          '<option value="Wednesday">Wednesday</option>' +
+          '<option value="Thursday">Thursday</option>' +
+          '<option value="Friday">Friday</option>' +
+          '<option value="Saturday">Saturday</option>' +
+        '</select>' +
+
+        '<label>Active</label>' +
+        '<select id="taskActive_' + index + '">' +
+          '<option value="true">true</option>' +
+          '<option value="false">false</option>' +
+        '</select>' +
+
+        '<div class="small-row">' +
+          '<button class="green" onclick="saveSingleTask(' + index + ')">SAVE</button>' +
+          '<button class="red" onclick="deleteSingleTask(' + index + ')">DELETE</button>' +
+        '</div>';
 
       box.appendChild(div);
+
+      document.getElementById("taskSchedule_" + index).value =
+        task.schedule || "daily";
+
+      document.getElementById("taskActive_" + index).value =
+        task.active === false || task.active === "No" ? "false" : "true";
     });
 
     if (box.innerHTML === "") {
-      box.innerHTML = "<h3>No tasks found.</h3>";
+      const empty = document.createElement("h3");
+      empty.innerText = "No sub tasks yet.";
+      box.appendChild(empty);
     }
   }
 
-  async function saveTask() {
-    const assignment = document.getElementById("taskAssignment").value;
-    const area = document.getElementById("taskArea").value.trim();
-    const task = document.getElementById("taskName").value.trim();
-    const schedule = document.getElementById("taskSchedule").value;
-    const category = document.getElementById("taskCategory").value;
+  async function addSubTask() {
+    const area = document.getElementById("editAreaInput").value.trim();
+    const category = document.getElementById("editCategoryInput").value.trim();
+    const assignment = document.getElementById("editAssignmentInput").value.trim();
+    const taskName = document.getElementById("newTaskNameInput").value.trim();
+    const schedule = document.getElementById("newTaskScheduleInput").value;
 
-    if (!assignment || !area || !task || !schedule || !category) {
-      alert("Fill schedule, room/area, task name, day, and category.");
+    if (!area || !category || !assignment || !taskName) {
+      alert("Fill area, category, assignment, and sub task.");
       return;
     }
 
-    const conflict = await findHousekeepingConflict(
-      assignment,
-      category,
-      area,
-      task,
-      editingTaskId
-    );
+    showLoading();
 
-    if (conflict && !editingTaskId) {
-      const moveIt = confirm(
-        "This task already exists in " + conflict.assignment +
-        ". Move it to " + assignment + " instead of creating a duplicate?"
-      );
+    await addDoc(collection(db, "tasks"), {
+      assignment: assignment,
+      category: category,
+      area: area,
+      task: taskName,
+      schedule: schedule,
+      active: true,
+      updatedAt: serverTimestamp()
+    });
 
-      if (!moveIt) return;
+    document.getElementById("newTaskNameInput").value = "";
 
-      await updateDoc(doc(db, "tasks", conflict.id), {
+    selectedArea = area;
+    selectedCategory = category;
+    selectedAssignment = assignment;
+
+    await loadCategoryAreas();
+    openAreaEditor(area);
+
+    hideLoading();
+  }
+
+  async function saveSingleTask(index) {
+    const task = currentAreaTasks[index];
+
+    const area = document.getElementById("editAreaInput").value.trim();
+    const category = document.getElementById("editCategoryInput").value.trim();
+    const assignment = document.getElementById("editAssignmentInput").value.trim();
+    const taskName = document.getElementById("taskName_" + index).value.trim();
+    const schedule = document.getElementById("taskSchedule_" + index).value;
+    const active = document.getElementById("taskActive_" + index).value === "true";
+
+    if (!area || !category || !assignment || !taskName) {
+      alert("Fill all fields.");
+      return;
+    }
+
+    showLoading();
+
+    await updateDoc(doc(db, "tasks", task.id), {
+      assignment: assignment,
+      category: category,
+      area: area,
+      task: taskName,
+      schedule: schedule,
+      active: active,
+      updatedAt: serverTimestamp()
+    });
+
+    selectedArea = area;
+    selectedCategory = category;
+    selectedAssignment = assignment;
+
+    document.getElementById("assignmentInput").value = assignment;
+
+    await loadCategoryAreas();
+    openAreaEditor(area);
+
+    hideLoading();
+
+    document.getElementById("message").innerText = "Saved.";
+  }
+
+  async function saveAreaChanges() {
+    const area = document.getElementById("editAreaInput").value.trim();
+    const category = document.getElementById("editCategoryInput").value.trim();
+    const assignment = document.getElementById("editAssignmentInput").value.trim();
+
+    if (!area || !category || !assignment) {
+      alert("Fill area, category, and assignment.");
+      return;
+    }
+
+    if (currentAreaTasks.length === 0) {
+      alert("Add at least one sub task.");
+      return;
+    }
+
+    showLoading();
+
+    for (let i = 0; i < currentAreaTasks.length; i++) {
+      const task = currentAreaTasks[i];
+
+      const taskName = document.getElementById("taskName_" + i).value.trim();
+      const schedule = document.getElementById("taskSchedule_" + i).value;
+      const active = document.getElementById("taskActive_" + i).value === "true";
+
+      await updateDoc(doc(db, "tasks", task.id), {
         assignment: assignment,
         category: category,
         area: area,
-        task: task,
+        task: taskName,
         schedule: schedule,
-        active: "Yes",
+        active: active,
         updatedAt: serverTimestamp()
       });
-
-      selectedSchedule = assignment;
-      selectedCategory = category;
-      selectedSubArea = area;
-
-      clearTaskForm();
-      openTaskManager(area);
-      return;
     }
 
-    if (conflict && editingTaskId) {
-      alert(
-        "This task already exists in " + conflict.assignment +
-        ". A housekeeping task can only be in one HK schedule."
-      );
-      return;
-    }
-
-    const taskData = {
-      assignment: assignment,
-      area: area,
-      task: task,
-      schedule: schedule,
-      category: category,
-      status: "pending",
-      active: "Yes",
-      updatedAt: serverTimestamp()
-    };
-
-    if (editingTaskId) {
-      await updateDoc(doc(db, "tasks", editingTaskId), taskData);
-    } else {
-      taskData.createdAt = serverTimestamp();
-      await addDoc(collection(db, "tasks"), taskData);
-    }
-
-    selectedSchedule = assignment;
+    selectedArea = area;
     selectedCategory = category;
-    selectedSubArea = area;
+    selectedAssignment = assignment;
 
-    cancelTaskEdit();
-    openTaskManager(area);
+    document.getElementById("assignmentInput").value = assignment;
+
+    await loadCategoryAreas();
+    openAreaEditor(area);
+
+    hideLoading();
+
+    document.getElementById("message").innerText = "Area saved.";
   }
 
-  async function findHousekeepingConflict(assignment, category, area, taskName, currentId) {
-    const isHK =
-      assignment === "HK Schedule 1" ||
-      assignment === "HK Schedule 2";
+  async function deleteSingleTask(index) {
+    const task = currentAreaTasks[index];
 
-    if (!isHK) return null;
+    const ok = confirm("Delete this task?");
+    if (!ok) return;
 
-    const snap = await getDocs(collection(db, "tasks"));
+    showLoading();
 
-    const cleanArea = String(area).trim().toLowerCase();
-    const cleanTask = String(taskName).trim().toLowerCase();
-    const cleanCategory = String(category).trim().toLowerCase();
+    await deleteDoc(doc(db, "tasks", task.id));
 
-    let conflict = null;
+    await loadCategoryAreas();
 
-    snap.docs.forEach(function(docSnap) {
-      if (conflict) return;
-      if (docSnap.id === currentId) return;
-
-      const item = docSnap.data();
-
-      const itemAssignment = String(item.assignment || "").trim();
-
-      const itemIsHK =
-        itemAssignment === "HK Schedule 1" ||
-        itemAssignment === "HK Schedule 2";
-
-      if (!itemIsHK) return;
-
-      const itemArea = String(item.area || "").trim().toLowerCase();
-      const itemTask = String(item.task || "").trim().toLowerCase();
-      const itemCategory = String(item.category || "").trim().toLowerCase();
-
-      if (
-        itemArea === cleanArea &&
-        itemTask === cleanTask &&
-        itemCategory === cleanCategory
-      ) {
-        conflict = {
-          id: docSnap.id,
-          assignment: itemAssignment
-        };
-      }
-    });
-
-    return conflict;
-  }
-
-  async function startEditTask(id) {
-    const snap = await getDocs(collection(db, "tasks"));
-
-    snap.docs.forEach(function(docSnap) {
-      if (docSnap.id !== id) return;
-
-      const task = docSnap.data();
-
-      editingTaskId = id;
-
-      document.getElementById("taskAssignment").value = task.assignment || "";
-      document.getElementById("taskArea").value = task.area || "";
-      document.getElementById("taskName").value = task.task || "";
-      document.getElementById("taskSchedule").value = task.schedule || "";
-      document.getElementById("taskCategory").value = task.category || "";
-
-      document.getElementById("saveTaskButton").innerText = "SAVE TASK";
-
-      document.getElementById("taskEditBanner").innerText =
-        "Editing: " + (task.area || "") + " - " + (task.task || "");
-
-      document.getElementById("taskEditBanner").classList.remove("hidden");
-      document.getElementById("cancelTaskEditButton").classList.remove("hidden");
-
-      window.scrollTo({
-        top: 0,
-        behavior: "smooth"
-      });
-    });
-  }
-
-  function clearTaskForm() {
-    document.getElementById("taskAssignment").value = selectedSchedule || "";
-    document.getElementById("taskArea").value = selectedSubArea || "";
-    document.getElementById("taskName").value = "";
-    document.getElementById("taskSchedule").value = "";
-    document.getElementById("taskCategory").value = selectedCategory || "";
-  }
-
-  function cancelTaskEdit() {
-    editingTaskId = "";
-
-    document.getElementById("saveTaskButton").innerText = "ADD TASK";
-    document.getElementById("taskEditBanner").classList.add("hidden");
-    document.getElementById("cancelTaskEditButton").classList.add("hidden");
-
-    if (document.getElementById("taskAssignment")) {
-      clearTaskForm();
-    }
-  }
-
-  async function deleteTask(id) {
-    if (!confirm("Delete this task?")) return;
-
-    await deleteDoc(doc(db, "tasks", id));
-
-    if (editingTaskId === id) {
-      cancelTaskEdit();
+    if (selectedArea) {
+      openAreaEditor(selectedArea);
     }
 
-    loadAreaTasks();
+    hideLoading();
   }
 
-  async function addEmployee() {
-    const firstName = document.getElementById("empFirstName").value.trim();
-    const employeeId = document.getElementById("empEmployeeId").value.trim();
-    const pin = Number(document.getElementById("empPin").value.trim());
-    const role = document.getElementById("empRole").value;
-
-    if (!firstName || !employeeId || !pin || !role) {
-      alert("Fill first name, employee ID, PIN, and role.");
+  async function deleteWholeArea() {
+    if (currentAreaTasks.length === 0) {
+      backToAreas();
       return;
     }
 
-    await addDoc(collection(db, "employees"), {
-      firstName: firstName,
-      employeeId: employeeId,
-      pin: pin,
-      role: role,
-      active: "Yes",
-      createdAt: serverTimestamp(),
-      updatedAt: serverTimestamp()
-    });
+    const ok = confirm("Delete this whole area and all sub tasks?");
+    if (!ok) return;
 
-    clearEmployeeForm();
-    loadEmployees();
+    showLoading();
+
+    for (let i = 0; i < currentAreaTasks.length; i++) {
+      await deleteDoc(doc(db, "tasks", currentAreaTasks[i].id));
+    }
+
+    await loadCategoryAreas();
+
+    hideLoading();
+
+    showView(3);
   }
 
-  function clearEmployeeForm() {
-    document.getElementById("empFirstName").value = "";
-    document.getElementById("empEmployeeId").value = "";
-    document.getElementById("empPin").value = "";
-    document.getElementById("empRole").value = "";
-  }
-
-  async function loadEmployees() {
-    const box = document.getElementById("employeesList");
-    box.innerHTML = "Loading...";
+  async function openEmployees() {
+    showLoading();
 
     const snap = await getDocs(collection(db, "employees"));
 
+    const employees = snap.docs.map(function(empDoc) {
+      return {
+        id: empDoc.id,
+        ...empDoc.data()
+      };
+    });
+
+    const box = document.getElementById("employeeList");
     box.innerHTML = "";
 
-    snap.docs.forEach(function(docSnap) {
-      const emp = docSnap.data();
+    employees.forEach(function(emp) {
+      const btn = document.createElement("button");
 
-      const div = document.createElement("div");
-      div.className = "item-card";
+      const name =
+        ((emp.firstName || "") + " " + (emp.lastName || "")).trim() ||
+        emp.employeeName ||
+        emp.name ||
+        "Employee";
 
-      div.innerHTML =
-        "<b>" + (emp.firstName || "Employee") + "</b><br>" +
-        "Employee ID: " + (emp.employeeId || "") + "<br>" +
-        "PIN: " + (emp.pin || "") + "<br>" +
-        "Role: " + (emp.role || "Housekeeping") + "<br>" +
-        "Active: " + (emp.active || "Yes") + "<br>" +
-        '<button class="yellow" onclick="toggleEmployeeActive(\'' + docSnap.id + '\', \'' + (emp.active || "Yes") + '\')">ACTIVE / INACTIVE</button>' +
-        '<button class="red" onclick="deleteEmployee(\'' + docSnap.id + '\')">DELETE</button>';
+      btn.innerHTML =
+        '<div class="room-number">' + name + '</div>' +
+        '<div class="room-counter">PIN: ' + (emp.pin || "") + '</div>';
 
-      box.appendChild(div);
+      btn.onclick = function() {
+        openEmployeeEditor(emp);
+      };
+
+      box.appendChild(btn);
     });
 
     if (box.innerHTML === "") {
-      box.innerHTML = "<h3>No employees found.</h3>";
+      const empty = document.createElement("h3");
+      empty.innerText = "No employees found.";
+      box.appendChild(empty);
     }
+
+    hideLoading();
+
+    showView(5);
   }
 
-  async function toggleEmployeeActive(id, currentActive) {
-    const newValue =
-      String(currentActive).toLowerCase() === "yes" ? "No" : "Yes";
+  function openNewEmployee() {
+    currentEmployeeId = "";
+    currentEmployeeData = null;
 
-    await updateDoc(doc(db, "employees", id), {
-      active: newValue,
-      updatedAt: serverTimestamp()
-    });
+    document.getElementById("employeeEditTitle").innerText = "New Employee";
+    document.getElementById("empFirstName").value = "";
+    document.getElementById("empLastName").value = "";
+    document.getElementById("empPin").value = "";
+    document.getElementById("empAssignment").value = "";
+    document.getElementById("empRole").value = "employee";
+    document.getElementById("empActive").value = "true";
+    document.getElementById("employeeMessage").innerText = "";
 
-    loadEmployees();
+    showView(6);
   }
 
-  async function deleteEmployee(id) {
-    if (!confirm("Delete this employee?")) return;
+  function openEmployeeEditor(emp) {
+    currentEmployeeId = emp.id;
+    currentEmployeeData = emp;
 
-    await deleteDoc(doc(db, "employees", id));
+    const name =
+      ((emp.firstName || "") + " " + (emp.lastName || "")).trim() ||
+      emp.employeeName ||
+      emp.name ||
+      "Employee";
 
-    loadEmployees();
+    document.getElementById("employeeEditTitle").innerText = name;
+    document.getElementById("empFirstName").value = emp.firstName || "";
+    document.getElementById("empLastName").value = emp.lastName || "";
+    document.getElementById("empPin").value = emp.pin || "";
+    document.getElementById("empAssignment").value = emp.assignment || "";
+    document.getElementById("empRole").value = emp.role || "employee";
+    document.getElementById("empActive").value =
+      emp.active === false ? "false" : "true";
+    document.getElementById("employeeMessage").innerText = "";
+
+    showView(6);
   }
 
-  async function loadLogs() {
-    const box = document.getElementById("logsList");
-    box.innerHTML = "Loading...";
+  async function saveEmployee() {
+    const firstName = document.getElementById("empFirstName").value.trim();
+    const lastName = document.getElementById("empLastName").value.trim();
+    const pin = document.getElementById("empPin").value.trim();
+    const assignment = document.getElementById("empAssignment").value.trim();
+    const role = document.getElementById("empRole").value;
+    const active = document.getElementById("empActive").value === "true";
 
-    const snap = await getDocs(collection(db, "taskLogs"));
-
-    const logs = [];
-
-    snap.docs.forEach(function(docSnap) {
-      logs.push(docSnap.data());
-    });
-
-    logs.sort(function(a, b) {
-      const aTime = a.timestamp && a.timestamp.seconds ? a.timestamp.seconds : 0;
-      const bTime = b.timestamp && b.timestamp.seconds ? b.timestamp.seconds : 0;
-
-      return bTime - aTime;
-    });
-
-    box.innerHTML = "";
-
-    logs.slice(0, 100).forEach(function(log) {
-      const div = document.createElement("div");
-      div.className = "item-card";
-
-      div.innerHTML =
-        "<b>" + (log.employeeName || "Employee") + "</b><br>" +
-        "Assignment: " + (log.assignment || "") + "<br>" +
-        "Area: " + (log.area || "") + "<br>" +
-        "Task: " + (log.task || "") + "<br>" +
-        "Status: " + (log.status || "") + "<br>" +
-        "Date: " + (log.workDate || "") + "<br>" +
-        "Reason: " + (log.reason || "");
-
-      box.appendChild(div);
-    });
-
-    if (box.innerHTML === "") {
-      box.innerHTML = "<h3>No logs found.</h3>";
-    }
-  }
-
-  async function saveRoomLabel() {
-    const roomNumber = document.getElementById("roomNumber").value.trim();
-    const occupiedStatus = document.getElementById("occupiedStatus").value;
-    const moldRisk = document.getElementById("moldRisk").value;
-    const smellStatus = document.getElementById("smellStatus").value;
-    const labelNotes = document.getElementById("labelNotes").value.trim();
-
-    if (!roomNumber || !occupiedStatus || !moldRisk || !smellStatus) {
-      alert("Fill room number, occupancy, mold status, and smell status.");
+    if (!firstName || !pin) {
+      alert("First name and PIN are required.");
       return;
     }
 
-    await setDoc(doc(db, "rooms", roomNumber), {
-      roomNumber: roomNumber,
-      occupiedStatus: occupiedStatus,
-      moldRisk: moldRisk,
-      smellStatus: smellStatus,
-      labelNotes: labelNotes,
-      labelUpdatedDate: getTodayDisplay(),
-      updatedBy: sessionData.firstName || "Admin",
-      updatedAt: serverTimestamp()
-    });
+    showLoading();
 
-    clearRoomForm();
-    loadRoomLabels();
+    const data = {
+      firstName: firstName,
+      lastName: lastName,
+      pin: pin,
+      assignment: assignment,
+      role: role,
+      active: active,
+      updatedAt: serverTimestamp()
+    };
+
+    if (currentEmployeeId) {
+      await updateDoc(doc(db, "employees", currentEmployeeId), data);
+    } else {
+      data.createdAt = serverTimestamp();
+      const newDoc = await addDoc(collection(db, "employees"), data);
+      currentEmployeeId = newDoc.id;
+    }
+
+    hideLoading();
+
+    document.getElementById("employeeMessage").innerText = "Employee saved.";
   }
 
-  async function resetRoomLabel() {
-    const roomNumber = document.getElementById("roomNumber").value.trim();
-
-    if (!roomNumber) {
-      alert("Enter room number to reset.");
+  async function deleteEmployee() {
+    if (!currentEmployeeId) {
+      openEmployees();
       return;
     }
 
-    if (!confirm("Reset room " + roomNumber + " for new resident?")) return;
+    const ok = confirm("Delete this employee?");
+    if (!ok) return;
 
-    await setDoc(doc(db, "rooms", roomNumber), {
-      roomNumber: roomNumber,
-      occupiedStatus: "Full",
-      moldRisk: "No Mold",
-      smellStatus: "No Smell",
-      labelNotes: "",
-      labelUpdatedDate: getTodayDisplay(),
-      updatedBy: sessionData.firstName || "Admin",
-      updatedAt: serverTimestamp()
-    });
+    showLoading();
 
-    clearRoomForm();
-    loadRoomLabels();
+    await deleteDoc(doc(db, "employees", currentEmployeeId));
+
+    hideLoading();
+
+    openEmployees();
   }
 
-  async function loadRoomLabels() {
-    const box = document.getElementById("roomLabelsList");
-    const filter = document.getElementById("roomFilter").value;
-
-    box.innerHTML = "Loading...";
-
-    const snap = await getDocs(collection(db, "rooms"));
-
-    const rooms = [];
-
-    snap.docs.forEach(function(docSnap) {
-      rooms.push(docSnap.data());
-    });
-
-    rooms.sort(function(a, b) {
-      const aRoom = Number(a.roomNumber || 0);
-      const bRoom = Number(b.roomNumber || 0);
-
-      return aRoom - bRoom;
-    });
-
-    box.innerHTML = "";
-
-    rooms.forEach(function(room) {
-      const isMold =
-        room.moldRisk === "Mold Watch" ||
-        room.moldRisk === "High Mold Risk";
-
-      const isSmelly =
-        room.smellStatus === "Smelly";
-
-      if (filter === "Empty" && room.occupiedStatus !== "Empty") return;
-      if (filter === "Mold" && !isMold) return;
-      if (filter === "Smelly" && !isSmelly) return;
-      if (filter === "MoldSmelly" && (!isMold || !isSmelly)) return;
-
-      const div = document.createElement("div");
-      div.className = "item-card";
-
-      div.innerHTML =
-        "<b>Room " + (room.roomNumber || "") + "</b><br>" +
-        "Occupancy: " + (room.occupiedStatus || "Full") + "<br>" +
-        "Mold: " + (room.moldRisk || "No Mold") + "<br>" +
-        "Smell: " + (room.smellStatus || "No Smell") + "<br>" +
-        "Notes: " + (room.labelNotes || "") + "<br>" +
-        "Updated: " + (room.labelUpdatedDate || "") + "<br>" +
-        '<button onclick="editRoomLabel(\'' + (room.roomNumber || "") + '\')">EDIT</button>';
-
-      box.appendChild(div);
-    });
-
-    if (box.innerHTML === "") {
-      box.innerHTML = "<h3>No rooms found.</h3>";
-    }
+  function backToAdminHome() {
+    showView(2);
   }
 
-  async function editRoomLabel(roomNumber) {
-    const snap = await getDocs(collection(db, "rooms"));
-
-    snap.docs.forEach(function(docSnap) {
-      const room = docSnap.data();
-
-      if (room.roomNumber === roomNumber) {
-        document.getElementById("roomNumber").value = room.roomNumber || "";
-        document.getElementById("occupiedStatus").value = room.occupiedStatus || "";
-        document.getElementById("moldRisk").value = room.moldRisk || "";
-        document.getElementById("smellStatus").value = room.smellStatus || "";
-        document.getElementById("labelNotes").value = room.labelNotes || "";
-
-        window.scrollTo({
-          top: 0,
-          behavior: "smooth"
-        });
-      }
-    });
+  async function backToAreas() {
+    await loadCategoryAreas();
+    showView(3);
   }
 
-  function clearRoomForm() {
-    document.getElementById("roomNumber").value = "";
-    document.getElementById("occupiedStatus").value = "";
-    document.getElementById("moldRisk").value = "";
-    document.getElementById("smellStatus").value = "";
-    document.getElementById("labelNotes").value = "";
-  }
-
-  function getTodayDisplay() {
-    const d = new Date();
-    const mm = String(d.getMonth() + 1).padStart(2, "0");
-    const dd = String(d.getDate()).padStart(2, "0");
-    const yyyy = d.getFullYear();
-
-    return mm + "/" + dd + "/" + yyyy;
-  }
-
-  function escapeText(text) {
-    return String(text).replace(/'/g, "\\'");
-  }
-
-  function logout() {
-    sessionStorage.clear();
+  function goLogin() {
     window.location.href = "index.html";
   }
 
-  window.showDashboard = showDashboard;
-  window.showEmployees = showEmployees;
-  window.showAreas = showAreas;
-  window.showLogs = showLogs;
-  window.showRoomLabels = showRoomLabels;
+  function escapeHtml(value) {
+    return String(value)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
 
-  window.selectAreaSchedule = selectAreaSchedule;
-  window.showSubAreas = showSubAreas;
-  window.backToAreaCategories = backToAreaCategories;
-  window.backToSubAreas = backToSubAreas;
-  window.loadSubAreas = loadSubAreas;
-  window.openSubArea = openSubArea;
-  window.openNewSubArea = openNewSubArea;
-
-  window.saveTask = saveTask;
-  window.loadAreaTasks = loadAreaTasks;
-  window.startEditTask = startEditTask;
-  window.cancelTaskEdit = cancelTaskEdit;
-  window.deleteTask = deleteTask;
-
-  window.addEmployee = addEmployee;
-  window.loadEmployees = loadEmployees;
-  window.toggleEmployeeActive = toggleEmployeeActive;
+  window.openCategory = openCategory;
+  window.openNewAreaTask = openNewAreaTask;
+  window.addSubTask = addSubTask;
+  window.saveSingleTask = saveSingleTask;
+  window.saveAreaChanges = saveAreaChanges;
+  window.deleteSingleTask = deleteSingleTask;
+  window.deleteWholeArea = deleteWholeArea;
+  window.openEmployees = openEmployees;
+  window.openNewEmployee = openNewEmployee;
+  window.saveEmployee = saveEmployee;
   window.deleteEmployee = deleteEmployee;
-
-  window.loadLogs = loadLogs;
-
-  window.saveRoomLabel = saveRoomLabel;
-  window.resetRoomLabel = resetRoomLabel;
-  window.loadRoomLabels = loadRoomLabels;
-  window.editRoomLabel = editRoomLabel;
-
-  window.logout = logout;
+  window.backToAdminHome = backToAdminHome;
+  window.backToAreas = backToAreas;
+  window.goLogin = goLogin;
 
 </script>
 
