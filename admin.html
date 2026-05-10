@@ -72,7 +72,7 @@
       font-weight: bold;
     }
 
-    input, select, textarea {
+    input, select {
       width: 100%;
       font-size: 18px;
       padding: 10px;
@@ -126,15 +126,7 @@
     }
 
     /* =========================
-       03 - DATE ROW STYLE
-    ========================== */
-
-    .top-date-box {
-      margin-bottom: 10px;
-    }
-
-    /* =========================
-       04 - BUTTON GRIDS
+       03 - BUTTON GRIDS
     ========================== */
 
     .rooms-grid {
@@ -197,7 +189,7 @@
     }
 
     /* =========================
-       05 - ADMIN EDIT TASK CARDS
+       04 - EDIT CARDS
     ========================== */
 
     .task-card {
@@ -216,7 +208,7 @@
     }
 
     /* =========================
-       06 - LOADING SCREEN STYLE
+       05 - LOADING SCREEN STYLE
     ========================== */
 
     .loading-bg {
@@ -256,13 +248,13 @@
 <body>
 
 <!-- =========================
-     07 - MAIN CARD START
+     06 - MAIN CARD START
 ========================== -->
 
 <div class="card">
 
   <!-- =========================
-       08 - ADMIN VIEW 2 - MAIN DASHBOARD
+       07 - ADMIN VIEW 2 - MAIN DASHBOARD
   ========================== -->
 
   <div id="adminView2">
@@ -270,8 +262,6 @@
     <div class="view-center">
       <div class="view-tag">ADMIN VIEW 2</div>
     </div>
-
-   
 
     <label>Assignment</label>
     <select id="adminAssignmentSelect" onchange="changeAdminAssignment()">
@@ -285,7 +275,7 @@
   </div>
 
   <!-- =========================
-       09 - ADMIN VIEW 3 / 4 / 5 / 6 - AREA LIST
+       08 - ADMIN VIEW 3 / 4 / 5 / 6 - AREA LIST
   ========================== -->
 
   <div id="adminAreaView" class="hidden">
@@ -297,7 +287,7 @@
     <div class="assignment-title" id="adminAreaAssignmentTitle"></div>
     <h2 id="adminAreaTitle">Area</h2>
 
-    <div id="adminAreaBigDatePickerBox" class="top-date-box hidden">
+    <div id="adminAreaBigDatePickerBox" class="hidden">
       <h3 id="adminAreaDateTitle"></h3>
 
       <input
@@ -318,7 +308,7 @@
   </div>
 
   <!-- =========================
-       10 - ADMIN VIEW 7 - EDIT AREA / TASKS
+       09 - ADMIN VIEW 7 - EDIT AREA / TASKS
   ========================== -->
 
   <div id="adminEditView" class="hidden">
@@ -390,7 +380,7 @@
   </div>
 
   <!-- =========================
-       11 - ADMIN VIEW 8 - EMPLOYEES LIST
+       10 - ADMIN VIEW 8 - EMPLOYEES LIST
   ========================== -->
 
   <div id="adminEmployeesView" class="hidden">
@@ -411,7 +401,7 @@
   </div>
 
   <!-- =========================
-       12 - ADMIN VIEW 9 - EDIT EMPLOYEE
+       11 - ADMIN VIEW 9 - EDIT EMPLOYEE
   ========================== -->
 
   <div id="adminEmployeeEditView" class="hidden">
@@ -468,7 +458,7 @@
 </div>
 
 <!-- =========================
-     13 - LOADING SCREEN HTML
+     12 - LOADING SCREEN HTML
 ========================== -->
 
 <div id="loadingScreen" class="loading-bg hidden">
@@ -478,7 +468,7 @@
 <script type="module">
 
   /* =========================
-     14 - FIREBASE IMPORTS
+     13 - FIREBASE IMPORTS
   ========================== */
 
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
@@ -497,7 +487,7 @@
   } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
   /* =========================
-     15 - FIREBASE CONFIG
+     14 - FIREBASE CONFIG
   ========================== */
 
   const firebaseConfig = {
@@ -514,7 +504,7 @@
   const db = getFirestore(app);
 
   /* =========================
-     16 - SESSION DATA
+     15 - SESSION DATA
   ========================== */
 
   const sessionData = JSON.parse(sessionStorage.getItem("currentEmployee"));
@@ -523,14 +513,8 @@
     window.location.href = "index.html";
   }
 
-  const adminName =
-    ((sessionData.firstName || "") + " " + (sessionData.lastName || "")).trim() ||
-    sessionData.employeeName ||
-    sessionData.name ||
-    "Admin";
-
   /* =========================
-     17 - GLOBAL ADMIN VARIABLES
+     16 - GLOBAL ADMIN VARIABLES
   ========================== */
 
   let currentAssignment =
@@ -553,11 +537,8 @@
   let currentEditingTaskIndex = -1;
 
   /* =========================
-     18 - ADMIN STARTUP
+     17 - ADMIN STARTUP
   ========================== */
-
-  document.getElementById("adminName").innerText =
-    "Welcome, " + adminName;
 
   startAdmin();
 
@@ -568,7 +549,7 @@
   }
 
   /* =========================
-     19 - LOADING FUNCTIONS
+     18 - LOADING FUNCTIONS
   ========================== */
 
   function showLoading() {
@@ -580,7 +561,7 @@
   }
 
   /* =========================
-     20 - VIEW SWITCHING
+     19 - VIEW SWITCHING
   ========================== */
 
   function showAdminView(viewId) {
@@ -616,7 +597,7 @@
   }
 
   /* =========================
-     21 - DATE FUNCTIONS
+     20 - DATE FUNCTIONS
   ========================== */
 
   function getTodayISO() {
@@ -660,7 +641,7 @@
   }
 
   /* =========================
-     22 - ASSIGNMENT CHANGE
+     21 - ASSIGNMENT CHANGE
   ========================== */
 
   async function changeAdminAssignment() {
@@ -670,18 +651,20 @@
   }
 
   /* =========================
-     23 - LOAD TASKS FROM FIRESTORE
+     22 - LOAD TASKS FROM FIRESTORE
   ========================== */
 
   async function loadAdminTasks() {
     showLoading();
 
     updateDateDisplay();
-
-    document.getElementById("adminAreaDateTitle").innerText =
-      currentWorkDayName;
-
     updateAssignmentTitles();
+
+    const dateTitle = document.getElementById("adminAreaDateTitle");
+
+    if (dateTitle) {
+      dateTitle.innerText = currentWorkDayName;
+    }
 
     const taskQuery = query(
       collection(db, "tasks"),
@@ -731,7 +714,7 @@
   }
 
   /* =========================
-     23-1 - UPDATE TASK NAME OPTIONS
+     23 - UPDATE TASK NAME OPTIONS
   ========================== */
 
   function updateTaskNameOptions() {
