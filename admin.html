@@ -200,6 +200,30 @@
       background: #fafafa;
     }
 
+    .check-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      margin: 8px 0;
+    }
+
+    .check-item {
+      border: 1px solid #ccc;
+      border-radius: 10px;
+      padding: 8px;
+      font-size: 15px;
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: #fafafa;
+    }
+
+    .check-item input {
+      width: auto;
+      margin: 0;
+    }
+
     #adminMessage,
     #employeeMessage {
       text-align: center;
@@ -247,14 +271,10 @@
 
 <body>
 
-<!-- =========================
-     06 - MAIN CARD START
-========================== -->
-
 <div class="card">
 
   <!-- =========================
-       07 - ADMIN VIEW 2 - MAIN DASHBOARD
+       06 - ADMIN VIEW 2 - MAIN DASHBOARD
   ========================== -->
 
   <div id="adminView2">
@@ -275,7 +295,7 @@
   </div>
 
   <!-- =========================
-       08 - ADMIN VIEW 3 / 4 / 5 / 6 - AREA LIST
+       07 - ADMIN VIEW 3 / 4 / 5 / 6 - AREA LIST
   ========================== -->
 
   <div id="adminAreaView" class="hidden">
@@ -308,6 +328,16 @@
       ADD NEW AREA
     </button>
 
+    <div id="adminBulkTaskBox" class="task-card hidden">
+      <h3>Default Tasks</h3>
+      <div id="adminBulkTaskChecks" class="check-grid"></div>
+
+      <div class="button-row">
+        <button class="green" onclick="addCheckedTasksToAllAreas()">ADD TO ALL</button>
+        <button class="red" onclick="deleteCheckedTasksFromAllAreas()">DELETE FROM ALL</button>
+      </div>
+    </div>
+
     <div id="adminAreaButtons" class="rooms-grid"></div>
 
     <button class="back" onclick="backToAdminCategories()">BACK</button>
@@ -315,7 +345,7 @@
   </div>
 
   <!-- =========================
-       09 - ADMIN VIEW 7 - EDIT AREA / TASKS
+       08 - ADMIN VIEW 7 - EDIT AREA / TASKS
   ========================== -->
 
   <div id="adminEditView" class="hidden">
@@ -362,6 +392,16 @@
         <option>Saturday</option>
         <option>Sunday</option>
       </select>
+    </div>
+
+    <div id="adminSingleTaskBox" class="task-card hidden">
+      <h3>Default Tasks</h3>
+      <div id="adminSingleTaskChecks" class="check-grid"></div>
+
+      <div class="button-row">
+        <button class="green" onclick="addCheckedTasksToSingleArea()">ADD TO ROOM</button>
+        <button class="red" onclick="deleteCheckedTasksFromSingleArea()">DELETE FROM ROOM</button>
+      </div>
     </div>
 
     <h3>Sub Tasks</h3>
@@ -423,7 +463,7 @@
   </div>
 
   <!-- =========================
-       10 - ADMIN VIEW 8 - EMPLOYEES LIST
+       09 - ADMIN VIEW 8 - EMPLOYEES LIST
   ========================== -->
 
   <div id="adminEmployeesView" class="hidden">
@@ -444,7 +484,7 @@
   </div>
 
   <!-- =========================
-       11 - ADMIN VIEW 9 - EDIT EMPLOYEE
+       10 - ADMIN VIEW 9 - EDIT EMPLOYEE
   ========================== -->
 
   <div id="adminEmployeeEditView" class="hidden">
@@ -500,10 +540,6 @@
 
 </div>
 
-<!-- =========================
-     12 - LOADING SCREEN HTML
-========================== -->
-
 <div id="loadingScreen" class="loading-bg hidden">
   <div class="spinner"></div>
 </div>
@@ -511,7 +547,7 @@
 <script type="module">
 
   /* =========================
-     13 - FIREBASE IMPORTS
+     11 - FIREBASE IMPORTS
   ========================== */
 
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
@@ -530,7 +566,7 @@
   } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
   /* =========================
-     14 - FIREBASE CONFIG
+     12 - FIREBASE CONFIG
   ========================== */
 
   const firebaseConfig = {
@@ -547,7 +583,7 @@
   const db = getFirestore(app);
 
   /* =========================
-     15 - SESSION DATA
+     13 - SESSION DATA
   ========================== */
 
   const sessionData = JSON.parse(sessionStorage.getItem("currentEmployee"));
@@ -557,7 +593,7 @@
   }
 
   /* =========================
-     16 - GLOBAL ADMIN VARIABLES
+     14 - GLOBAL ADMIN VARIABLES
   ========================== */
 
   let currentAssignment =
@@ -582,8 +618,24 @@
   let currentEditingTaskIndex = -1;
   let originalEditingTaskName = "";
 
+  const DEFAULT_WEEKLY_ROOM_TASKS = [
+    "Vac",
+    "Fridge",
+    "Bath",
+    "Mop",
+    "Toilet",
+    "Sink",
+    "Dust",
+    "Bed",
+    "AC Filter"
+  ];
+
+  const DEFAULT_DAILY_ROOM_TASKS = [
+    "Clean"
+  ];
+
   /* =========================
-     17 - ADMIN STARTUP
+     15 - ADMIN STARTUP
   ========================== */
 
   startAdmin();
@@ -595,7 +647,7 @@
   }
 
   /* =========================
-     18 - LOADING FUNCTIONS
+     16 - LOADING FUNCTIONS
   ========================== */
 
   function showLoading() {
@@ -607,7 +659,7 @@
   }
 
   /* =========================
-     19 - VIEW SWITCHING
+     17 - VIEW SWITCHING
   ========================== */
 
   function showAdminView(viewId) {
@@ -643,7 +695,7 @@
   }
 
   /* =========================
-     20 - DATE FUNCTIONS
+     18 - DATE FUNCTIONS
   ========================== */
 
   function getTodayISO() {
@@ -687,7 +739,7 @@
   }
 
   /* =========================
-     21 - ASSIGNMENT CHANGE
+     19 - ASSIGNMENT CHANGE
   ========================== */
 
   async function changeAdminAssignment() {
@@ -697,7 +749,7 @@
   }
 
   /* =========================
-     22 - LOAD TASKS FROM FIRESTORE
+     20 - LOAD TASKS FROM FIRESTORE
   ========================== */
 
   async function loadAdminTasks() {
@@ -760,7 +812,7 @@
   }
 
   /* =========================
-     23 - UPDATE TASK NAME OPTIONS
+     21 - UPDATE TASK NAME OPTIONS
   ========================== */
 
   function updateTaskNameOptions() {
@@ -785,7 +837,7 @@
   }
 
   /* =========================
-     24 - DRAW CATEGORY BUTTONS
+     22 - DRAW CATEGORY BUTTONS
   ========================== */
 
   function drawAdminCategories() {
@@ -826,7 +878,7 @@
   }
 
   /* =========================
-     25 - DRAW AREA BUTTONS
+     23 - DRAW AREA BUTTONS
   ========================== */
 
   function drawAdminAreaButtons(category) {
@@ -838,6 +890,7 @@
     setAdminAreaViewTag(category);
     setAdminAreaDatePickerVisibility(category);
     setAdminAreaSearchVisibility(category);
+    setAdminBulkTaskBoxVisibility(category);
 
     document.getElementById("adminBigDatePicker").value = currentWorkDateISO;
 
@@ -902,7 +955,7 @@
   }
 
   /* =========================
-     26 - SEARCH AREAS
+     24 - SEARCH AREAS
   ========================== */
 
   function searchAdminAreas() {
@@ -923,7 +976,333 @@
   }
 
   /* =========================
-     27 - AREA VIEW NUMBER LABEL
+     25 - TASK CHECKBOXES
+  ========================== */
+
+  function getDefaultTasksForSelectedCategory() {
+    if (selectedCategory === "Weekly Room" || selectedCategory === "Weekly Laundry") {
+      return DEFAULT_WEEKLY_ROOM_TASKS;
+    }
+
+    if (selectedCategory === "Daily Room" || selectedCategory === "Daily Laundry Check") {
+      return DEFAULT_DAILY_ROOM_TASKS;
+    }
+
+    return [];
+  }
+
+  function setAdminBulkTaskBoxVisibility(category) {
+    const box = document.getElementById("adminBulkTaskBox");
+
+    if (
+      category === "Weekly Room" ||
+      category === "Daily Room" ||
+      category === "Weekly Laundry" ||
+      category === "Daily Laundry Check"
+    ) {
+      drawTaskCheckboxes("adminBulkTaskChecks", getDefaultTasksForSelectedCategory(), "bulkTaskCheck");
+      box.classList.remove("hidden");
+    } else {
+      box.classList.add("hidden");
+    }
+  }
+
+  function setAdminSingleTaskBoxVisibility(category) {
+    const box = document.getElementById("adminSingleTaskBox");
+
+    if (
+      category === "Weekly Room" ||
+      category === "Daily Room" ||
+      category === "Weekly Laundry" ||
+      category === "Daily Laundry Check"
+    ) {
+      drawTaskCheckboxes("adminSingleTaskChecks", getDefaultTasksForSelectedCategory(), "singleTaskCheck");
+      box.classList.remove("hidden");
+    } else {
+      box.classList.add("hidden");
+    }
+  }
+
+  function drawTaskCheckboxes(containerId, taskList, className) {
+    const box = document.getElementById(containerId);
+    box.innerHTML = "";
+
+    taskList.forEach(function(taskName) {
+      const label = document.createElement("label");
+      label.className = "check-item";
+
+      label.innerHTML =
+        '<input type="checkbox" class="' + className + '" value="' + escapeHtml(taskName) + '">' +
+        '<span>' + escapeHtml(taskName) + '</span>';
+
+      box.appendChild(label);
+    });
+  }
+
+  function getCheckedTaskNames(className) {
+    return Array.from(document.querySelectorAll("." + className + ":checked"))
+      .map(function(input) {
+        return input.value;
+      });
+  }
+
+  function getScheduleForBulkTask() {
+    if (selectedCategory === "Weekly Room" || selectedCategory === "Weekly Laundry") {
+      return currentWorkDayName || "weekly";
+    }
+
+    return "daily";
+  }
+
+  function getScheduleForSingleTask() {
+    if (selectedCategory === "Weekly Room" || selectedCategory === "Weekly Laundry") {
+      return selectedAreaScheduleDay || currentWorkDayName || "weekly";
+    }
+
+    return "daily";
+  }
+
+  /* =========================
+     26 - ADD / DELETE CHECKED TASKS TO ALL AREAS
+  ========================== */
+
+  async function addCheckedTasksToAllAreas() {
+    const checkedTasks = getCheckedTaskNames("bulkTaskCheck");
+
+    if (checkedTasks.length === 0) {
+      alert("Select tasks.");
+      return;
+    }
+
+    const schedule = getScheduleForBulkTask();
+
+    const areas =
+      [...new Set(allTasksForAssignment.filter(function(task) {
+        return task.category === selectedCategory;
+      }).map(function(task) {
+        return task.area;
+      }).filter(function(area) {
+        return String(area || "").trim() !== "";
+      }))];
+
+    if (areas.length === 0) {
+      alert("No rooms found.");
+      return;
+    }
+
+    const ok = confirm("Add checked tasks to all " + areas.length + " rooms? Duplicates will be skipped.");
+    if (!ok) return;
+
+    showLoading();
+
+    let addedCount = 0;
+
+    for (let a = 0; a < areas.length; a++) {
+      const area = areas[a];
+
+      for (let t = 0; t < checkedTasks.length; t++) {
+        const taskName = checkedTasks[t];
+
+        const exists =
+          allTasksForAssignment.some(function(task) {
+            return (
+              task.assignment === currentAssignment &&
+              task.category === selectedCategory &&
+              task.area === area &&
+              String(task.task || "").trim().toLowerCase() === taskName.toLowerCase() &&
+              String(task.schedule || "").trim().toLowerCase() === schedule.toLowerCase()
+            );
+          });
+
+        if (!exists) {
+          await addDoc(collection(db, "tasks"), {
+            assignment: currentAssignment,
+            category: selectedCategory,
+            area: area,
+            task: taskName,
+            schedule: schedule,
+            active: true,
+            createdAt: serverTimestamp(),
+            updatedAt: serverTimestamp()
+          });
+
+          addedCount++;
+        }
+      }
+    }
+
+    await loadAdminTasks();
+    drawAdminAreaButtons(selectedCategory);
+
+    hideLoading();
+
+    alert("Added " + addedCount + " missing tasks.");
+  }
+
+  async function deleteCheckedTasksFromAllAreas() {
+    const checkedTasks = getCheckedTaskNames("bulkTaskCheck");
+
+    if (checkedTasks.length === 0) {
+      alert("Select tasks.");
+      return;
+    }
+
+    const schedule = getScheduleForBulkTask();
+
+    const tasksToDelete =
+      allTasksForAssignment.filter(function(task) {
+        return (
+          task.assignment === currentAssignment &&
+          task.category === selectedCategory &&
+          checkedTasks.includes(String(task.task || "").trim()) &&
+          String(task.schedule || "").trim().toLowerCase() === schedule.toLowerCase()
+        );
+      });
+
+    if (tasksToDelete.length === 0) {
+      alert("No matching tasks found.");
+      return;
+    }
+
+    const ok = confirm("Delete " + tasksToDelete.length + " matching tasks from all rooms?");
+    if (!ok) return;
+
+    showLoading();
+
+    for (let i = 0; i < tasksToDelete.length; i++) {
+      await deleteDoc(doc(db, "tasks", tasksToDelete[i].id));
+    }
+
+    await loadAdminTasks();
+    drawAdminAreaButtons(selectedCategory);
+
+    hideLoading();
+
+    alert("Deleted " + tasksToDelete.length + " tasks.");
+  }
+
+  /* =========================
+     27 - ADD / DELETE CHECKED TASKS TO SINGLE AREA
+  ========================== */
+
+  async function addCheckedTasksToSingleArea() {
+    const checkedTasks = getCheckedTaskNames("singleTaskCheck");
+
+    if (checkedTasks.length === 0) {
+      alert("Select tasks.");
+      return;
+    }
+
+    const area = document.getElementById("adminEditAreaInput").value.trim();
+    const assignment = document.getElementById("adminEditAssignmentInput").value.trim();
+    const category = document.getElementById("adminEditCategoryInput").value.trim();
+    const schedule = getScheduleForSingleTask();
+
+    if (!area || !assignment || !category) {
+      alert("Fill area and assignment.");
+      return;
+    }
+
+    showLoading();
+
+    let addedCount = 0;
+
+    for (let i = 0; i < checkedTasks.length; i++) {
+      const taskName = checkedTasks[i];
+
+      const exists =
+        allTasksForAssignment.some(function(task) {
+          return (
+            task.assignment === assignment &&
+            task.category === category &&
+            task.area === area &&
+            String(task.task || "").trim().toLowerCase() === taskName.toLowerCase() &&
+            String(task.schedule || "").trim().toLowerCase() === schedule.toLowerCase()
+          );
+        });
+
+      if (!exists) {
+        await addDoc(collection(db, "tasks"), {
+          assignment: assignment,
+          category: category,
+          area: area,
+          task: taskName,
+          schedule: schedule,
+          active: true,
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp()
+        });
+
+        addedCount++;
+      }
+    }
+
+    currentAssignment = assignment;
+    selectedCategory = category;
+    selectedArea = area;
+    selectedAreaScheduleDay = schedule;
+
+    document.getElementById("adminAssignmentSelect").value = assignment;
+    document.getElementById("adminAreaScheduleInput").value = schedule;
+
+    await loadAdminTasks();
+    openAdminEditArea(area);
+
+    hideLoading();
+
+    document.getElementById("adminMessage").innerText =
+      "Added " + addedCount + " missing tasks.";
+  }
+
+  async function deleteCheckedTasksFromSingleArea() {
+    const checkedTasks = getCheckedTaskNames("singleTaskCheck");
+
+    if (checkedTasks.length === 0) {
+      alert("Select tasks.");
+      return;
+    }
+
+    const area = document.getElementById("adminEditAreaInput").value.trim();
+    const assignment = document.getElementById("adminEditAssignmentInput").value.trim();
+    const category = document.getElementById("adminEditCategoryInput").value.trim();
+    const schedule = getScheduleForSingleTask();
+
+    const tasksToDelete =
+      allTasksForAssignment.filter(function(task) {
+        return (
+          task.assignment === assignment &&
+          task.category === category &&
+          task.area === area &&
+          checkedTasks.includes(String(task.task || "").trim()) &&
+          String(task.schedule || "").trim().toLowerCase() === schedule.toLowerCase()
+        );
+      });
+
+    if (tasksToDelete.length === 0) {
+      alert("No matching tasks found.");
+      return;
+    }
+
+    const ok = confirm("Delete " + tasksToDelete.length + " matching tasks from this room?");
+    if (!ok) return;
+
+    showLoading();
+
+    for (let i = 0; i < tasksToDelete.length; i++) {
+      await deleteDoc(doc(db, "tasks", tasksToDelete[i].id));
+    }
+
+    await loadAdminTasks();
+    openAdminEditArea(area);
+
+    hideLoading();
+
+    document.getElementById("adminMessage").innerText =
+      "Deleted " + tasksToDelete.length + " tasks.";
+  }
+
+  /* =========================
+     28 - AREA VIEW NUMBER LABEL
   ========================== */
 
   function setAdminAreaViewTag(category) {
@@ -947,7 +1326,7 @@
   }
 
   /* =========================
-     28 - WEEKLY DATE PICKER VISIBILITY
+     29 - WEEKLY DATE PICKER VISIBILITY
   ========================== */
 
   function setAdminAreaDatePickerVisibility(category) {
@@ -964,7 +1343,7 @@
   }
 
   /* =========================
-     29 - OPEN EXISTING AREA EDITOR
+     30 - OPEN EXISTING AREA EDITOR
   ========================== */
 
   function openAdminEditArea(area) {
@@ -990,6 +1369,7 @@
 
     updateAssignmentTitles();
     setAreaScheduleBoxVisibility();
+    setAdminSingleTaskBoxVisibility(selectedCategory);
     closeAdminSubTaskEditor();
     drawAdminSubTaskButtons();
 
@@ -997,7 +1377,7 @@
   }
 
   /* =========================
-     30 - OPEN NEW AREA EDITOR
+     31 - OPEN NEW AREA EDITOR
   ========================== */
 
   function openNewAdminArea() {
@@ -1018,6 +1398,7 @@
 
     updateAssignmentTitles();
     setAreaScheduleBoxVisibility();
+    setAdminSingleTaskBoxVisibility(selectedCategory);
     closeAdminSubTaskEditor();
     drawAdminSubTaskButtons();
 
@@ -1025,7 +1406,7 @@
   }
 
   /* =========================
-     31 - AREA SCHEDULE DAY
+     32 - AREA SCHEDULE DAY
   ========================== */
 
   function setAreaScheduleBoxVisibility() {
@@ -1050,7 +1431,7 @@
   }
 
   /* =========================
-     32 - DRAW SUB TASK BUTTONS
+     33 - DRAW SUB TASK BUTTONS
   ========================== */
 
   function drawAdminSubTaskButtons() {
@@ -1095,7 +1476,7 @@
   }
 
   /* =========================
-     33 - OPEN SUB TASK EDITOR
+     34 - OPEN SUB TASK EDITOR
   ========================== */
 
   function openAdminSubTaskEditor(index) {
@@ -1125,7 +1506,7 @@
   }
 
   /* =========================
-     34 - OPEN NEW SUB TASK
+     35 - OPEN NEW SUB TASK
   ========================== */
 
   function openNewAdminSubTask() {
@@ -1150,7 +1531,7 @@
   }
 
   /* =========================
-     35 - CLOSE SUB TASK EDITOR
+     36 - CLOSE SUB TASK EDITOR
   ========================== */
 
   function closeAdminSubTaskEditor() {
@@ -1162,7 +1543,7 @@
   }
 
   /* =========================
-     36 - SAVE ALL WEEKLY BUTTON VISIBILITY
+     37 - SAVE ALL WEEKLY BUTTON VISIBILITY
   ========================== */
 
   function setSaveAllWeeklyButtonVisibility() {
@@ -1186,7 +1567,7 @@
   }
 
   /* =========================
-     37 - SAVE AREA ONLY
+     38 - SAVE AREA ONLY
   ========================== */
 
   async function saveAdminAreaOnly() {
@@ -1237,7 +1618,7 @@
   }
 
   /* =========================
-     38 - SAVE SUB TASK
+     39 - SAVE SUB TASK
   ========================== */
 
   async function saveAdminSubTask() {
@@ -1302,7 +1683,7 @@
   }
 
   /* =========================
-     39 - SAVE SUB TASK TO ALL WEEKLY ROOMS
+     40 - SAVE SUB TASK TO ALL WEEKLY ROOMS
   ========================== */
 
   async function saveAdminSubTaskToAllWeeklyRooms() {
@@ -1393,7 +1774,7 @@
   }
 
   /* =========================
-     40 - DELETE SUB TASK
+     41 - DELETE SUB TASK
   ========================== */
 
   async function deleteAdminSubTask() {
@@ -1421,7 +1802,7 @@
   }
 
   /* =========================
-     41 - DELETE WHOLE AREA / DAY
+     42 - DELETE WHOLE AREA / DAY
   ========================== */
 
   async function deleteAdminArea() {
@@ -1473,7 +1854,7 @@
   }
 
   /* =========================
-     42 - BACK BUTTONS
+     43 - BACK BUTTONS
   ========================== */
 
   async function backToAdminAreas() {
@@ -1489,7 +1870,7 @@
   }
 
   /* =========================
-     43 - OPEN EMPLOYEES
+     44 - OPEN EMPLOYEES
   ========================== */
 
   async function openEmployees() {
@@ -1541,7 +1922,7 @@
   }
 
   /* =========================
-     44 - OPEN NEW EMPLOYEE
+     45 - OPEN NEW EMPLOYEE
   ========================== */
 
   function openNewEmployee() {
@@ -1562,7 +1943,7 @@
   }
 
   /* =========================
-     45 - OPEN EXISTING EMPLOYEE
+     46 - OPEN EXISTING EMPLOYEE
   ========================== */
 
   function openEmployeeEditor(emp) {
@@ -1590,7 +1971,7 @@
   }
 
   /* =========================
-     46 - SAVE EMPLOYEE
+     47 - SAVE EMPLOYEE
   ========================== */
 
   async function saveEmployee() {
@@ -1634,7 +2015,7 @@
   }
 
   /* =========================
-     47 - DELETE EMPLOYEE
+     48 - DELETE EMPLOYEE
   ========================== */
 
   async function deleteEmployee() {
@@ -1656,7 +2037,7 @@
   }
 
   /* =========================
-     48 - LOGOUT
+     49 - LOGOUT
   ========================== */
 
   function logout() {
@@ -1665,7 +2046,7 @@
   }
 
   /* =========================
-     49 - HTML ESCAPE HELPER
+     50 - HTML ESCAPE HELPER
   ========================== */
 
   function escapeHtml(value) {
@@ -1677,16 +2058,8 @@
   }
 
   /* =========================
-     50 - DEFAULT SCHEDULE HELPER
+     51 - SCHEDULE HELPER
   ========================== */
-
-  function getDefaultScheduleForCategory(category) {
-    if (category === "Weekly Room" || category === "Weekly Laundry") {
-      return currentWorkDayName || "weekly";
-    }
-
-    return "daily";
-  }
 
   function getScheduleForSubTask(category) {
     if (category === "Weekly Room" || category === "Weekly Laundry") {
@@ -1704,7 +2077,7 @@
   }
 
   /* =========================
-     51 - WINDOW FUNCTIONS - DATE / ASSIGNMENT
+     52 - WINDOW FUNCTIONS - DATE / ASSIGNMENT
   ========================== */
 
   window.changeAdminWorkDateFromBigPicker = changeAdminWorkDateFromBigPicker;
@@ -1713,7 +2086,7 @@
   window.changeAdminAreaScheduleDay = changeAdminAreaScheduleDay;
 
   /* =========================
-     52 - WINDOW FUNCTIONS - ADMIN TASKS
+     53 - WINDOW FUNCTIONS - ADMIN TASKS
   ========================== */
 
   window.openNewAdminArea = openNewAdminArea;
@@ -1727,9 +2100,13 @@
   window.deleteAdminArea = deleteAdminArea;
   window.backToAdminAreas = backToAdminAreas;
   window.backToAdminCategories = backToAdminCategories;
+  window.addCheckedTasksToAllAreas = addCheckedTasksToAllAreas;
+  window.deleteCheckedTasksFromAllAreas = deleteCheckedTasksFromAllAreas;
+  window.addCheckedTasksToSingleArea = addCheckedTasksToSingleArea;
+  window.deleteCheckedTasksFromSingleArea = deleteCheckedTasksFromSingleArea;
 
   /* =========================
-     53 - WINDOW FUNCTIONS - EMPLOYEES
+     54 - WINDOW FUNCTIONS - EMPLOYEES
   ========================== */
 
   window.openEmployees = openEmployees;
@@ -1738,7 +2115,7 @@
   window.deleteEmployee = deleteEmployee;
 
   /* =========================
-     54 - WINDOW FUNCTIONS - LOGOUT
+     55 - WINDOW FUNCTIONS - LOGOUT
   ========================== */
 
   window.logout = logout;
