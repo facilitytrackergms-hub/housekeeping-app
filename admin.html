@@ -345,24 +345,14 @@
 
     <div id="adminSubtaskEditor" class="task-card hidden">
 
+      <div class="view-center">
+        <div class="view-tag" id="adminSubtaskViewTag">ADMIN VIEW 7-1</div>
+      </div>
+
       <h3 id="adminSubtaskEditorTitle">Edit Sub Task</h3>
 
       <label>Task Name</label>
       <input id="adminTaskNameInput">
-
-      <label>Schedule Type</label>
-      <select id="adminTaskScheduleInput">
-        <option value="">Select schedule</option>
-        <option value="daily">Daily</option>
-        <option value="weekly">Weekly</option>
-        <option value="Sunday">Sunday</option>
-        <option value="Monday">Monday</option>
-        <option value="Tuesday">Tuesday</option>
-        <option value="Wednesday">Wednesday</option>
-        <option value="Thursday">Thursday</option>
-        <option value="Friday">Friday</option>
-        <option value="Saturday">Saturday</option>
-      </select>
 
       <label>Schedule Date</label>
       <input id="adminTaskDateInput" type="date">
@@ -1057,14 +1047,14 @@
     currentEditingTaskIndex = index;
     currentEditingTaskId = task.id || "";
 
+    document.getElementById("adminSubtaskViewTag").innerText =
+      "ADMIN VIEW 7-1";
+
     document.getElementById("adminSubtaskEditorTitle").innerText =
       "Edit Sub Task";
 
     document.getElementById("adminTaskNameInput").value =
       task.task || "";
-
-    document.getElementById("adminTaskScheduleInput").value =
-      task.schedule || "";
 
     document.getElementById("adminTaskDateInput").value =
       task.scheduleDate || "";
@@ -1089,11 +1079,13 @@
     currentEditingTaskIndex = -1;
     currentEditingTaskId = "";
 
+    document.getElementById("adminSubtaskViewTag").innerText =
+      "ADMIN VIEW 7-1";
+
     document.getElementById("adminSubtaskEditorTitle").innerText =
       "New Sub Task";
 
     document.getElementById("adminTaskNameInput").value = "";
-    document.getElementById("adminTaskScheduleInput").value = "";
     document.getElementById("adminTaskDateInput").value = "";
     document.getElementById("adminTaskStartTimeInput").value = "";
     document.getElementById("adminTaskEndTimeInput").value = "";
@@ -1173,14 +1165,14 @@
     const category = document.getElementById("adminEditCategoryInput").value.trim();
 
     const taskName = document.getElementById("adminTaskNameInput").value.trim();
-    const schedule = document.getElementById("adminTaskScheduleInput").value;
+    const schedule = getDefaultScheduleForCategory(category);
     const scheduleDate = document.getElementById("adminTaskDateInput").value;
     const startTime = document.getElementById("adminTaskStartTimeInput").value;
     const endTime = document.getElementById("adminTaskEndTimeInput").value;
     const activeValue = document.getElementById("adminTaskActiveInput").value;
 
-    if (!area || !assignment || !category || !taskName || !schedule || !activeValue) {
-      alert("Fill area, assignment, category, task name, schedule, and active.");
+    if (!area || !assignment || !category || !taskName || !activeValue) {
+      alert("Fill area, assignment, category, task name, and active.");
       return;
     }
 
@@ -1488,7 +1480,19 @@
   }
 
   /* =========================
-     46 - WINDOW FUNCTIONS - DATE / ASSIGNMENT
+     46 - DEFAULT SCHEDULE HELPER
+  ========================== */
+
+  function getDefaultScheduleForCategory(category) {
+    if (category === "Weekly Room" || category === "Weekly Laundry") {
+      return currentWorkDayName || "weekly";
+    }
+
+    return "daily";
+  }
+
+  /* =========================
+     47 - WINDOW FUNCTIONS - DATE / ASSIGNMENT
   ========================== */
 
   window.changeAdminWorkDateFromBigPicker = changeAdminWorkDateFromBigPicker;
@@ -1497,7 +1501,7 @@
   window.deleteSelectedAssignment = deleteSelectedAssignment;
 
   /* =========================
-     47 - WINDOW FUNCTIONS - ADMIN TASKS
+     48 - WINDOW FUNCTIONS - ADMIN TASKS
   ========================== */
 
   window.openNewAdminArea = openNewAdminArea;
@@ -1512,7 +1516,7 @@
   window.backToAdminCategories = backToAdminCategories;
 
   /* =========================
-     48 - WINDOW FUNCTIONS - EMPLOYEES
+     49 - WINDOW FUNCTIONS - EMPLOYEES
   ========================== */
 
   window.openEmployees = openEmployees;
@@ -1521,7 +1525,7 @@
   window.deleteEmployee = deleteEmployee;
 
   /* =========================
-     49 - WINDOW FUNCTIONS - LOGOUT
+     50 - WINDOW FUNCTIONS - LOGOUT
   ========================== */
 
   window.logout = logout;
