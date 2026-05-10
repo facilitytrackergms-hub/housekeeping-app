@@ -94,6 +94,13 @@
       cursor: pointer;
     }
 
+    .assignment-title {
+      text-align: center;
+      font-size: 17px;
+      font-weight: bold;
+      margin: 0 0 6px;
+    }
+
     .green {
       background: #2e7d32 !important;
       color: white !important;
@@ -264,7 +271,7 @@
       <div class="view-tag">ADMIN VIEW 2</div>
     </div>
 
-    <h2 id="adminName">Welcome, Admin</h2>
+   
 
     <label>Assignment</label>
     <select id="adminAssignmentSelect" onchange="changeAdminAssignment()">
@@ -287,6 +294,7 @@
       <div class="view-tag" id="adminAreaViewTag">ADMIN VIEW 3</div>
     </div>
 
+    <div class="assignment-title" id="adminAreaAssignmentTitle"></div>
     <h2 id="adminAreaTitle">Area</h2>
 
     <div id="adminAreaBigDatePickerBox" class="top-date-box hidden">
@@ -319,6 +327,7 @@
       <div class="view-tag">ADMIN VIEW 7</div>
     </div>
 
+    <div class="assignment-title" id="adminEditAssignmentTitle"></div>
     <h2 id="adminEditTitle">Edit Area</h2>
 
     <label>Area Name</label>
@@ -354,6 +363,7 @@
         <div class="view-tag" id="adminSubtaskViewTag">ADMIN VIEW 7-1</div>
       </div>
 
+      <div class="assignment-title" id="adminSubtaskAssignmentTitle"></div>
       <h3 id="adminSubtaskEditorTitle">Edit Sub Task</h3>
 
       <label>Task Name</label>
@@ -389,6 +399,7 @@
       <div class="view-tag">ADMIN VIEW 8 - EMPLOYEES</div>
     </div>
 
+    <div class="assignment-title" id="adminEmployeesAssignmentTitle"></div>
     <h2>Employees</h2>
 
     <button class="green" onclick="openNewEmployee()">ADD EMPLOYEE</button>
@@ -409,6 +420,7 @@
       <div class="view-tag">ADMIN VIEW 9 - EDIT EMPLOYEE</div>
     </div>
 
+    <div class="assignment-title" id="adminEmployeeEditAssignmentTitle"></div>
     <h2 id="employeeEditTitle">Employee</h2>
 
     <label>First Name</label>
@@ -582,7 +594,25 @@
       document.getElementById(id).classList.add("hidden");
     });
 
+    updateAssignmentTitles();
+
     document.getElementById(viewId).classList.remove("hidden");
+  }
+
+  function updateAssignmentTitles() {
+    [
+      "adminAreaAssignmentTitle",
+      "adminEditAssignmentTitle",
+      "adminSubtaskAssignmentTitle",
+      "adminEmployeesAssignmentTitle",
+      "adminEmployeeEditAssignmentTitle"
+    ].forEach(function(id) {
+      const el = document.getElementById(id);
+
+      if (el) {
+        el.innerText = currentAssignment;
+      }
+    });
   }
 
   /* =========================
@@ -650,6 +680,8 @@
 
     document.getElementById("adminAreaDateTitle").innerText =
       currentWorkDayName;
+
+    updateAssignmentTitles();
 
     const taskQuery = query(
       collection(db, "tasks"),
@@ -783,6 +815,8 @@
     document.getElementById("adminAreaDateTitle").innerText =
       currentWorkDayName;
 
+    updateAssignmentTitles();
+
     const categoryTasks =
       allTasksForDay.filter(function(task) {
         return task.category === category;
@@ -876,6 +910,8 @@
     document.getElementById("adminEditCategoryInput").value = selectedCategory;
     document.getElementById("adminMessage").innerText = "";
 
+    updateAssignmentTitles();
+
     closeAdminSubTaskEditor();
     drawAdminSubTaskButtons();
 
@@ -895,6 +931,8 @@
     document.getElementById("adminEditAssignmentInput").value = "";
     document.getElementById("adminEditCategoryInput").value = selectedCategory;
     document.getElementById("adminMessage").innerText = "";
+
+    updateAssignmentTitles();
 
     closeAdminSubTaskEditor();
     drawAdminSubTaskButtons();
@@ -952,6 +990,8 @@
     document.getElementById("adminTaskNameInput").value =
       task.task || "";
 
+    updateAssignmentTitles();
+
     document.getElementById("adminSubtaskEditor").classList.remove("hidden");
   }
 
@@ -970,6 +1010,8 @@
       "New Sub Task";
 
     document.getElementById("adminTaskNameInput").value = "";
+
+    updateAssignmentTitles();
 
     document.getElementById("adminSubtaskEditor").classList.remove("hidden");
   }
@@ -1004,6 +1046,7 @@
       currentAssignment = assignment;
       selectedCategory = category;
       document.getElementById("adminAssignmentSelect").value = assignment;
+      updateAssignmentTitles();
       document.getElementById("adminMessage").innerText = "Saved.";
       return;
     }
@@ -1208,6 +1251,8 @@
 
     hideLoading();
 
+    updateAssignmentTitles();
+
     showAdminView("adminEmployeesView");
   }
 
@@ -1226,6 +1271,8 @@
     document.getElementById("empRole").value = "";
     document.getElementById("empActive").value = "";
     document.getElementById("employeeMessage").innerText = "";
+
+    updateAssignmentTitles();
 
     showAdminView("adminEmployeeEditView");
   }
@@ -1252,6 +1299,8 @@
     document.getElementById("empActive").value =
       emp.active === false ? "false" : "true";
     document.getElementById("employeeMessage").innerText = "";
+
+    updateAssignmentTitles();
 
     showAdminView("adminEmployeeEditView");
   }
