@@ -325,6 +325,7 @@
 
     <label>Assignment</label>
     <select id="adminEditAssignmentInput">
+      <option value="">Select assignment</option>
       <option>HK Schedule 1</option>
       <option>HK Schedule 2</option>
       <option>Laundry</option>
@@ -332,6 +333,7 @@
 
     <label>Category</label>
     <select id="adminEditCategoryInput">
+      <option value="">Select category</option>
       <option>Common Area</option>
       <option>Weekly Room</option>
       <option>Daily Room</option>
@@ -351,6 +353,7 @@
 
     <label>Schedule</label>
     <select id="adminNewScheduleInput">
+      <option value="">Select schedule</option>
       <option value="daily">daily</option>
       <option value="Sunday">Sunday</option>
       <option value="Monday">Monday</option>
@@ -417,6 +420,7 @@
 
     <label>Assignment</label>
     <select id="empAssignment">
+      <option value="">Select assignment</option>
       <option>HK Schedule 1</option>
       <option>HK Schedule 2</option>
       <option>Laundry</option>
@@ -424,12 +428,14 @@
 
     <label>Role</label>
     <select id="empRole">
+      <option value="">Select role</option>
       <option value="employee">employee</option>
       <option value="admin">admin</option>
     </select>
 
     <label>Active</label>
     <select id="empActive">
+      <option value="">Select active</option>
       <option value="true">true</option>
       <option value="false">false</option>
     </select>
@@ -808,6 +814,7 @@
     document.getElementById("adminEditCategoryInput").value = selectedCategory;
     document.getElementById("adminMessage").innerText = "";
     document.getElementById("adminNewTaskInput").value = "";
+    document.getElementById("adminNewScheduleInput").value = "";
     document.getElementById("adminNewDateInput").value = "";
     document.getElementById("adminNewStartTimeInput").value = "";
     document.getElementById("adminNewEndTimeInput").value = "";
@@ -823,10 +830,11 @@
 
     document.getElementById("adminEditTitle").innerText = "New Area";
     document.getElementById("adminEditAreaInput").value = "";
-    document.getElementById("adminEditAssignmentInput").value = currentAssignment;
-    document.getElementById("adminEditCategoryInput").value = selectedCategory;
+    document.getElementById("adminEditAssignmentInput").value = "";
+    document.getElementById("adminEditCategoryInput").value = "";
     document.getElementById("adminMessage").innerText = "";
     document.getElementById("adminNewTaskInput").value = "";
+    document.getElementById("adminNewScheduleInput").value = "";
     document.getElementById("adminNewDateInput").value = "";
     document.getElementById("adminNewStartTimeInput").value = "";
     document.getElementById("adminNewEndTimeInput").value = "";
@@ -850,6 +858,7 @@
 
         '<label>Schedule</label>' +
         '<select id="adminTaskSchedule_' + index + '">' +
+          '<option value="">Select schedule</option>' +
           '<option value="daily">daily</option>' +
           '<option value="Sunday">Sunday</option>' +
           '<option value="Monday">Monday</option>' +
@@ -871,6 +880,7 @@
 
         '<label>Active</label>' +
         '<select id="adminTaskActive_' + index + '">' +
+          '<option value="">Select active</option>' +
           '<option value="true">true</option>' +
           '<option value="false">false</option>' +
         '</select>' +
@@ -883,7 +893,7 @@
       box.appendChild(div);
 
       document.getElementById("adminTaskSchedule_" + index).value =
-        task.schedule || "daily";
+        task.schedule || "";
 
       document.getElementById("adminTaskDate_" + index).value =
         task.scheduleDate || "";
@@ -915,8 +925,8 @@
     const startTime = document.getElementById("adminNewStartTimeInput").value;
     const endTime = document.getElementById("adminNewEndTimeInput").value;
 
-    if (!area || !assignment || !category || !taskName) {
-      alert("Fill area, assignment, category, and task name.");
+    if (!area || !assignment || !category || !taskName || !schedule) {
+      alert("Fill area, assignment, category, task name, and schedule.");
       return;
     }
 
@@ -958,12 +968,14 @@
     const scheduleDate = document.getElementById("adminTaskDate_" + index).value;
     const startTime = document.getElementById("adminTaskStartTime_" + index).value;
     const endTime = document.getElementById("adminTaskEndTime_" + index).value;
-    const active = document.getElementById("adminTaskActive_" + index).value === "true";
+    const activeValue = document.getElementById("adminTaskActive_" + index).value;
 
-    if (!area || !assignment || !category || !taskName) {
+    if (!area || !assignment || !category || !taskName || !schedule || !activeValue) {
       alert("Fill all required fields.");
       return;
     }
+
+    const active = activeValue === "true";
 
     showLoading();
 
@@ -1019,7 +1031,15 @@
       const scheduleDate = document.getElementById("adminTaskDate_" + i).value;
       const startTime = document.getElementById("adminTaskStartTime_" + i).value;
       const endTime = document.getElementById("adminTaskEndTime_" + i).value;
-      const active = document.getElementById("adminTaskActive_" + i).value === "true";
+      const activeValue = document.getElementById("adminTaskActive_" + i).value;
+
+      if (!taskName || !schedule || !activeValue) {
+        hideLoading();
+        alert("Fill all task fields.");
+        return;
+      }
+
+      const active = activeValue === "true";
 
       await updateDoc(doc(db, "tasks", task.id), {
         assignment: assignment,
@@ -1157,9 +1177,9 @@
     document.getElementById("empFirstName").value = "";
     document.getElementById("empLastName").value = "";
     document.getElementById("empPin").value = "";
-    document.getElementById("empAssignment").value = "HK Schedule 1";
-    document.getElementById("empRole").value = "employee";
-    document.getElementById("empActive").value = "true";
+    document.getElementById("empAssignment").value = "";
+    document.getElementById("empRole").value = "";
+    document.getElementById("empActive").value = "";
     document.getElementById("employeeMessage").innerText = "";
 
     showAdminView("adminEmployeeEditView");
@@ -1178,8 +1198,8 @@
     document.getElementById("empFirstName").value = emp.firstName || "";
     document.getElementById("empLastName").value = emp.lastName || "";
     document.getElementById("empPin").value = emp.pin || "";
-    document.getElementById("empAssignment").value = emp.assignment || "HK Schedule 1";
-    document.getElementById("empRole").value = emp.role || "employee";
+    document.getElementById("empAssignment").value = emp.assignment || "";
+    document.getElementById("empRole").value = emp.role || "";
     document.getElementById("empActive").value =
       emp.active === false ? "false" : "true";
     document.getElementById("employeeMessage").innerText = "";
@@ -1193,12 +1213,14 @@
     const pin = document.getElementById("empPin").value.trim();
     const assignment = document.getElementById("empAssignment").value;
     const role = document.getElementById("empRole").value;
-    const active = document.getElementById("empActive").value === "true";
+    const activeValue = document.getElementById("empActive").value;
 
-    if (!firstName || !pin) {
-      alert("First name and PIN are required.");
+    if (!firstName || !pin || !assignment || !role || !activeValue) {
+      alert("Fill first name, PIN, assignment, role, and active.");
       return;
     }
+
+    const active = activeValue === "true";
 
     showLoading();
 
