@@ -354,15 +354,6 @@
       <label>Task Name</label>
       <input id="adminTaskNameInput">
 
-      <label>Schedule Date</label>
-      <input id="adminTaskDateInput" type="date">
-
-      <label>Start Time</label>
-      <input id="adminTaskStartTimeInput" type="time">
-
-      <label>End Time</label>
-      <input id="adminTaskEndTimeInput" type="time">
-
       <label>Active</label>
       <select id="adminTaskActiveInput">
         <option value="">Select active</option>
@@ -1056,15 +1047,6 @@
     document.getElementById("adminTaskNameInput").value =
       task.task || "";
 
-    document.getElementById("adminTaskDateInput").value =
-      task.scheduleDate || "";
-
-    document.getElementById("adminTaskStartTimeInput").value =
-      task.startTime || "";
-
-    document.getElementById("adminTaskEndTimeInput").value =
-      task.endTime || "";
-
     document.getElementById("adminTaskActiveInput").value =
       task.active === false || task.active === "No" ? "false" : "true";
 
@@ -1086,9 +1068,6 @@
       "New Sub Task";
 
     document.getElementById("adminTaskNameInput").value = "";
-    document.getElementById("adminTaskDateInput").value = "";
-    document.getElementById("adminTaskStartTimeInput").value = "";
-    document.getElementById("adminTaskEndTimeInput").value = "";
     document.getElementById("adminTaskActiveInput").value = "";
 
     document.getElementById("adminSubtaskEditor").classList.remove("hidden");
@@ -1166,9 +1145,6 @@
 
     const taskName = document.getElementById("adminTaskNameInput").value.trim();
     const schedule = getDefaultScheduleForCategory(category);
-    const scheduleDate = document.getElementById("adminTaskDateInput").value;
-    const startTime = document.getElementById("adminTaskStartTimeInput").value;
-    const endTime = document.getElementById("adminTaskEndTimeInput").value;
     const activeValue = document.getElementById("adminTaskActiveInput").value;
 
     if (!area || !assignment || !category || !taskName || !activeValue) {
@@ -1187,9 +1163,6 @@
         area: area,
         task: taskName,
         schedule: schedule,
-        scheduleDate: scheduleDate,
-        startTime: startTime,
-        endTime: endTime,
         active: active,
         updatedAt: serverTimestamp()
       });
@@ -1200,9 +1173,6 @@
         area: area,
         task: taskName,
         schedule: schedule,
-        scheduleDate: scheduleDate,
-        startTime: startTime,
-        endTime: endTime,
         active: active,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp()
