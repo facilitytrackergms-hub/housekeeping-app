@@ -26,15 +26,15 @@
       display: flex;
       justify-content: center;
       align-items: flex-start;
-      padding: 10px 8px;
+      padding: 8px;
     }
 
     .card {
       width: 100%;
-      max-width: 430px;
+      max-width: 420px;
       background: white;
-      border-radius: 20px;
-      padding: 16px;
+      border-radius: 18px;
+      padding: 12px;
       box-shadow: 0 4px 18px rgba(0,0,0,0.18);
     }
 
@@ -45,7 +45,7 @@
       padding: 4px 10px;
       border-radius: 8px;
       font-size: 12px;
-      margin-bottom: 8px;
+      margin-bottom: 6px;
     }
 
     .view-center {
@@ -58,43 +58,43 @@
     }
 
     h2 {
-      font-size: 24px;
-      margin-bottom: 10px;
+      font-size: 22px;
+      margin-bottom: 8px;
     }
 
     h3 {
-      font-size: 20px;
-      margin-bottom: 10px;
+      font-size: 18px;
+      margin-bottom: 8px;
     }
 
     label {
-      font-size: 17px;
+      font-size: 15px;
       font-weight: bold;
     }
 
     input, select, textarea {
       width: 100%;
-      font-size: 20px;
-      padding: 12px;
-      margin: 8px 0 14px;
-      border-radius: 14px;
+      font-size: 18px;
+      padding: 10px;
+      margin: 6px 0 10px;
+      border-radius: 12px;
       border: 1px solid #ccc;
     }
 
     textarea {
-      min-height: 80px;
+      min-height: 70px;
     }
 
     button {
       width: 100%;
       border: none;
-      border-radius: 14px;
+      border-radius: 12px;
       background: #1976d2;
       color: white;
-      font-size: 20px;
+      font-size: 17px;
       font-weight: bold;
-      padding: 14px;
-      margin: 6px 0;
+      padding: 11px;
+      margin: 5px 0;
       cursor: pointer;
     }
 
@@ -127,7 +127,7 @@
     ========================== */
 
     .top-date-box {
-      margin-bottom: 14px;
+      margin-bottom: 10px;
     }
 
     /* =========================
@@ -137,34 +137,34 @@
     .rooms-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
-      gap: 8px;
-      margin-top: 10px;
+      gap: 7px;
+      margin-top: 8px;
     }
 
     .rooms-grid button {
       width: 100%;
-      min-height: 64px;
-      font-size: 18px;
-      padding: 8px 6px;
+      min-height: 58px;
+      font-size: 16px;
+      padding: 7px 5px;
       line-height: 1.1;
       display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      border-radius: 14px;
+      border-radius: 12px;
       margin: 0;
     }
 
     .room-number {
-      font-size: 24px;
+      font-size: 21px;
       font-weight: bold;
       line-height: 1.1;
     }
 
     .room-counter {
-      font-size: 16px;
+      font-size: 14px;
       font-weight: bold;
-      margin-top: 3px;
+      margin-top: 2px;
     }
 
     /* =========================
@@ -173,17 +173,43 @@
 
     .task-card {
       border: 1px solid #ccc;
-      border-radius: 16px;
-      padding: 12px;
-      margin: 10px 0;
+      border-radius: 14px;
+      padding: 10px;
+      margin: 8px 0;
       background: #fafafa;
+    }
+
+    .button-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 7px;
+      margin-top: 8px;
+    }
+
+    .button-row button {
+      font-size: 15px;
+      padding: 10px 6px;
+      margin: 0;
+    }
+
+    .button-row-three {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 7px;
+      margin-top: 8px;
+    }
+
+    .button-row-three button {
+      font-size: 14px;
+      padding: 10px 4px;
+      margin: 0;
     }
 
     #adminMessage,
     #employeeMessage,
     #assignmentMessage {
       text-align: center;
-      font-size: 18px;
+      font-size: 16px;
       font-weight: bold;
     }
 
@@ -250,16 +276,19 @@
 
     <input id="newAssignmentInput" placeholder="New assignment name">
 
-    <button class="green" onclick="addAssignment()">ADD ASSIGNMENT</button>
-    <button class="red" onclick="deleteSelectedAssignment()">DELETE SELECTED ASSIGNMENT</button>
+    <div class="button-row">
+      <button class="green" onclick="addAssignment()">ADD</button>
+      <button class="red" onclick="deleteSelectedAssignment()">DELETE</button>
+    </div>
 
     <p id="assignmentMessage"></p>
 
     <div id="adminCategoryButtons"></div>
 
-    <button class="yellow" onclick="openEmployees()">EMPLOYEES</button>
-
-    <button class="back" onclick="logout()">LOGOUT</button>
+    <div class="button-row">
+      <button class="yellow" onclick="openEmployees()">EMPLOYEES</button>
+      <button class="back" onclick="logout()">LOGOUT</button>
+    </div>
 
   </div>
 
@@ -323,8 +352,6 @@
       <option>Daily Laundry Check</option>
     </select>
 
-    <button class="green" onclick="saveAdminAreaNameOnly()">SAVE AREA NAME</button>
-
     <h3>Sub Tasks</h3>
 
     <button class="green" onclick="openNewAdminSubTask()">ADD NEW SUB TASK</button>
@@ -344,17 +371,21 @@
 
       <datalist id="taskNameOptions"></datalist>
 
-      <button class="green" onclick="saveAdminSubTask()">SAVE SUB TASK</button>
-      <button class="red" onclick="deleteAdminSubTask()">DELETE SUB TASK</button>
-      <button class="back" onclick="closeAdminSubTaskEditor()">CANCEL</button>
+      <div class="button-row-three">
+        <button class="green" onclick="saveAdminSubTask()">SAVE</button>
+        <button class="red" onclick="deleteAdminSubTask()">DELETE</button>
+        <button class="back" onclick="closeAdminSubTaskEditor()">CANCEL</button>
+      </div>
 
     </div>
 
-    <button class="red" onclick="deleteAdminArea()">DELETE WHOLE AREA</button>
+    <div class="button-row-three">
+      <button class="green" onclick="saveAdminAreaOnly()">SAVE</button>
+      <button class="red" onclick="deleteAdminArea()">DELETE AREA</button>
+      <button class="back" onclick="backToAdminAreas()">BACK</button>
+    </div>
 
     <p id="adminMessage"></p>
-
-    <button class="back" onclick="backToAdminAreas()">BACK</button>
 
   </div>
 
@@ -416,8 +447,10 @@
       <option value="false">false</option>
     </select>
 
-    <button class="green" onclick="saveEmployee()">SAVE EMPLOYEE</button>
-    <button class="red" onclick="deleteEmployee()">DELETE EMPLOYEE</button>
+    <div class="button-row">
+      <button class="green" onclick="saveEmployee()">SAVE</button>
+      <button class="red" onclick="deleteEmployee()">DELETE</button>
+    </div>
 
     <p id="employeeMessage"></p>
 
@@ -1083,10 +1116,10 @@
   }
 
   /* =========================
-     34 - SAVE AREA NAME ONLY
+     34 - SAVE AREA ONLY
   ========================== */
 
-  async function saveAdminAreaNameOnly() {
+  async function saveAdminAreaOnly() {
     const area = document.getElementById("adminEditAreaInput").value.trim();
     const assignment = document.getElementById("adminEditAssignmentInput").value.trim();
     const category = document.getElementById("adminEditCategoryInput").value.trim();
@@ -1101,7 +1134,7 @@
       currentAssignment = assignment;
       selectedCategory = category;
       document.getElementById("adminAssignmentSelect").value = assignment;
-      document.getElementById("adminMessage").innerText = "Area ready. Add a sub task.";
+      document.getElementById("adminMessage").innerText = "Saved.";
       return;
     }
 
@@ -1129,7 +1162,7 @@
 
     hideLoading();
 
-    document.getElementById("adminMessage").innerText = "Area saved.";
+    document.getElementById("adminMessage").innerText = "Saved.";
   }
 
   /* =========================
@@ -1185,7 +1218,7 @@
 
     hideLoading();
 
-    document.getElementById("adminMessage").innerText = "Sub task saved.";
+    document.getElementById("adminMessage").innerText = "Saved.";
   }
 
   /* =========================
@@ -1398,7 +1431,7 @@
 
     hideLoading();
 
-    document.getElementById("employeeMessage").innerText = "Employee saved.";
+    document.getElementById("employeeMessage").innerText = "Saved.";
   }
 
   /* =========================
@@ -1473,7 +1506,7 @@
   window.openNewAdminSubTask = openNewAdminSubTask;
   window.openAdminSubTaskEditor = openAdminSubTaskEditor;
   window.closeAdminSubTaskEditor = closeAdminSubTaskEditor;
-  window.saveAdminAreaNameOnly = saveAdminAreaNameOnly;
+  window.saveAdminAreaOnly = saveAdminAreaOnly;
   window.saveAdminSubTask = saveAdminSubTask;
   window.deleteAdminSubTask = deleteAdminSubTask;
   window.deleteAdminArea = deleteAdminArea;
