@@ -2,10 +2,18 @@
 <html>
 
 <head>
+  <!-- =========================
+       01 - HEAD
+  ========================== -->
+
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin Dashboard</title>
 
   <style>
+    /* =========================
+       02 - GLOBAL STYLE
+    ========================== */
+
     * {
       box-sizing: border-box;
     }
@@ -114,6 +122,10 @@
       display: none !important;
     }
 
+    /* =========================
+       03 - DATE ROW STYLE
+    ========================== */
+
     .date-row {
       display: flex;
       align-items: center;
@@ -150,6 +162,10 @@
       margin-bottom: 14px;
     }
 
+    /* =========================
+       04 - AREA BUTTON GRID
+    ========================== */
+
     .rooms-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -183,6 +199,10 @@
       margin-top: 3px;
     }
 
+    /* =========================
+       05 - ADMIN EDIT TASK CARDS
+    ========================== */
+
     .task-card {
       border: 1px solid #ccc;
       border-radius: 16px;
@@ -208,6 +228,10 @@
       font-size: 18px;
       font-weight: bold;
     }
+
+    /* =========================
+       06 - LOADING SCREEN STYLE
+    ========================== */
 
     .loading-bg {
       position: fixed;
@@ -245,12 +269,20 @@
 
 <body>
 
+<!-- =========================
+     07 - MAIN CARD START
+========================== -->
+
 <div class="card">
+
+  <!-- =========================
+       08 - ADMIN VIEW 2 - MAIN DASHBOARD
+  ========================== -->
 
   <div id="adminView2">
 
     <div class="view-center">
-      <div class="view-tag">VIEW 2</div>
+      <div class="view-tag">ADMIN VIEW 2</div>
     </div>
 
     <h2 id="adminName">Welcome</h2>
@@ -286,11 +318,17 @@
 
   </div>
 
+  <!-- =========================
+       09 - ADMIN VIEW 3 / 4 / 5 / 6 - AREA LIST
+  ========================== -->
+
   <div id="adminAreaView" class="hidden">
 
     <div class="view-center">
-      <div class="view-tag" id="adminAreaViewTag">VIEW 3</div>
+      <div class="view-tag" id="adminAreaViewTag">ADMIN VIEW 3</div>
     </div>
+
+    <h2 id="adminAreaTitle">Area</h2>
 
     <div id="adminAreaBigDatePickerBox" class="top-date-box hidden">
       <h3 id="adminAreaDateTitle"></h3>
@@ -312,10 +350,14 @@
 
   </div>
 
+  <!-- =========================
+       10 - ADMIN VIEW 7 - EDIT AREA / TASKS
+  ========================== -->
+
   <div id="adminEditView" class="hidden">
 
     <div class="view-center">
-      <div class="view-tag">VIEW 7</div>
+      <div class="view-tag">ADMIN VIEW 7</div>
     </div>
 
     <h2 id="adminEditTitle">Edit Area</h2>
@@ -385,10 +427,14 @@
 
   </div>
 
+  <!-- =========================
+       11 - ADMIN VIEW 8 - EMPLOYEES LIST
+  ========================== -->
+
   <div id="adminEmployeesView" class="hidden">
 
     <div class="view-center">
-      <div class="view-tag">EMPLOYEES</div>
+      <div class="view-tag">ADMIN VIEW 8 - EMPLOYEES</div>
     </div>
 
     <h2>Employees</h2>
@@ -401,10 +447,14 @@
 
   </div>
 
+  <!-- =========================
+       12 - ADMIN VIEW 9 - EDIT EMPLOYEE
+  ========================== -->
+
   <div id="adminEmployeeEditView" class="hidden">
 
     <div class="view-center">
-      <div class="view-tag">EDIT EMPLOYEE</div>
+      <div class="view-tag">ADMIN VIEW 9 - EDIT EMPLOYEE</div>
     </div>
 
     <h2 id="employeeEditTitle">Employee</h2>
@@ -451,11 +501,19 @@
 
 </div>
 
+<!-- =========================
+     13 - LOADING SCREEN HTML
+========================== -->
+
 <div id="loadingScreen" class="loading-bg hidden">
   <div class="spinner"></div>
 </div>
 
 <script type="module">
+
+  /* =========================
+     14 - FIREBASE IMPORTS
+  ========================== */
 
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
 
@@ -472,6 +530,10 @@
     serverTimestamp
   } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
+  /* =========================
+     15 - FIREBASE CONFIG
+  ========================== */
+
   const firebaseConfig = {
     apiKey: "AIzaSyBgq_ooBeEN4noEyIxYPLVokgM6RjCO648",
     authDomain: "gms-task-tracker.firebaseapp.com",
@@ -485,6 +547,10 @@
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
 
+  /* =========================
+     16 - SESSION DATA
+  ========================== */
+
   const sessionData = JSON.parse(sessionStorage.getItem("currentEmployee"));
 
   if (!sessionData) {
@@ -496,6 +562,10 @@
     sessionData.employeeName ||
     sessionData.name ||
     "Admin";
+
+  /* =========================
+     17 - GLOBAL ADMIN VARIABLES
+  ========================== */
 
   let currentAssignment =
     sessionData.assignment ||
@@ -514,6 +584,10 @@
 
   let currentEmployeeId = "";
 
+  /* =========================
+     18 - ADMIN STARTUP
+  ========================== */
+
   document.getElementById("adminName").innerText =
     "Welcome, " + adminName;
 
@@ -527,6 +601,10 @@
     showAdminView("adminView2");
   }
 
+  /* =========================
+     19 - LOADING FUNCTIONS
+  ========================== */
+
   function showLoading() {
     document.getElementById("loadingScreen").classList.remove("hidden");
   }
@@ -534,6 +612,10 @@
   function hideLoading() {
     document.getElementById("loadingScreen").classList.add("hidden");
   }
+
+  /* =========================
+     20 - VIEW SWITCHING
+  ========================== */
 
   function showAdminView(viewId) {
     [
@@ -548,6 +630,10 @@
 
     document.getElementById(viewId).classList.remove("hidden");
   }
+
+  /* =========================
+     21 - DATE FUNCTIONS
+  ========================== */
 
   function getTodayISO() {
     const today = new Date();
@@ -625,11 +711,19 @@
     }
   }
 
+  /* =========================
+     22 - ASSIGNMENT FUNCTIONS
+  ========================== */
+
   async function changeAdminAssignment() {
     currentAssignment = document.getElementById("adminAssignmentSelect").value;
     await loadAdminTasks();
     showAdminView("adminView2");
   }
+
+  /* =========================
+     23 - LOAD TASKS FROM FIRESTORE
+  ========================== */
 
   async function loadAdminTasks() {
     showLoading();
@@ -662,6 +756,12 @@
 
     allTasksForDay =
       allTasksForAssignment.filter(function(item) {
+        const activeValue = item.active;
+
+        if (activeValue === false || activeValue === "No") {
+          return false;
+        }
+
         const schedule =
           String(item.schedule || "").trim().toLowerCase();
 
@@ -682,6 +782,10 @@
 
     hideLoading();
   }
+
+  /* =========================
+     24 - DRAW CATEGORY BUTTONS
+  ========================== */
 
   function drawAdminCategories() {
     const box = document.getElementById("adminCategoryButtons");
@@ -718,9 +822,15 @@
     });
   }
 
+  /* =========================
+     25 - DRAW AREA BUTTONS
+  ========================== */
+
   function drawAdminAreaButtons(category) {
     const box = document.getElementById("adminAreaButtons");
     box.innerHTML = "";
+
+    document.getElementById("adminAreaTitle").innerText = category;
 
     setAdminAreaViewTag(category);
     setAdminAreaDatePickerVisibility(category);
@@ -767,25 +877,33 @@
     });
   }
 
+  /* =========================
+     26 - AREA VIEW NUMBER LABEL
+  ========================== */
+
   function setAdminAreaViewTag(category) {
     const tag = document.getElementById("adminAreaViewTag");
 
     if (category === "Common Area") {
-      tag.innerText = "VIEW 3";
+      tag.innerText = "ADMIN VIEW 3";
     } else if (category === "Weekly Room") {
-      tag.innerText = "VIEW 4";
+      tag.innerText = "ADMIN VIEW 4";
     } else if (category === "Daily Room") {
-      tag.innerText = "VIEW 5";
+      tag.innerText = "ADMIN VIEW 5";
     } else if (category === "Dehumidifier") {
-      tag.innerText = "VIEW 6";
+      tag.innerText = "ADMIN VIEW 6";
     } else if (category === "Weekly Laundry") {
-      tag.innerText = "VIEW 4";
+      tag.innerText = "ADMIN VIEW 4";
     } else if (category === "Daily Laundry Check") {
-      tag.innerText = "VIEW 5";
+      tag.innerText = "ADMIN VIEW 5";
     } else {
-      tag.innerText = "VIEW 3";
+      tag.innerText = "ADMIN VIEW 3";
     }
   }
+
+  /* =========================
+     27 - WEEKLY DATE PICKER VISIBILITY
+  ========================== */
 
   function setAdminAreaDatePickerVisibility(category) {
     const pickerBox = document.getElementById("adminAreaBigDatePickerBox");
@@ -799,6 +917,10 @@
       dateTitle.classList.add("hidden");
     }
   }
+
+  /* =========================
+     28 - OPEN EXISTING AREA EDITOR
+  ========================== */
 
   function openAdminEditArea(area) {
     selectedArea = area;
@@ -824,6 +946,10 @@
     showAdminView("adminEditView");
   }
 
+  /* =========================
+     29 - OPEN NEW AREA EDITOR
+  ========================== */
+
   function openNewAdminArea() {
     selectedArea = "";
     currentAreaTasks = [];
@@ -843,6 +969,10 @@
 
     showAdminView("adminEditView");
   }
+
+  /* =========================
+     30 - DRAW SUB TASKS
+  ========================== */
 
   function drawAdminSubTasks() {
     const box = document.getElementById("adminSubtaskList");
@@ -915,6 +1045,10 @@
     }
   }
 
+  /* =========================
+     31 - ADD SUB TASK
+  ========================== */
+
   async function addAdminSubTask() {
     const area = document.getElementById("adminEditAreaInput").value.trim();
     const assignment = document.getElementById("adminEditAssignmentInput").value.trim();
@@ -956,6 +1090,10 @@
 
     hideLoading();
   }
+
+  /* =========================
+     32 - SAVE ONE SUB TASK
+  ========================== */
 
   async function saveAdminSingleTask(index) {
     const task = currentAreaTasks[index];
@@ -1005,6 +1143,10 @@
 
     document.getElementById("adminMessage").innerText = "Saved.";
   }
+
+  /* =========================
+     33 - SAVE WHOLE AREA
+  ========================== */
 
   async function saveAdminAreaChanges() {
     const area = document.getElementById("adminEditAreaInput").value.trim();
@@ -1069,6 +1211,10 @@
     document.getElementById("adminMessage").innerText = "Area saved.";
   }
 
+  /* =========================
+     34 - DELETE ONE SUB TASK
+  ========================== */
+
   async function deleteAdminSingleTask(index) {
     const task = currentAreaTasks[index];
 
@@ -1089,6 +1235,10 @@
 
     hideLoading();
   }
+
+  /* =========================
+     35 - DELETE WHOLE AREA
+  ========================== */
 
   async function deleteAdminArea() {
     if (currentAreaTasks.length === 0) {
@@ -1112,6 +1262,10 @@
     showAdminView("adminAreaView");
   }
 
+  /* =========================
+     36 - BACK BUTTONS
+  ========================== */
+
   async function backToAdminAreas() {
     await loadAdminTasks();
     drawAdminAreaButtons(selectedCategory);
@@ -1123,6 +1277,10 @@
     drawAdminCategories();
     showAdminView("adminView2");
   }
+
+  /* =========================
+     37 - OPEN EMPLOYEES
+  ========================== */
 
   async function openEmployees() {
     showLoading();
@@ -1170,6 +1328,10 @@
     showAdminView("adminEmployeesView");
   }
 
+  /* =========================
+     38 - OPEN NEW EMPLOYEE
+  ========================== */
+
   function openNewEmployee() {
     currentEmployeeId = "";
 
@@ -1184,6 +1346,10 @@
 
     showAdminView("adminEmployeeEditView");
   }
+
+  /* =========================
+     39 - OPEN EXISTING EMPLOYEE
+  ========================== */
 
   function openEmployeeEditor(emp) {
     currentEmployeeId = emp.id;
@@ -1206,6 +1372,10 @@
 
     showAdminView("adminEmployeeEditView");
   }
+
+  /* =========================
+     40 - SAVE EMPLOYEE
+  ========================== */
 
   async function saveEmployee() {
     const firstName = document.getElementById("empFirstName").value.trim();
@@ -1247,6 +1417,10 @@
     document.getElementById("employeeMessage").innerText = "Employee saved.";
   }
 
+  /* =========================
+     41 - DELETE EMPLOYEE
+  ========================== */
+
   async function deleteEmployee() {
     if (!currentEmployeeId) {
       openEmployees();
@@ -1265,10 +1439,18 @@
     openEmployees();
   }
 
+  /* =========================
+     42 - LOGOUT
+  ========================== */
+
   function logout() {
     sessionStorage.clear();
     window.location.href = "index.html";
   }
+
+  /* =========================
+     43 - HTML ESCAPE HELPER
+  ========================== */
 
   function escapeHtml(value) {
     return String(value)
@@ -1278,10 +1460,18 @@
       .replace(/"/g, "&quot;");
   }
 
+  /* =========================
+     44 - WINDOW FUNCTIONS - DATE / ASSIGNMENT
+  ========================== */
+
   window.openAdminCalendar = openAdminCalendar;
   window.changeAdminWorkDateFromCalendar = changeAdminWorkDateFromCalendar;
   window.changeAdminWorkDateFromBigPicker = changeAdminWorkDateFromBigPicker;
   window.changeAdminAssignment = changeAdminAssignment;
+
+  /* =========================
+     45 - WINDOW FUNCTIONS - ADMIN TASKS
+  ========================== */
 
   window.openNewAdminArea = openNewAdminArea;
   window.addAdminSubTask = addAdminSubTask;
@@ -1292,10 +1482,18 @@
   window.backToAdminAreas = backToAdminAreas;
   window.backToAdminCategories = backToAdminCategories;
 
+  /* =========================
+     46 - WINDOW FUNCTIONS - EMPLOYEES
+  ========================== */
+
   window.openEmployees = openEmployees;
   window.openNewEmployee = openNewEmployee;
   window.saveEmployee = saveEmployee;
   window.deleteEmployee = deleteEmployee;
+
+  /* =========================
+     47 - WINDOW FUNCTIONS - LOGOUT
+  ========================== */
 
   window.logout = logout;
 
