@@ -297,6 +297,13 @@
       >
     </div>
 
+    <input
+      id="adminAreaSearchInput"
+      class="hidden"
+      placeholder="Search room"
+      oninput="searchAdminAreas()"
+    >
+
     <button id="adminAddAreaButton" class="green" onclick="openNewAdminArea()">
       ADD NEW AREA
     </button>
@@ -361,8 +368,12 @@
 
       <datalist id="taskNameOptions"></datalist>
 
-      <div class="button-row-three">
-        <button class="green" onclick="saveAdminSubTask()">SAVE</button>
+      <div class="button-row">
+        <button class="green" onclick="saveAdminSubTask()">SAVE ROOM</button>
+        <button id="saveAllWeeklyButton" class="yellow hidden" onclick="saveAdminSubTaskToAllWeeklyRooms()">SAVE ALL</button>
+      </div>
+
+      <div class="button-row">
         <button class="red" onclick="deleteAdminSubTask()">DELETE</button>
         <button class="back" onclick="closeAdminSubTaskEditor()">CANCEL</button>
       </div>
@@ -526,6 +537,7 @@
 
   let selectedCategory = "";
   let selectedArea = "";
+  let adminAreaSearchTerm = "";
 
   let allTasksForDay = [];
   let allTasksForAssignment = [];
@@ -535,6 +547,7 @@
 
   let currentEditingTaskId = "";
   let currentEditingTaskIndex = -1;
+  let originalEditingTaskName = "";
 
   /* =========================
      17 - ADMIN STARTUP
@@ -767,6 +780,8 @@
         } else {
           btn.onclick = function() {
             selectedCategory = item;
+            adminAreaSearchTerm = "";
+            document.getElementById("adminAreaSearchInput").value = "";
             drawAdminAreaButtons(item);
             showAdminView("adminAreaView");
           };
@@ -789,6 +804,7 @@
 
     setAdminAreaViewTag(category);
     setAdminAreaDatePickerVisibility(category);
+    setAdminAreaSearchVisibility(category);
 
     document.getElementById("adminBigDatePicker").value = currentWorkDateISO;
 
@@ -800,15 +816,33 @@
 
     updateAssignmentTitles();
 
-    const categoryTasks =
-      allTasksForDay.filter(function(task) {
-        return task.category === category;
-      });
+    let categoryTasks = [];
 
-    const areas =
+    if (category === "Weekly Room" || category === "Weekly Laundry") {
+      categoryTasks =
+        allTasksForAssignment.filter(function(task) {
+          return task.category === category;
+        });
+    } else {
+      categoryTasks =
+        allTasksForDay.filter(function(task) {
+          return task.category === category;
+        });
+    }
+
+    let areas =
       [...new Set(categoryTasks.map(function(task) {
         return task.area;
       }))];
+
+    if (adminAreaSearchTerm) {
+      areas =
+        areas.filter(function(area) {
+          return String(area || "")
+            .toLowerCase()
+            .includes(adminAreaSearchTerm.toLowerCase());
+        });
+    }
 
     areas.forEach(function(area) {
       const areaTasks =
@@ -835,7 +869,28 @@
   }
 
   /* =========================
-     26 - AREA VIEW NUMBER LABEL
+     26 - SEARCH AREAS
+  ========================== */
+
+  function searchAdminAreas() {
+    adminAreaSearchTerm =
+      document.getElementById("adminAreaSearchInput").value.trim();
+
+    drawAdminAreaButtons(selectedCategory);
+  }
+
+  function setAdminAreaSearchVisibility(category) {
+    const searchBox = document.getElementById("adminAreaSearchInput");
+
+    if (category === "Weekly Room" || category === "Weekly Laundry") {
+      searchBox.classList.remove("hidden");
+    } else {
+      searchBox.classList.add("hidden");
+    }
+  }
+
+  /* =========================
+     27 - AREA VIEW NUMBER LABEL
   ========================== */
 
   function setAdminAreaViewTag(category) {
@@ -859,7 +914,7 @@
   }
 
   /* =========================
-     27 - WEEKLY DATE PICKER VISIBILITY
+     28 - WEEKLY DATE PICKER VISIBILITY
   ========================== */
 
   function setAdminAreaDatePickerVisibility(category) {
@@ -876,7 +931,7 @@
   }
 
   /* =========================
-     28 - OPEN EXISTING AREA EDITOR
+     29 - OPEN EXISTING AREA EDITOR
   ========================== */
 
   function openAdminEditArea(area) {
@@ -902,7 +957,7 @@
   }
 
   /* =========================
-     29 - OPEN NEW AREA EDITOR
+     30 - OPEN NEW AREA EDITOR
   ========================== */
 
   function openNewAdminArea() {
@@ -924,7 +979,7 @@
   }
 
   /* =========================
-     30 - DRAW SUB TASK BUTTONS
+     31 - DRAW SUB TASK BUTTONS
   ========================== */
 
   function drawAdminSubTaskButtons() {
@@ -955,7 +1010,7 @@
   }
 
   /* =========================
-     31 - OPEN SUB TASK EDITOR
+     32 - OPEN SUB TASK EDITOR
   ========================== */
 
   function openAdminSubTaskEditor(index) {
@@ -963,6 +1018,7 @@
 
     currentEditingTaskIndex = index;
     currentEditingTaskId = task.id || "";
+    originalEditingTaskName = task.task || "";
 
     document.getElementById("adminSubtaskViewTag").innerText =
       "ADMIN VIEW 7-1";
@@ -973,18 +1029,20 @@
     document.getElementById("adminTaskNameInput").value =
       task.task || "";
 
+    setSaveAllWeeklyButtonVisibility();
     updateAssignmentTitles();
 
     document.getElementById("adminSubtaskEditor").classList.remove("hidden");
   }
 
   /* =========================
-     32 - OPEN NEW SUB TASK
+     33 - OPEN NEW SUB TASK
   ========================== */
 
   function openNewAdminSubTask() {
     currentEditingTaskIndex = -1;
     currentEditingTaskId = "";
+    originalEditingTaskName = "";
 
     document.getElementById("adminSubtaskViewTag").innerText =
       "ADMIN VIEW 7-1";
@@ -994,24 +1052,40 @@
 
     document.getElementById("adminTaskNameInput").value = "";
 
+    setSaveAllWeeklyButtonVisibility();
     updateAssignmentTitles();
 
     document.getElementById("adminSubtaskEditor").classList.remove("hidden");
   }
 
   /* =========================
-     33 - CLOSE SUB TASK EDITOR
+     34 - CLOSE SUB TASK EDITOR
   ========================== */
 
   function closeAdminSubTaskEditor() {
     currentEditingTaskIndex = -1;
     currentEditingTaskId = "";
+    originalEditingTaskName = "";
 
     document.getElementById("adminSubtaskEditor").classList.add("hidden");
   }
 
   /* =========================
-     34 - SAVE AREA ONLY
+     35 - SAVE ALL WEEKLY BUTTON VISIBILITY
+  ========================== */
+
+  function setSaveAllWeeklyButtonVisibility() {
+    const btn = document.getElementById("saveAllWeeklyButton");
+
+    if (selectedCategory === "Weekly Room" || selectedCategory === "Weekly Laundry") {
+      btn.classList.remove("hidden");
+    } else {
+      btn.classList.add("hidden");
+    }
+  }
+
+  /* =========================
+     36 - SAVE AREA ONLY
   ========================== */
 
   async function saveAdminAreaOnly() {
@@ -1062,7 +1136,7 @@
   }
 
   /* =========================
-     35 - SAVE SUB TASK
+     37 - SAVE SUB TASK
   ========================== */
 
   async function saveAdminSubTask() {
@@ -1118,7 +1192,89 @@
   }
 
   /* =========================
-     36 - DELETE SUB TASK
+     38 - SAVE SUB TASK TO ALL WEEKLY ROOMS
+  ========================== */
+
+  async function saveAdminSubTaskToAllWeeklyRooms() {
+    const assignment = document.getElementById("adminEditAssignmentInput").value.trim();
+    const category = document.getElementById("adminEditCategoryInput").value.trim();
+    const taskName = document.getElementById("adminTaskNameInput").value.trim();
+    const schedule = getDefaultScheduleForCategory(category);
+
+    if (!assignment || !category || !taskName) {
+      alert("Fill assignment and task name.");
+      return;
+    }
+
+    const areas =
+      [...new Set(allTasksForAssignment.filter(function(task) {
+        return task.category === category;
+      }).map(function(task) {
+        return task.area;
+      }).filter(function(area) {
+        return String(area || "").trim() !== "";
+      }))];
+
+    if (areas.length === 0) {
+      alert("No weekly rooms found.");
+      return;
+    }
+
+    const ok = confirm("Save this sub task to all " + areas.length + " weekly rooms?");
+    if (!ok) return;
+
+    showLoading();
+
+    for (let i = 0; i < areas.length; i++) {
+      const area = areas[i];
+
+      const existingTask =
+        allTasksForAssignment.find(function(task) {
+          const taskNameToMatch =
+            originalEditingTaskName || taskName;
+
+          return (
+            task.assignment === assignment &&
+            task.category === category &&
+            task.area === area &&
+            task.task === taskNameToMatch
+          );
+        });
+
+      if (existingTask) {
+        await updateDoc(doc(db, "tasks", existingTask.id), {
+          task: taskName,
+          schedule: schedule,
+          active: true,
+          updatedAt: serverTimestamp()
+        });
+      } else {
+        await addDoc(collection(db, "tasks"), {
+          assignment: assignment,
+          category: category,
+          area: area,
+          task: taskName,
+          schedule: schedule,
+          active: true,
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp()
+        });
+      }
+    }
+
+    currentAssignment = assignment;
+    selectedCategory = category;
+
+    await loadAdminTasks();
+    openAdminEditArea(selectedArea);
+
+    hideLoading();
+
+    document.getElementById("adminMessage").innerText = "Saved to all weekly rooms.";
+  }
+
+  /* =========================
+     39 - DELETE SUB TASK
   ========================== */
 
   async function deleteAdminSubTask() {
@@ -1146,7 +1302,7 @@
   }
 
   /* =========================
-     37 - DELETE WHOLE AREA
+     40 - DELETE WHOLE AREA
   ========================== */
 
   async function deleteAdminArea() {
@@ -1172,7 +1328,7 @@
   }
 
   /* =========================
-     38 - BACK BUTTONS
+     41 - BACK BUTTONS
   ========================== */
 
   async function backToAdminAreas() {
@@ -1188,7 +1344,7 @@
   }
 
   /* =========================
-     39 - OPEN EMPLOYEES
+     42 - OPEN EMPLOYEES
   ========================== */
 
   async function openEmployees() {
@@ -1240,7 +1396,7 @@
   }
 
   /* =========================
-     40 - OPEN NEW EMPLOYEE
+     43 - OPEN NEW EMPLOYEE
   ========================== */
 
   function openNewEmployee() {
@@ -1261,7 +1417,7 @@
   }
 
   /* =========================
-     41 - OPEN EXISTING EMPLOYEE
+     44 - OPEN EXISTING EMPLOYEE
   ========================== */
 
   function openEmployeeEditor(emp) {
@@ -1289,7 +1445,7 @@
   }
 
   /* =========================
-     42 - SAVE EMPLOYEE
+     45 - SAVE EMPLOYEE
   ========================== */
 
   async function saveEmployee() {
@@ -1333,7 +1489,7 @@
   }
 
   /* =========================
-     43 - DELETE EMPLOYEE
+     46 - DELETE EMPLOYEE
   ========================== */
 
   async function deleteEmployee() {
@@ -1355,7 +1511,7 @@
   }
 
   /* =========================
-     44 - LOGOUT
+     47 - LOGOUT
   ========================== */
 
   function logout() {
@@ -1364,7 +1520,7 @@
   }
 
   /* =========================
-     45 - HTML ESCAPE HELPER
+     48 - HTML ESCAPE HELPER
   ========================== */
 
   function escapeHtml(value) {
@@ -1376,7 +1532,7 @@
   }
 
   /* =========================
-     46 - DEFAULT SCHEDULE HELPER
+     49 - DEFAULT SCHEDULE HELPER
   ========================== */
 
   function getDefaultScheduleForCategory(category) {
@@ -1388,14 +1544,15 @@
   }
 
   /* =========================
-     47 - WINDOW FUNCTIONS - DATE / ASSIGNMENT
+     50 - WINDOW FUNCTIONS - DATE / ASSIGNMENT
   ========================== */
 
   window.changeAdminWorkDateFromBigPicker = changeAdminWorkDateFromBigPicker;
   window.changeAdminAssignment = changeAdminAssignment;
+  window.searchAdminAreas = searchAdminAreas;
 
   /* =========================
-     48 - WINDOW FUNCTIONS - ADMIN TASKS
+     51 - WINDOW FUNCTIONS - ADMIN TASKS
   ========================== */
 
   window.openNewAdminArea = openNewAdminArea;
@@ -1404,13 +1561,14 @@
   window.closeAdminSubTaskEditor = closeAdminSubTaskEditor;
   window.saveAdminAreaOnly = saveAdminAreaOnly;
   window.saveAdminSubTask = saveAdminSubTask;
+  window.saveAdminSubTaskToAllWeeklyRooms = saveAdminSubTaskToAllWeeklyRooms;
   window.deleteAdminSubTask = deleteAdminSubTask;
   window.deleteAdminArea = deleteAdminArea;
   window.backToAdminAreas = backToAdminAreas;
   window.backToAdminCategories = backToAdminCategories;
 
   /* =========================
-     49 - WINDOW FUNCTIONS - EMPLOYEES
+     52 - WINDOW FUNCTIONS - EMPLOYEES
   ========================== */
 
   window.openEmployees = openEmployees;
@@ -1419,7 +1577,7 @@
   window.deleteEmployee = deleteEmployee;
 
   /* =========================
-     50 - WINDOW FUNCTIONS - LOGOUT
+     53 - WINDOW FUNCTIONS - LOGOUT
   ========================== */
 
   window.logout = logout;
