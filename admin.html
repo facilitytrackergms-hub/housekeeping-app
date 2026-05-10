@@ -126,38 +126,6 @@
        03 - DATE ROW STYLE
     ========================== */
 
-    .date-row {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      margin-bottom: 10px;
-    }
-
-    .date-row h3 {
-      margin: 0;
-      font-size: 20px;
-      line-height: 1.2;
-    }
-
-    .date-change-btn {
-      width: auto;
-      font-size: 13px;
-      padding: 8px 10px;
-      margin: 0;
-      border-radius: 10px;
-      background: #555;
-      white-space: nowrap;
-    }
-
-    .hidden-date {
-      position: absolute;
-      opacity: 0;
-      pointer-events: none;
-      width: 1px;
-      height: 1px;
-    }
-
     .top-date-box {
       margin-bottom: 14px;
     }
@@ -223,7 +191,8 @@
     }
 
     #adminMessage,
-    #employeeMessage {
+    #employeeMessage,
+    #assignmentMessage {
       text-align: center;
       font-size: 18px;
       font-weight: bold;
@@ -285,30 +254,17 @@
       <div class="view-tag">ADMIN VIEW 2</div>
     </div>
 
-    <h2 id="adminName">Welcome</h2>
-    <h2 id="adminAssignmentTitle">HK Schedule 1</h2>
+    <h2 id="adminName">Welcome, Admin</h2>
 
     <label>Assignment</label>
-    <select id="adminAssignmentSelect" onchange="changeAdminAssignment()">
-      <option>HK Schedule 1</option>
-      <option>HK Schedule 2</option>
-      <option>Laundry</option>
-    </select>
+    <select id="adminAssignmentSelect" onchange="changeAdminAssignment()"></select>
 
-    <div class="date-row">
-      <h3 id="adminWorkDateTitle"></h3>
+    <input id="newAssignmentInput" placeholder="New assignment name">
 
-      <button class="date-change-btn" onclick="openAdminCalendar()">
-        CHANGE DATE
-      </button>
+    <button class="green" onclick="addAssignment()">ADD ASSIGNMENT</button>
+    <button class="red" onclick="deleteSelectedAssignment()">DELETE SELECTED ASSIGNMENT</button>
 
-      <input
-        type="date"
-        id="adminQuickDatePicker"
-        class="hidden-date"
-        onchange="changeAdminWorkDateFromCalendar()"
-      >
-    </div>
+    <p id="assignmentMessage"></p>
 
     <div id="adminCategoryButtons"></div>
 
@@ -366,12 +322,7 @@
     <input id="adminEditAreaInput">
 
     <label>Assignment</label>
-    <select id="adminEditAssignmentInput">
-      <option value="">Select assignment</option>
-      <option>HK Schedule 1</option>
-      <option>HK Schedule 2</option>
-      <option>Laundry</option>
-    </select>
+    <select id="adminEditAssignmentInput"></select>
 
     <label>Category</label>
     <select id="adminEditCategoryInput">
@@ -469,12 +420,7 @@
     <input id="empPin">
 
     <label>Assignment</label>
-    <select id="empAssignment">
-      <option value="">Select assignment</option>
-      <option>HK Schedule 1</option>
-      <option>HK Schedule 2</option>
-      <option>Laundry</option>
-    </select>
+    <select id="empAssignment"></select>
 
     <label>Role</label>
     <select id="empRole">
@@ -583,6 +529,7 @@
   let currentAreaTasks = [];
 
   let currentEmployeeId = "";
+  let assignmentList = [];
 
   /* =========================
      18 - ADMIN STARTUP
@@ -591,12 +538,12 @@
   document.getElementById("adminName").innerText =
     "Welcome, " + adminName;
 
-  document.getElementById("adminAssignmentSelect").value =
-    currentAssignment;
-
   startAdmin();
 
   async function startAdmin() {
+    await loadAssignments();
+    renderAllAssignmentSelects();
+    document.getElementById("adminAssignmentSelect").value = currentAssignment;
     await loadAdminTasks();
     showAdminView("adminView2");
   }
@@ -666,36 +613,6 @@
     currentWorkDateDisplay = mm + "/" + dd + "/" + yyyy;
   }
 
-  function openAdminCalendar() {
-    const picker = document.getElementById("adminQuickDatePicker");
-
-    picker.value = currentWorkDateISO;
-
-    if (picker.showPicker) {
-      picker.showPicker();
-    } else {
-      picker.click();
-    }
-  }
-
-  async function changeAdminWorkDateFromCalendar() {
-    const picker = document.getElementById("adminQuickDatePicker");
-
-    if (!picker.value) return;
-
-    currentWorkDateISO = picker.value;
-
-    await loadAdminTasks();
-
-    if (selectedCategory) {
-      drawAdminAreaButtons(selectedCategory);
-      showAdminView("adminAreaView");
-    } else {
-      drawAdminCategories();
-      showAdminView("adminView2");
-    }
-  }
-
   async function changeAdminWorkDateFromBigPicker() {
     const picker = document.getElementById("adminBigDatePicker");
 
@@ -715,10 +632,142 @@
      22 - ASSIGNMENT FUNCTIONS
   ========================== */
 
+  async function loadAssignments() {
+    assignmentList = [];
+
+    const snap = await getDocs(collection(db, "assignments"));
+
+    snap.docs.forEach(function(itemDoc) {
+      const data = itemDoc.data();
+      const name = String(data.name || "").trim();
+
+      if (name) {
+        assignmentList.push({
+          id: itemDoc.id,
+          name: name
+        });
+      }
+    });
+
+    if (assignmentList.length === 0) {
+      assignmentList = [
+        { id: "", name: "HK Schedule 1" },
+        { id: "", name: "HK Schedule 2" },
+        { id: "", name: "Laundry" }
+      ];
+    }
+  }
+
+  function renderAllAssignmentSelects() {
+    renderAssignmentSelect("adminAssignmentSelect", false);
+    renderAssignmentSelect("adminEditAssignmentInput", true);
+    renderAssignmentSelect("empAssignment", true);
+  }
+
+  function renderAssignmentSelect(selectId, includeBlank) {
+    const select = document.getElementById(selectId);
+    select.innerHTML = "";
+
+    if (includeBlank) {
+      const blank = document.createElement("option");
+      blank.value = "";
+      blank.innerText = "Select assignment";
+      select.appendChild(blank);
+    }
+
+    assignmentList.forEach(function(item) {
+      const option = document.createElement("option");
+      option.value = item.name;
+      option.innerText = item.name;
+      select.appendChild(option);
+    });
+  }
+
   async function changeAdminAssignment() {
     currentAssignment = document.getElementById("adminAssignmentSelect").value;
     await loadAdminTasks();
     showAdminView("adminView2");
+  }
+
+  async function addAssignment() {
+    const input = document.getElementById("newAssignmentInput");
+    const name = input.value.trim();
+
+    if (!name) {
+      alert("Enter assignment name.");
+      return;
+    }
+
+    const exists = assignmentList.some(function(item) {
+      return item.name.toLowerCase() === name.toLowerCase();
+    });
+
+    if (exists) {
+      alert("Assignment already exists.");
+      return;
+    }
+
+    showLoading();
+
+    await addDoc(collection(db, "assignments"), {
+      name: name,
+      active: true,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
+    });
+
+    input.value = "";
+    currentAssignment = name;
+
+    await loadAssignments();
+    renderAllAssignmentSelects();
+
+    document.getElementById("adminAssignmentSelect").value = name;
+
+    await loadAdminTasks();
+
+    hideLoading();
+
+    document.getElementById("assignmentMessage").innerText = "Assignment added.";
+  }
+
+  async function deleteSelectedAssignment() {
+    const selected = document.getElementById("adminAssignmentSelect").value;
+
+    if (!selected) {
+      alert("Select assignment.");
+      return;
+    }
+
+    const ok = confirm("Delete assignment: " + selected + "? This will not delete tasks already saved with that assignment.");
+    if (!ok) return;
+
+    const assignmentItem = assignmentList.find(function(item) {
+      return item.name === selected;
+    });
+
+    showLoading();
+
+    if (assignmentItem && assignmentItem.id) {
+      await deleteDoc(doc(db, "assignments", assignmentItem.id));
+    }
+
+    currentAssignment = "HK Schedule 1";
+
+    await loadAssignments();
+    renderAllAssignmentSelects();
+
+    if (assignmentList.length > 0) {
+      currentAssignment = assignmentList[0].name;
+    }
+
+    document.getElementById("adminAssignmentSelect").value = currentAssignment;
+
+    await loadAdminTasks();
+
+    hideLoading();
+
+    document.getElementById("assignmentMessage").innerText = "Assignment deleted.";
   }
 
   /* =========================
@@ -729,12 +778,6 @@
     showLoading();
 
     updateDateDisplay();
-
-    document.getElementById("adminAssignmentTitle").innerText =
-      currentAssignment;
-
-    document.getElementById("adminWorkDateTitle").innerText =
-      currentWorkDayName;
 
     document.getElementById("adminAreaDateTitle").innerText =
       currentWorkDayName;
@@ -797,20 +840,10 @@
         : ["Common Area", "Weekly Room", "Daily Room", "Dehumidifier"];
 
     categories.forEach(function(category) {
-      const categoryTasks =
-        allTasksForDay.filter(function(task) {
-          return task.category === category;
-        });
-
-      const total = categoryTasks.length;
-
       const btn = document.createElement("button");
 
-      btn.innerText =
-        category + " " + total;
-
-      btn.className =
-        total === 0 ? "red" : "yellow";
+      btn.innerText = category;
+      btn.className = "yellow";
 
       btn.onclick = function() {
         selectedCategory = category;
@@ -1335,6 +1368,8 @@
   function openNewEmployee() {
     currentEmployeeId = "";
 
+    renderAllAssignmentSelects();
+
     document.getElementById("employeeEditTitle").innerText = "New Employee";
     document.getElementById("empFirstName").value = "";
     document.getElementById("empLastName").value = "";
@@ -1353,6 +1388,8 @@
 
   function openEmployeeEditor(emp) {
     currentEmployeeId = emp.id;
+
+    renderAllAssignmentSelects();
 
     const name =
       ((emp.firstName || "") + " " + (emp.lastName || "")).trim() ||
@@ -1464,10 +1501,10 @@
      44 - WINDOW FUNCTIONS - DATE / ASSIGNMENT
   ========================== */
 
-  window.openAdminCalendar = openAdminCalendar;
-  window.changeAdminWorkDateFromCalendar = changeAdminWorkDateFromCalendar;
   window.changeAdminWorkDateFromBigPicker = changeAdminWorkDateFromBigPicker;
   window.changeAdminAssignment = changeAdminAssignment;
+  window.addAssignment = addAssignment;
+  window.deleteSelectedAssignment = deleteSelectedAssignment;
 
   /* =========================
      45 - WINDOW FUNCTIONS - ADMIN TASKS
