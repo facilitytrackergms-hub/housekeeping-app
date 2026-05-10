@@ -1149,12 +1149,17 @@
 
     const schedule = getScheduleForBulkTask();
 
+    const checkedLower =
+      checkedTasks.map(function(taskName) {
+        return String(taskName || "").trim().toLowerCase();
+      });
+
     const tasksToDelete =
       allTasksForAssignment.filter(function(task) {
         return (
           task.assignment === currentAssignment &&
           task.category === selectedCategory &&
-          checkedTasks.includes(String(task.task || "").trim()) &&
+          checkedLower.includes(String(task.task || "").trim().toLowerCase()) &&
           String(task.schedule || "").trim().toLowerCase() === schedule.toLowerCase()
         );
       });
@@ -1267,13 +1272,18 @@
     const category = document.getElementById("adminEditCategoryInput").value.trim();
     const schedule = getScheduleForSingleTask();
 
+    const checkedLower =
+      checkedTasks.map(function(taskName) {
+        return String(taskName || "").trim().toLowerCase();
+      });
+
     const tasksToDelete =
       allTasksForAssignment.filter(function(task) {
         return (
           task.assignment === assignment &&
           task.category === category &&
           task.area === area &&
-          checkedTasks.includes(String(task.task || "").trim()) &&
+          checkedLower.includes(String(task.task || "").trim().toLowerCase()) &&
           String(task.schedule || "").trim().toLowerCase() === schedule.toLowerCase()
         );
       });
@@ -1443,7 +1453,8 @@
     if (selectedCategory === "Weekly Room" || selectedCategory === "Weekly Laundry") {
       tasksToShow =
         currentAreaTasks.filter(function(task) {
-          return task.schedule === selectedAreaScheduleDay;
+          return String(task.schedule || "").trim().toLowerCase() ===
+            String(selectedAreaScheduleDay || "").trim().toLowerCase();
         });
     }
 
@@ -1735,8 +1746,8 @@
             task.assignment === assignment &&
             task.category === category &&
             task.area === area &&
-            task.task === taskNameToMatch &&
-            task.schedule === schedule
+            String(task.task || "").trim().toLowerCase() === String(taskNameToMatch || "").trim().toLowerCase() &&
+            String(task.schedule || "").trim().toLowerCase() === String(schedule || "").trim().toLowerCase()
           );
         });
 
@@ -1822,7 +1833,8 @@
 
       tasksToDelete =
         currentAreaTasks.filter(function(task) {
-          return task.schedule === selectedAreaScheduleDay;
+          return String(task.schedule || "").trim().toLowerCase() ===
+            String(selectedAreaScheduleDay || "").trim().toLowerCase();
         });
 
       confirmText = "Delete only " + selectedAreaScheduleDay + " tasks for this room?";
