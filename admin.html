@@ -907,7 +907,11 @@
     if (category === "Weekly Room" || category === "Weekly Laundry") {
       categoryTasks =
         allTasksForAssignment.filter(function(task) {
-          return task.category === category;
+          return (
+            task.category === category &&
+            String(task.schedule || "").trim().toLowerCase() ===
+            String(currentWorkDayName || "").trim().toLowerCase()
+          );
         });
     } else {
       categoryTasks =
@@ -1078,7 +1082,10 @@
 
     const areas =
       [...new Set(allTasksForAssignment.filter(function(task) {
-        return task.category === selectedCategory;
+        return (
+          task.category === selectedCategory &&
+          String(task.schedule || "").trim().toLowerCase() === String(schedule || "").trim().toLowerCase()
+        );
       }).map(function(task) {
         return task.area;
       }).filter(function(area) {
@@ -1717,7 +1724,10 @@
 
     const areas =
       [...new Set(allTasksForAssignment.filter(function(task) {
-        return task.category === category;
+        return (
+          task.category === category &&
+          String(task.schedule || "").trim().toLowerCase() === String(schedule || "").trim().toLowerCase()
+        );
       }).map(function(task) {
         return task.area;
       }).filter(function(area) {
@@ -1725,11 +1735,11 @@
       }))];
 
     if (areas.length === 0) {
-      alert("No weekly rooms found.");
+      alert("No weekly rooms found for this day.");
       return;
     }
 
-    const ok = confirm("Save this sub task to all " + areas.length + " weekly rooms?");
+    const ok = confirm("Save this sub task to all " + areas.length + " weekly rooms for " + schedule + "?");
     if (!ok) return;
 
     showLoading();
@@ -1781,7 +1791,7 @@
 
     hideLoading();
 
-    document.getElementById("adminMessage").innerText = "Saved to all weekly rooms.";
+    document.getElementById("adminMessage").innerText = "Saved to all rooms for " + schedule + ".";
   }
 
   /* =========================
