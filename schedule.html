@@ -552,6 +552,7 @@
   let allTasksForDay = [];
   let progressData = {};
   let currentTaskList = [];
+  let selectedDehumidifierPeriod = "";
 
   let customConfirmResolve = null;
   let customConfirmYesValue = true;
@@ -1002,7 +1003,47 @@
     return true;
   }
 
+
+  function getCurrentDehumidifierPeriod() {
+    const now = new Date();
+    return now.getHours() < 12 ? "AM" : "PM";
+  }
+
+  function isTaskForPeriod(task, period) {
+    const taskName = String(task.task || "").trim().toUpperCase();
+    return taskName.includes(period);
+  }
+
+  async function openDehumidifierChoice(area) {
+    selectedDehumidifierPeriod = getCurrentDehumidifierPeriod();
+
+    const choice = await showCustomChoice(area, "", selectedDehumidifierPeriod, "TASKS");
+
+    if (choice === "save") {
+      const loaded = await loadTaskGroupData(area);
+
+      if (!loaded) return;
+
+      currentTaskList =
+        currentTaskList.filter(function(task) {
+          return isTaskForPeriod(task, selectedDehumidifierPeriod);
+        });
+
+      await saveCurrentAreaComplete();
+      return;
+    }
+
+    if (choice === "tasks") {
+      await openTaskGroup(area, selectedDehumidifierPeriod);
+    }
+  }
+
   async function openAreaChoice(area) {
+    if (selectedCategory === "Dehumidifier") {
+      await openDehumidifierChoice(area);
+      return;
+    }
+
     const choice = await showCustomChoice(area, "", "SAVE", "TASKS");
 
     if (choice === "save") {
@@ -1019,12 +1060,24 @@
     }
   }
 
-  async function openTaskGroup(area) {
+  async function openTaskGroup(area, dehumidifierPeriod) {
     const loaded = await loadTaskGroupData(area);
 
     if (!loaded) return;
 
-    document.getElementById("allTasksButton").innerText = area;
+    if (selectedCategory === "Dehumidifier" && dehumidifierPeriod) {
+      selectedDehumidifierPeriod = dehumidifierPeriod;
+
+      currentTaskList =
+        currentTaskList.filter(function(task) {
+          return isTaskForPeriod(task, selectedDehumidifierPeriod);
+        });
+    }
+
+    document.getElementById("allTasksButton").innerText =
+      selectedCategory === "Dehumidifier" && selectedDehumidifierPeriod
+        ? area + " " + selectedDehumidifierPeriod
+        : area;
 
     document.getElementById("message").innerText = "";
     document.getElementById("reason").value = "";
@@ -1069,7 +1122,10 @@
     currentTaskList.forEach(function(task, index) {
 
       const savedStatus = areaProgress[task.task] || "";
-      const isCompleted = savedStatus === "Completed";
+
+      const isCompleted =
+        savedStatus === "Completed" ||
+        (selectedCategory === "Dehumidifier" && selectedDehumidifierPeriod !== "");
 
       const div = document.createElement("div");
 
@@ -1222,6 +1278,8 @@
     hideLoading();
 
     document.getElementById("message").innerText = "TASK SAVED";
+
+    selectedDehumidifierPeriod = "";
 
     setTimeout(function() {
       drawAreaButtons(selectedCategory);
