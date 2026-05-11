@@ -587,37 +587,84 @@
     document.getElementById("areaDateTitle").innerText =
       currentWorkDayName;
 
-    const taskQuery = query(
-      collection(db, "tasks"),
-      where("assignment", "==", currentAssignment)
+const settingsSnap = await getDocs(
+  query(collection(db, "settings"))
+);
+
+let housekeepingMode = "two";
+
+settingsSnap.docs.forEach(function(docItem) {
+  const data = docItem.data();
+
+  if (data.housekeepingMode) {
+    housekeepingMode = String(data.housekeepingMode).toLowerCase();
+  }
+});
+
+const areaQuery = query(
+  collection(db, "areas")
+);
+
+const areaSnap = await getDocs(areaQuery);
+
+const allAssignmentTasks =
+  areaSnap.docs.map(function(taskDoc) {
+    return {
+      id: taskDoc.id,
+      ...taskDoc.data()
+    };
+  });
+
+allTasksForDay =
+  allAssignmentTasks.filter(function(item) {
+
+    const activeValue = item.active;
+
+    if (activeValue === false || activeValue === "No") {
+      return false;
+    }
+
+    const areaSchedule =
+      String(item.scheduleDay || "")
+      .trim()
+      .toLowerCase();
+
+    const correctDay =
+      areaSchedule === "daily" ||
+      areaSchedule === currentWorkDayName.toLowerCase();
+
+    if (!correctDay) {
+      return false;
+    }
+
+    let assignmentField = "";
+
+    if (housekeepingMode === "three") {
+      assignmentField =
+        item.threeHousekeeperSchedule || "";
+    } else {
+      assignmentField =
+        item.twoHousekeeperSchedule || "";
+    }
+
+    return (
+      String(assignmentField).trim() ===
+      String(currentAssignment).trim()
     );
+  }).map(function(item) {
 
-    const taskSnap = await getDocs(taskQuery);
+    return {
+      area: item.areaName,
+      task: item.areaName,
+      category: item.category,
+      schedule: item.scheduleDay,
+      assignment: currentAssignment,
+      active: item.active,
+      type: item.type,
+      workId: item.workId
+    };
 
-    const allAssignmentTasks =
-      taskSnap.docs.map(function(taskDoc) {
-        return {
-          id: taskDoc.id,
-          ...taskDoc.data()
-        };
-      });
-
-    allTasksForDay =
-      allAssignmentTasks.filter(function(item) {
-        const activeValue = item.active;
-
-        if (activeValue === false || activeValue === "No") {
-          return false;
-        }
-
-        const schedule =
-          String(item.schedule || "").trim().toLowerCase();
-
-        return (
-          schedule === "daily" ||
-          schedule === currentWorkDayName.toLowerCase()
-        );
-      });
+  });
 
     await loadProgressData();
 
