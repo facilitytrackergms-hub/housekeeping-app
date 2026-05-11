@@ -1104,91 +1104,117 @@ allTasksForDay =
       customConfirmResolve(false);
     }
   }
+async function saveTaskStatuses(saveItems) {
 
-  async function saveTaskStatuses(saveItems) {
-    const batch = writeBatch(db);
+  const batch = writeBatch(db);
 
-    saveItems.forEach(function(item) {
-      const task = item.task;
-      const status = item.status;
-      const reason = item.reason || "";
+  saveItems.forEach(function(item) {
 
-      updateLocalProgress(task, status);
+    const task = item.task;
+    const status = item.status;
+    const reason = item.reason || "";
 
-      const progressId = makeProgressId(task);
+    updateLocalProgress(task, status);
 
-      const progressRef =
-        doc(db, "taskProgress", progressId);
+    const cleanTaskId =
+      (
+        String(task.area || "") + "_" +
+        String(task.category || "") + "_" +
+        String(task.schedule || "") + "_" +
+        String(task.task || "")
+      )
+      .toLowerCase()
+      .replace(/&/g, "and")
+      .replace(/[^a-z0-9]+/g, "_")
+      .replace(/^_+|_+$/g, "");
 
-      batch.set(progressRef, {
-        workDateISO: currentWorkDateISO,
-        workDate: currentWorkDateDisplay,
-        weekday: currentWorkDayName,
+    const progressId = makeProgressId(task);
 
-        employeeId: String(employeeId || ""),
-        employeeName: employeeName,
+    const progressRef =
+      doc(db, "taskProgress", progressId);
 
-        assignment: currentAssignment,
-        area: task.area,
-workId: task.workId || "",
-task: task.task,
-taskId: task.id || "",
-schedule: task.schedule || "",
-category: task.category || "",
+    batch.set(progressRef, {
 
-        status: status,
-        reason: reason,
+      workDateISO: currentWorkDateISO,
+      workDate: currentWorkDateDisplay,
+      weekday: currentWorkDayName,
 
-        updatedAt: serverTimestamp()
-      });
+      employeeId: String(employeeId || ""),
+      employeeName: employeeName,
 
-      const logRef =
-        doc(collection(db, "taskLogs"));
+      assignment: currentAssignment,
 
-      batch.set(logRef, {
-        workDateISO: currentWorkDateISO,
-        workDate: currentWorkDateDisplay,
-        weekday: currentWorkDayName,
+      area: task.area,
+      workId: task.workId || "",
 
-        employeeId: String(employeeId || ""),
-        employeeName: employeeName,
+      task: task.task,
+      taskId: cleanTaskId,
 
-       assignment: currentAssignment,
-area: task.area,
-workId: task.workId || "",
-task: task.task,
-taskId: task.id || "",
-schedule: task.schedule || "",
-category: task.category || "",
+      schedule: task.schedule || "",
+      category: task.category || "",
 
-        status: status,
-        reason: reason,
+      status: status,
+      reason: reason,
 
-        timestamp: serverTimestamp()
-      });
+      updatedAt: serverTimestamp()
     });
 
-    await batch.commit();
-  }
+    const logRef =
+      doc(collection(db, "taskLogs"));
 
-  function updateLocalProgress(task, status) {
-    if (!progressData[task.area]) {
-      progressData[task.area] = {};
-    }
+    batch.set(logRef, {
 
-    progressData[task.area][task.task] = status;
-  }
+      workDateISO: currentWorkDateISO,
+      workDate: currentWorkDateDisplay,
+      weekday: currentWorkDayName,
 
-  function makeProgressId(task) {
-const raw =
-  currentWorkDateISO + "_" +
-  String(employeeId || "") + "_" +
-  currentAssignment + "_" +
-  (task.workId || task.area) + "_" +
-  (task.id || task.task);
+      employeeId: String(employeeId || ""),
+      employeeName: employeeName,
 
-    return raw.replace(/[^a-zA-Z0-9_-]/g, "_");
-  }
+      assignment: currentAssignment,
+
+      area: task.area,
+      workId: task.workId || "",
+
+      task: task.task,
+      taskId: cleanTaskId,
+
+      schedule: task.schedule || "",
+      category: task.category || "",
+
+      status: status,
+      reason: reason,
+
+      timestamp: serverTimestamp()
+    });
+
+  });
+
+  await batch.commit();
+}
+function makeProgressId(task) {
+
+  const taskId =
+    String(task.area || "") + "_" +
+    String(task.category || "") + "_" +
+    String(task.schedule || "") + "_" +
+    String(task.task || "");
+
+  const cleanTaskId =
+    taskId
+      .toLowerCase()
+      .replace(/&/g, "and")
+      .replace(/[^a-z0-9]+/g, "_")
+      .replace(/^_+|_+$/g, "");
+
+  const raw =
+    currentWorkDateISO + "_" +
+    String(employeeId || "") + "_" +
+    currentAssignment + "_" +
+    cleanTaskId;
+
+  return raw.replace(/[^a-zA-Z0-9_-]/g, "_");
+}
 
   function showView(num) {
     [2, 3, 4].forEach(function(viewNumber) {
