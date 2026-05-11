@@ -2,1323 +2,480 @@
 <html>
 
 <head>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Facility Tracker</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Facility Tracker</title>
 
-  <style>
-    * {
-      box-sizing: border-box;
-    }
+<style>
 
-    body {
-      margin: 0;
-      font-family: Arial, sans-serif;
-      background: #f2f2f2;
-      min-height: 100vh;
-      display: flex;
-      justify-content: center;
-      align-items: flex-start;
-      padding: 8px 6px;
-    }
+*{
+  box-sizing:border-box;
+}
 
-    .card {
-      width: 100%;
-      max-width: 430px;
-      background: white;
-      border-radius: 20px;
-      padding: 14px;
-      box-shadow: 0 4px 18px rgba(0,0,0,0.18);
-    }
+body{
+  margin:0;
+  font-family:Arial,sans-serif;
+  background:#f2f2f2;
+  min-height:100vh;
+  display:flex;
+  justify-content:center;
+  align-items:flex-start;
+  padding:6px;
+}
 
-    .view-tag {
-      display: inline-block;
-      background: black;
-      color: white;
-      padding: 4px 10px;
-      border-radius: 8px;
-      font-size: 12px;
-      margin-bottom: 6px;
-    }
+.card{
+  width:100%;
+  max-width:430px;
+  background:white;
+  border-radius:18px;
+  padding:12px;
+  box-shadow:0 4px 18px rgba(0,0,0,0.18);
+}
 
-    .view-center {
-      text-align: center;
-    }
+.view-tag{
+  display:inline-block;
+  background:black;
+  color:white;
+  padding:4px 10px;
+  border-radius:8px;
+  font-size:12px;
+  margin-bottom:6px;
+}
 
-    h2, h3 {
-      text-align: center;
-      margin-top: 0;
-    }
+.view-center{
+  text-align:center;
+}
 
-    h2 {
-      font-size: 22px;
-      margin-bottom: 8px;
-    }
+h2,h3{
+  text-align:center;
+  margin-top:0;
+}
 
-    h3 {
-      font-size: 18px;
-      margin-bottom: 8px;
-    }
+h2{
+  font-size:22px;
+  margin-bottom:8px;
+}
 
-    input, select, textarea {
-      width: 100%;
-      font-size: 18px;
-      padding: 10px;
-      margin: 6px 0 10px;
-      border-radius: 12px;
-      border: 1px solid #ccc;
-    }
+h3{
+  font-size:18px;
+  margin-bottom:8px;
+}
 
-    textarea {
-      min-height: 62px;
-    }
+input,select,textarea{
+  width:100%;
+  font-size:18px;
+  padding:10px;
+  margin:6px 0 10px;
+  border-radius:12px;
+  border:1px solid #ccc;
+}
 
-    button {
-      width: 100%;
-      border: none;
-      border-radius: 14px;
-      background: #1976d2;
-      color: white;
-      font-size: 18px;
-      font-weight: bold;
-      padding: 12px;
-      margin: 5px 0;
-      cursor: pointer;
-    }
+textarea{
+  min-height:60px;
+}
 
-    .green {
-      background: #2e7d32 !important;
-      color: white !important;
-    }
+button{
+  width:100%;
+  border:none;
+  border-radius:12px;
+  background:#1976d2;
+  color:white;
+  font-size:17px;
+  font-weight:bold;
+  padding:11px;
+  margin:4px 0;
+  cursor:pointer;
+}
 
-    .yellow {
-      background: #f9a825 !important;
-      color: black !important;
-    }
+.green{
+  background:#2e7d32 !important;
+  color:white !important;
+}
 
-    .red {
-      background: #c62828 !important;
-      color: white !important;
-    }
+.yellow{
+  background:#f9a825 !important;
+  color:black !important;
+}
 
-    .back {
-      background: #555 !important;
-      color: white !important;
-    }
+.red{
+  background:#c62828 !important;
+  color:white !important;
+}
 
-    .hidden {
-      display: none !important;
-    }
+.back{
+  background:#555 !important;
+  color:white !important;
+}
 
-    .date-row {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      margin-bottom: 10px;
-    }
+.hidden{
+  display:none !important;
+}
 
-    .date-row h3 {
-      margin: 0;
-      font-size: 20px;
-      line-height: 1.2;
-    }
+.date-row{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  margin-bottom:10px;
+}
 
-    .date-change-btn {
-      width: auto;
-      font-size: 13px;
-      padding: 8px 10px;
-      margin: 0;
-      border-radius: 10px;
-      background: #555;
-      white-space: nowrap;
-    }
+.date-row h3{
+  margin:0;
+  font-size:18px;
+}
 
-    .hidden-date {
-      position: absolute;
-      opacity: 0;
-      pointer-events: none;
-      width: 1px;
-      height: 1px;
-    }
+.date-change-btn{
+  width:auto;
+  font-size:12px;
+  padding:7px 10px;
+  margin:0;
+  border-radius:10px;
+  background:#555;
+  white-space:nowrap;
+}
 
-    .top-date-box {
-      margin-bottom: 14px;
-    }
+.hidden-date{
+  position:absolute;
+  opacity:0;
+  pointer-events:none;
+  width:1px;
+  height:1px;
+}
 
-    .rooms-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 8px;
-      margin-top: 10px;
-    }
+.top-date-box{
+  margin-bottom:12px;
+}
 
-    .rooms-grid button {
-      width: 100%;
-      min-height: 64px;
-      font-size: 18px;
-      padding: 8px 6px;
-      line-height: 1.1;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      border-radius: 14px;
-      margin: 0;
-    }
+.rooms-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr 1fr;
+  gap:6px;
+  margin-top:8px;
+}
 
-    .room-number {
-      font-size: 24px;
-      font-weight: bold;
-      line-height: 1.1;
-    }
+.rooms-grid button{
+  width:100%;
+  min-height:56px;
+  font-size:14px;
+  padding:6px 4px;
+  line-height:1.1;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  border-radius:12px;
+  margin:0;
+}
 
-    .room-counter {
-      font-size: 16px;
-      font-weight: bold;
-      margin-top: 3px;
-    }
+.room-number{
+  font-size:20px;
+  font-weight:bold;
+  line-height:1;
+}
 
-    #checklist {
-      display: grid;
-      grid-template-columns: 1fr 1fr 1fr;
-      gap: 6px;
-      margin-top: 8px;
-    }
+.room-counter{
+  font-size:13px;
+  font-weight:bold;
+  margin-top:2px;
+}
 
-    .check-row {
-      font-size: 14px;
-      padding: 7px 4px;
-      border: 1px solid #ddd;
-      border-radius: 10px;
-      text-align: center;
-      min-height: 42px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 4px;
-    }
+#checklist{
+  display:grid;
+  grid-template-columns:1fr 1fr 1fr;
+  gap:5px;
+  margin-top:8px;
+}
 
-    .check-row input {
-      width: auto;
-      transform: scale(1.05);
-      margin: 0;
-    }
+.check-row{
+  font-size:12px;
+  padding:5px 3px;
+  border:1px solid #ddd;
+  border-radius:10px;
+  text-align:center;
+  min-height:40px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:3px;
+}
 
-    #message {
-      text-align: center;
-      font-size: 18px;
-      font-weight: bold;
-      margin: 8px 0;
-      color: #2e7d32;
-    }
+.check-row input{
+  width:auto;
+  transform:scale(1);
+  margin:0;
+}
 
-    .loading-bg {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(255,255,255,0.70);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      z-index: 99999;
-    }
+#message{
+  text-align:center;
+  font-size:18px;
+  font-weight:bold;
+  margin:8px 0;
+  color:#2e7d32;
+}
 
-    .spinner {
-      width: 70px;
-      height: 70px;
-      border: 8px solid #ddd;
-      border-top: 8px solid #1976d2;
-      border-radius: 50%;
-      animation: spin 0.8s linear infinite;
-    }
+.loading-bg{
+  position:fixed;
+  top:0;
+  left:0;
+  width:100%;
+  height:100%;
+  background:rgba(255,255,255,0.70);
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  z-index:99999;
+}
 
-    @keyframes spin {
-      from {
-        transform: rotate(0deg);
-      }
+.spinner{
+  width:70px;
+  height:70px;
+  border:8px solid #ddd;
+  border-top:8px solid #1976d2;
+  border-radius:50%;
+  animation:spin 0.8s linear infinite;
+}
 
-      to {
-        transform: rotate(360deg);
-      }
-    }
+@keyframes spin{
+  from{
+    transform:rotate(0deg);
+  }
 
-    .custom-modal-bg {
-      position: fixed;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      background: rgba(0,0,0,0.55);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      z-index: 999999;
-    }
+  to{
+    transform:rotate(360deg);
+  }
+}
 
-    .custom-modal-box {
-      width: 90%;
-      max-width: 380px;
-      background: white;
-      border-radius: 22px;
-      padding: 25px;
-      text-align: center;
-      box-shadow: 0 5px 20px rgba(0,0,0,0.35);
-    }
-
-    .custom-modal-box h3 {
-      font-size: 28px;
-      margin-bottom: 15px;
-    }
-
-    .custom-modal-box p {
-      font-size: 22px;
-      margin-bottom: 20px;
-    }
-
-    .custom-modal-row {
-      display: flex;
-      gap: 10px;
-    }
-
-    .custom-modal-row button {
-      flex: 1;
-    }
-  </style>
+</style>
 </head>
 
 <body>
 
 <div class="card">
 
-  <div id="view2">
+<div id="view2">
 
-    <div class="view-center">
-      <div class="view-tag">VIEW 2</div>
-    </div>
+<div class="view-center">
+<div class="view-tag">VIEW 2</div>
+</div>
 
-    <h2 id="employeeName">Welcome</h2>
-    <h2 id="assignmentTitle"></h2>
+<h2 id="employeeName">Welcome</h2>
+<h2 id="assignmentTitle"></h2>
 
-    <div class="date-row">
-      <h3 id="workDateTitle"></h3>
+<div class="date-row">
 
-      <button class="date-change-btn" onclick="openCalendar()">
-        CHANGE DATE
-      </button>
+<h3 id="workDateTitle"></h3>
 
-      <input
-        type="date"
-        id="quickDatePicker"
-        class="hidden-date"
-        onchange="changeWorkDateFromCalendar()"
-      >
-    </div>
+<button class="date-change-btn" onclick="openCalendar()">
+CHANGE DATE
+</button>
 
-    <div id="categoryButtons"></div>
-
-    <button class="back" onclick="logout()">LOGOUT</button>
-
-  </div>
-
-  <div id="view3" class="hidden">
-
-    <div class="view-center">
-      <div class="view-tag" id="areaViewTag">VIEW 3</div>
-    </div>
-
-    <div id="areaBigDatePickerBox" class="top-date-box hidden">
-      <h3 id="areaDateTitle"></h3>
-
-      <input
-        type="date"
-        id="bigDatePicker"
-        onchange="changeWorkDateFromBigPicker()"
-      >
-    </div>
-
-    <button id="completeAllCategoryButton" class="green" onclick="completeWholeCategory()">
-      ALL
-    </button>
-
-    <div id="areaButtons" class="rooms-grid"></div>
-
-    <button class="back" onclick="backToCategories()">BACK</button>
-
-  </div>
-
-  <div id="view4" class="hidden">
-
-    <div class="view-center">
-      <div class="view-tag">VIEW 7</div>
-    </div>
-
-    <button id="allTasksButton" class="green" onclick="checkAllTasks()">
-      ALL TASKS COMPLETED
-    </button>
-
-    <div id="checklistBox">
-
-      <div id="checklist"></div>
-
-      <div id="reasonBox" class="hidden">
-
-        <h3>Reason</h3>
-
-        <select id="reason">
-          <option value="">Select reason</option>
-          <option>Resident in room</option>
-          <option>Resident refused</option>
-          <option>Room occupied</option>
-          <option>Supplies missing</option>
-          <option>Maintenance issue</option>
-          <option>Not enough time</option>
-          <option>Other</option>
-        </select>
-
-        <textarea id="note" placeholder="Other reason / notes"></textarea>
-
-      </div>
-
-      <button class="green" onclick="saveTaskChecklist()">
-        SAVE
-      </button>
-
-    </div>
-
-    <p id="message"></p>
-
-    <button class="back" onclick="backToAreas()">BACK</button>
-
-  </div>
+<input
+type="date"
+id="quickDatePicker"
+class="hidden-date"
+onchange="changeWorkDateFromCalendar()"
+>
 
 </div>
 
-<div id="customConfirmModal" class="custom-modal-bg hidden">
+<div id="categoryButtons"></div>
 
-  <div class="custom-modal-box">
+<button class="back" onclick="logout()">LOGOUT</button>
 
-    <h3>Confirm</h3>
+</div>
 
-    <p id="customConfirmText"></p>
+<div id="view3" class="hidden">
 
-    <div class="custom-modal-row">
-      <button class="green" onclick="customConfirmYes()">YES</button>
-      <button class="back" onclick="customConfirmNo()">CANCEL</button>
-    </div>
+<div class="view-center">
+<div class="view-tag" id="areaViewTag">VIEW 3</div>
+</div>
 
-  </div>
+<div id="areaBigDatePickerBox" class="top-date-box hidden">
+
+<h3 id="areaDateTitle"></h3>
+
+<input
+type="date"
+id="bigDatePicker"
+onchange="changeWorkDateFromBigPicker()"
+>
+
+</div>
+
+<button
+id="completeAllCategoryButton"
+class="green"
+onclick="completeWholeCategory()"
+>
+ALL
+</button>
+
+<div id="areaButtons" class="rooms-grid"></div>
+
+<button class="back" onclick="backToCategories()">
+BACK
+</button>
+
+</div>
+
+<div id="view4" class="hidden">
+
+<div class="view-center">
+<div class="view-tag">VIEW 7</div>
+</div>
+
+<button
+id="allTasksButton"
+class="green"
+onclick="checkAllTasks()"
+>
+103 ALL TASKS COMPLETED
+</button>
+
+<div id="checklistBox">
+
+<div id="checklist"></div>
+
+<div id="reasonBox" class="hidden">
+
+<h3>Reason</h3>
+
+<select id="reason">
+
+<option value="">Select reason</option>
+<option>Resident in room</option>
+<option>Resident refused</option>
+<option>Room occupied</option>
+<option>Supplies missing</option>
+<option>Maintenance issue</option>
+<option>Not enough time</option>
+<option>Other</option>
+
+</select>
+
+<textarea
+id="note"
+placeholder="Other reason / notes"
+></textarea>
+
+</div>
+
+<button
+class="green"
+onclick="saveTaskChecklist()"
+>
+SAVE
+</button>
+
+</div>
+
+<p id="message"></p>
+
+<button class="back" onclick="backToAreas()">
+BACK
+</button>
+
+</div>
 
 </div>
 
 <div id="loadingScreen" class="loading-bg hidden">
-  <div class="spinner"></div>
+<div class="spinner"></div>
 </div>
 
-<script type="module">
+<script>
 
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+function checkAllTasks(){
 
-  import {
-    getFirestore,
-    collection,
-    query,
-    where,
-    getDocs,
-    doc,
-    writeBatch,
-    serverTimestamp
-  } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+  const checkboxes =
+    document.querySelectorAll('#checklist input[type="checkbox"]');
 
-  const firebaseConfig = {
-    apiKey: "AIzaSyBgq_ooBeEN4noEyIxYPLVokgM6RjCO648",
-    authDomain: "gms-task-tracker.firebaseapp.com",
-    projectId: "gms-task-tracker",
-    storageBucket: "gms-task-tracker.firebasestorage.app",
-    messagingSenderId: "790880979860",
-    appId: "1:790880979860:web:6faee2a6e56955af3c1d81",
-    measurementId: "G-5TRHQMS039"
-  };
+  checkboxes.forEach(function(box){
+    box.checked = true;
+  });
 
-  const app = initializeApp(firebaseConfig);
-  const db = getFirestore(app);
+  document
+    .getElementById("reasonBox")
+    .classList
+    .add("hidden");
 
-  const sessionData = JSON.parse(sessionStorage.getItem("currentEmployee"));
-  const selectedDailyTask = JSON.parse(sessionStorage.getItem("selectedDailyTask"));
+  document.getElementById("reason").value = "";
+  document.getElementById("note").value = "";
+}
 
-  if (!sessionData || !selectedDailyTask || !selectedDailyTask.assignment) {
-    window.location.href = "index.html";
-  }
+function updateReasonVisibility(){
 
-  const employeeId =
-    sessionData.employeeId ||
-    sessionData.id ||
-    sessionData.pin ||
-    "";
+  const checkboxes =
+    document.querySelectorAll('#checklist input[type="checkbox"]');
 
-  const employeeName =
-    ((sessionData.firstName || "") + " " + (sessionData.lastName || "")).trim() ||
-    sessionData.employeeName ||
-    sessionData.name ||
-    "Employee";
+  let allChecked = true;
 
-  let currentAssignment = selectedDailyTask.assignment;
-  let currentWorkDateISO = getTodayISO();
-  let currentWorkDateDisplay = "";
-  let currentWorkDayName = "";
+  checkboxes.forEach(function(box){
 
-  let selectedCategory = "";
-  let currentArea = "";
-
-  let allTasksForDay = [];
-  let progressData = {};
-  let currentTaskList = [];
-
-  let customConfirmResolve = null;
-
-  document.getElementById("employeeName").innerText =
-    "Welcome, " + employeeName;
-
-  document.getElementById("assignmentTitle").innerText =
-    currentAssignment;
-
-  startSchedule();
-
-  async function startSchedule() {
-    await loadAssignmentTasks();
-    showView(2);
-  }
-
-  function showLoading() {
-    document.getElementById("loadingScreen").classList.remove("hidden");
-  }
-
-  function hideLoading() {
-    document.getElementById("loadingScreen").classList.add("hidden");
-  }
-
-  function getTodayISO() {
-    const today = new Date();
-    const yyyy = today.getFullYear();
-    const mm = String(today.getMonth() + 1).padStart(2, "0");
-    const dd = String(today.getDate()).padStart(2, "0");
-
-    return yyyy + "-" + mm + "-" + dd;
-  }
-
-  function updateDateDisplay() {
-    const date = new Date(currentWorkDateISO + "T00:00:00");
-
-    const weekdays = [
-      "Sunday",
-      "Monday",
-      "Tuesday",
-      "Wednesday",
-      "Thursday",
-      "Friday",
-      "Saturday"
-    ];
-
-    currentWorkDayName = weekdays[date.getDay()];
-
-    const mm = String(date.getMonth() + 1).padStart(2, "0");
-    const dd = String(date.getDate()).padStart(2, "0");
-    const yyyy = date.getFullYear();
-
-    currentWorkDateDisplay = mm + "/" + dd + "/" + yyyy;
-  }
-
-  function openCalendar() {
-    const picker = document.getElementById("quickDatePicker");
-
-    picker.value = currentWorkDateISO;
-
-    if (picker.showPicker) {
-      picker.showPicker();
-    } else {
-      picker.click();
-    }
-  }
-
-  async function changeWorkDateFromCalendar() {
-    const picker = document.getElementById("quickDatePicker");
-
-    if (!picker.value) return;
-
-    currentWorkDateISO = picker.value;
-
-    await loadAssignmentTasks();
-
-    if (selectedCategory) {
-      drawAreaButtons(selectedCategory);
-      showView(3);
-    } else {
-      drawCategories();
-      showView(2);
-    }
-  }
-
-  async function changeWorkDateFromBigPicker() {
-    const picker = document.getElementById("bigDatePicker");
-
-    if (!picker.value) return;
-
-    currentWorkDateISO = picker.value;
-
-    await loadAssignmentTasks();
-
-    if (selectedCategory) {
-      drawAreaButtons(selectedCategory);
-      showView(3);
-    }
-  }
-
-  async function loadAssignmentTasks() {
-    showLoading();
-
-    updateDateDisplay();
-
-    document.getElementById("assignmentTitle").innerText = currentAssignment;
-
-    document.getElementById("workDateTitle").innerText =
-      currentWorkDayName;
-
-    document.getElementById("areaDateTitle").innerText =
-      currentWorkDayName;
-
-    const settingsSnap = await getDocs(
-      query(collection(db, "settings"))
-    );
-
-    let housekeepingMode = "two";
-
-    settingsSnap.docs.forEach(function(docItem) {
-      const data = docItem.data();
-
-      if (data.housekeepingMode) {
-        housekeepingMode = String(data.housekeepingMode).toLowerCase();
-      }
-    });
-
-    const areaQuery = query(
-      collection(db, "areas")
-    );
-
-    const areaSnap = await getDocs(areaQuery);
-
-    const allAssignmentTasks =
-      areaSnap.docs.map(function(taskDoc) {
-        return {
-          id: taskDoc.id,
-          ...taskDoc.data()
-        };
-      });
-
-    allTasksForDay =
-      allAssignmentTasks.filter(function(item) {
-
-        const activeValue = item.active;
-
-        if (activeValue === false || activeValue === "No") {
-          return false;
-        }
-
-        const areaSchedule =
-          String(item.scheduleDay || "")
-          .trim()
-          .toLowerCase();
-
-        const correctDay =
-          areaSchedule === "daily" ||
-          areaSchedule === currentWorkDayName.toLowerCase();
-
-        if (!correctDay) {
-          return false;
-        }
-
-        let assignmentField = "";
-
-        if (housekeepingMode === "three") {
-          assignmentField =
-            item.threeHousekeeperSchedule || "";
-        } else {
-          assignmentField =
-            item.twoHousekeeperSchedule || "";
-        }
-
-        return (
-          String(assignmentField).trim() ===
-          String(currentAssignment).trim()
-        );
-      }).map(function(item) {
-
-        return {
-          area: item.areaName,
-          task: "",
-          category: item.category,
-          schedule: item.scheduleDay,
-          assignment: currentAssignment,
-          active: item.active,
-          type: item.type,
-          workId: item.workId
-        };
-
-      });
-
-    await loadProgressData();
-
-    drawCategories();
-
-    hideLoading();
-  }
-
-  async function loadProgressData() {
-    progressData = {};
-
-    const progressQuery = query(
-      collection(db, "taskProgress"),
-      where("workDateISO", "==", currentWorkDateISO)
-    );
-
-    const progressSnap = await getDocs(progressQuery);
-
-    progressSnap.docs.forEach(function(progressDoc) {
-      const item = progressDoc.data();
-
-      if (item.assignment !== currentAssignment) return;
-      if (String(item.employeeId || "") !== String(employeeId || "")) return;
-
-      const area = item.area || "";
-      const task = item.task || "";
-      const status = item.status || "";
-
-      if (!area || !status) return;
-
-      if (!progressData[area]) {
-        progressData[area] = {};
-      }
-
-      if (task) {
-        progressData[area][task] = status;
-      }
-
-      if (status === "Incomplete") {
-        progressData[area][""] = "Incomplete";
-      } else if (!progressData[area][""]) {
-        progressData[area][""] = status;
-      }
-    });
-  }
-
-  function drawCategories() {
-    const box = document.getElementById("categoryButtons");
-    box.innerHTML = "";
-
-    const categories =
-      currentAssignment === "Laundry"
-        ? ["Weekly Laundry", "Daily Laundry Check"]
-        : ["Common Area", "Weekly Room", "Daily Room", "Dehumidifier"];
-
-    categories.forEach(function(category) {
-      const categoryTasks =
-        allTasksForDay.filter(function(task) {
-          return task.category === category;
-        });
-
-      const total = categoryTasks.length;
-
-      if (total === 0) return;
-
-      const counts = getTaskCounts(categoryTasks);
-
-      const btn = document.createElement("button");
-
-      if (counts.incomplete > 0) {
-        btn.innerText =
-          category + " " + counts.completed + "/" + total + " - ISSUE";
-      } else {
-        btn.innerText =
-          category + " " + counts.completed + "/" + total;
-      }
-
-      btn.className =
-        getProgressColor(counts.completed, counts.incomplete, total);
-
-      btn.onclick = function() {
-        selectedCategory = category;
-        drawAreaButtons(category);
-        showView(3);
-      };
-
-      box.appendChild(btn);
-    });
-
-    if (box.innerHTML === "") {
-      const emptyMessage = document.createElement("h3");
-      emptyMessage.innerText = "No tasks found for " + currentAssignment;
-      box.appendChild(emptyMessage);
-    }
-  }
-
-  function drawAreaButtons(category) {
-    const box = document.getElementById("areaButtons");
-    box.innerHTML = "";
-
-    setAreaViewTag(category);
-    setAreaDatePickerVisibility(category);
-
-    document.getElementById("bigDatePicker").value = currentWorkDateISO;
-
-    document.getElementById("completeAllCategoryButton").innerText =
-      "ALL " + category.toUpperCase();
-
-    document.getElementById("areaDateTitle").innerText =
-      currentWorkDayName;
-
-    const categoryTasks =
-      allTasksForDay.filter(function(task) {
-        return task.category === category;
-      });
-
-    const areas =
-      [...new Set(categoryTasks.map(function(task) {
-        return task.area;
-      }))];
-
-    areas.forEach(function(area) {
-      const areaTasks =
-        categoryTasks.filter(function(task) {
-          return task.area === area;
-        });
-
-      const total = areaTasks.length;
-      const counts = getTaskCounts(areaTasks);
-
-      const btn = document.createElement("button");
-
-      if (counts.incomplete > 0) {
-        btn.innerHTML =
-          '<div class="room-number">' + area + '</div>' +
-          '<div class="room-counter">' + counts.completed + '/' + total + ' ISSUE</div>';
-      } else {
-        btn.innerHTML =
-          '<div class="room-number">' + area + '</div>' +
-          '<div class="room-counter">' + counts.completed + '/' + total + '</div>';
-      }
-
-      btn.className =
-        getProgressColor(counts.completed, counts.incomplete, total);
-
-      btn.onclick = function() {
-        openTaskGroup(area);
-      };
-
-      box.appendChild(btn);
-    });
-  }
-
-  function setAreaViewTag(category) {
-    const tag = document.getElementById("areaViewTag");
-
-    if (category === "Common Area") {
-      tag.innerText = "VIEW 3";
-    } else if (category === "Weekly Room") {
-      tag.innerText = "VIEW 4";
-    } else if (category === "Daily Room") {
-      tag.innerText = "VIEW 5";
-    } else if (category === "Dehumidifier") {
-      tag.innerText = "VIEW 6";
-    } else if (category === "Weekly Laundry") {
-      tag.innerText = "VIEW 4";
-    } else if (category === "Daily Laundry Check") {
-      tag.innerText = "VIEW 5";
-    } else {
-      tag.innerText = "VIEW 3";
-    }
-  }
-
-  function setAreaDatePickerVisibility(category) {
-    const pickerBox = document.getElementById("areaBigDatePickerBox");
-    const dateTitle = document.getElementById("areaDateTitle");
-
-    if (category === "Weekly Room" || category === "Weekly Laundry") {
-      pickerBox.classList.remove("hidden");
-      dateTitle.classList.remove("hidden");
-    } else {
-      pickerBox.classList.add("hidden");
-      dateTitle.classList.add("hidden");
-    }
-  }
-
-  function getTaskCounts(tasks) {
-    let completed = 0;
-    let incomplete = 0;
-    let untouched = 0;
-
-    tasks.forEach(function(task) {
-      const areaProgress = progressData[task.area] || {};
-      const status = areaProgress[task.task] || "";
-
-      if (status === "Completed") {
-        completed++;
-      } else if (status === "Incomplete") {
-        incomplete++;
-      } else {
-        untouched++;
-      }
-    });
-
-    return {
-      completed: completed,
-      incomplete: incomplete,
-      untouched: untouched
-    };
-  }
-
-  function getProgressColor(completed, incomplete, total) {
-    if (incomplete > 0) return "yellow";
-    if (completed === 0) return "red";
-    if (completed >= total) return "green";
-    return "yellow";
-  }
-
-  async function openTaskGroup(area) {
-    currentArea = area;
-
-    const selectedWork =
-      allTasksForDay.find(function(item) {
-        return item.area === area && item.category === selectedCategory;
-      });
-
-    if (!selectedWork) {
-      alert("Area not found.");
-      return;
+    if(!box.checked){
+      allChecked = false;
     }
 
-    const taskQuery = query(
-      collection(db, "tasks_new"),
-      where("workId", "==", selectedWork.workId)
-    );
+  });
 
-    const taskSnap = await getDocs(taskQuery);
-
-    currentTaskList =
-      taskSnap.docs.map(function(taskDoc) {
-        const taskData = taskDoc.data();
-
-        return {
-          id: taskDoc.id,
-          area: selectedWork.area,
-          areaName: selectedWork.area,
-          workId: selectedWork.workId,
-          task: taskData.taskName,
-          category: selectedWork.category,
-          schedule: selectedWork.schedule,
-          assignment: currentAssignment,
-          active: taskData.active
-        };
-      }).filter(function(task) {
-        return task.active !== false;
-      });
-
-    document.getElementById("allTasksButton").innerText =
-      area + " ALL TASKS COMPLETED";
-
-    document.getElementById("message").innerText = "";
-    document.getElementById("reason").value = "";
-    document.getElementById("note").value = "";
-    document.getElementById("reasonBox").classList.add("hidden");
-
-    buildChecklist();
-
-    showView(4);
-  }
-
-  function buildChecklist() {
-    const box = document.getElementById("checklist");
-    box.innerHTML = "";
-
-    currentTaskList.forEach(function(task, index) {
-      const div = document.createElement("div");
-      div.className = "check-row";
-
-      div.innerHTML =
-        '<input type="checkbox" id="task_' + index + '" onchange="updateReasonVisibility()">' +
-        task.task;
-
-      box.appendChild(div);
-    });
-  }
-
-  function checkAllTasks() {
-    currentTaskList.forEach(function(task, index) {
-      document.getElementById("task_" + index).checked = true;
-    });
-
-    document.getElementById("reasonBox").classList.add("hidden");
-    document.getElementById("reason").value = "";
-    document.getElementById("note").value = "";
-  }
-
-  function updateReasonVisibility() {
-    let allChecked = true;
-
-    currentTaskList.forEach(function(task, index) {
-      const checkbox = document.getElementById("task_" + index);
-
-      if (!checkbox.checked) {
-        allChecked = false;
-      }
-    });
-
-    if (allChecked) {
-      document.getElementById("reasonBox").classList.add("hidden");
-      document.getElementById("reason").value = "";
-      document.getElementById("note").value = "";
-    } else {
-      document.getElementById("reasonBox").classList.remove("hidden");
-    }
-  }
-
-  async function saveTaskChecklist() {
-    showLoading();
-
-    const saveItems = [];
-
-    let hasIncomplete = false;
-
-    currentTaskList.forEach(function(task, index) {
-      const checked =
-        document.getElementById("task_" + index).checked;
-
-      const status =
-        checked ? "Completed" : "Incomplete";
-
-      if (!checked) {
-        hasIncomplete = true;
-      }
-
-      saveItems.push({
-        task: task,
-        status: status,
-        reason: checked ? "" : getReasonText()
-      });
-    });
-
-    if (hasIncomplete && getReasonText() === "") {
-      hideLoading();
-      alert("Select a reason before saving.");
-      return;
-    }
-
-    await saveTaskStatuses(saveItems);
-
-    await loadAssignmentTasks();
-
-    hideLoading();
-
-    document.getElementById("message").innerText = "TASK SAVED";
-
-    setTimeout(function() {
-      drawAreaButtons(selectedCategory);
-      showView(3);
-    }, 800);
-  }
-
-  function getReasonText() {
-    const reason = document.getElementById("reason").value || "";
-    const note = document.getElementById("note").value || "";
-
-    if (reason && note) {
-      return reason + " - " + note;
-    }
-
-    if (reason) {
-      return reason;
-    }
-
-    return note;
-  }
-
-  async function completeWholeCategory() {
-    const categoryAreas =
-      allTasksForDay.filter(function(item) {
-        return item.category === selectedCategory;
-      });
-
-    if (categoryAreas.length === 0) {
-      alert("No areas in this category.");
-      return;
-    }
-
-    const confirmMessage =
-      "Mark ALL " + selectedCategory + " tasks completed for " +
-      currentWorkDateDisplay + "?";
-
-    const confirmed = await showCustomConfirm(confirmMessage);
-
-    if (!confirmed) {
-      return;
-    }
-
-    showLoading();
-
-    const saveItems = [];
-
-    for (let i = 0; i < categoryAreas.length; i++) {
-      const areaItem = categoryAreas[i];
-
-      const taskQuery = query(
-        collection(db, "tasks_new"),
-        where("workId", "==", areaItem.workId)
-      );
-
-      const taskSnap = await getDocs(taskQuery);
-
-      taskSnap.docs.forEach(function(taskDoc) {
-        const taskData = taskDoc.data();
-
-        if (taskData.active === false) {
-          return;
-        }
-
-        saveItems.push({
-          task: {
-            id: taskDoc.id,
-            area: areaItem.area,
-            areaName: areaItem.area,
-            workId: areaItem.workId,
-            task: taskData.taskName,
-            category: areaItem.category,
-            schedule: areaItem.schedule,
-            assignment: currentAssignment,
-            active: taskData.active
-          },
-          status: "Completed",
-          reason: ""
-        });
-      });
-    }
-
-    await saveTaskStatuses(saveItems);
-
-    hideLoading();
-
-    await loadAssignmentTasks();
-
-    drawAreaButtons(selectedCategory);
-    drawCategories();
-  }
-
-  function showCustomConfirm(message) {
-    document.getElementById("customConfirmText").innerText = message;
-    document.getElementById("customConfirmModal").classList.remove("hidden");
-
-    return new Promise(function(resolve) {
-      customConfirmResolve = resolve;
-    });
-  }
-
-  function customConfirmYes() {
-    document.getElementById("customConfirmModal").classList.add("hidden");
-
-    if (customConfirmResolve) {
-      customConfirmResolve(true);
-    }
-  }
-
-  function customConfirmNo() {
-    document.getElementById("customConfirmModal").classList.add("hidden");
-
-    if (customConfirmResolve) {
-      customConfirmResolve(false);
-    }
-  }
-
-  function updateLocalProgress(task, status) {
-    if (!progressData[task.area]) {
-      progressData[task.area] = {};
-    }
-
-    progressData[task.area][task.task] = status;
-
-    if (status === "Incomplete") {
-      progressData[task.area][""] = "Incomplete";
-    } else {
-      const areaTasks =
-        currentTaskList.filter(function(item) {
-          return item.area === task.area;
-        });
-
-      let hasIncomplete = false;
-
-      areaTasks.forEach(function(item) {
-        if (progressData[task.area][item.task] === "Incomplete") {
-          hasIncomplete = true;
-        }
-      });
-
-      if (!hasIncomplete) {
-        progressData[task.area][""] = "Completed";
-      }
-    }
-  }
-
-  async function saveTaskStatuses(saveItems) {
-
-    const batch = writeBatch(db);
-
-    saveItems.forEach(function(item) {
-
-      const task = item.task;
-      const status = item.status;
-      const reason = item.reason || "";
-
-      updateLocalProgress(task, status);
-
-      const cleanTaskId =
-        (
-          String(task.area || "") + "_" +
-          String(task.category || "") + "_" +
-          String(task.schedule || "") + "_" +
-          String(task.task || "")
-        )
-        .toLowerCase()
-        .replace(/&/g, "and")
-        .replace(/[^a-z0-9]+/g, "_")
-        .replace(/^_+|_+$/g, "");
-
-      const progressId = makeProgressId(task);
-
-      const progressRef =
-        doc(db, "taskProgress", progressId);
-
-      batch.set(progressRef, {
-
-        workDateISO: currentWorkDateISO,
-        workDate: currentWorkDateDisplay,
-        weekday: currentWorkDayName,
-
-        employeeId: String(employeeId || ""),
-        employeeName: employeeName,
-
-        assignment: currentAssignment,
-
-        area: task.area,
-        workId: task.workId || "",
-
-        task: task.task,
-        taskId: cleanTaskId,
-
-        schedule: task.schedule || "",
-        category: task.category || "",
-
-        status: status,
-        reason: reason,
-
-        updatedAt: serverTimestamp()
-      });
-
-      const logRef =
-        doc(collection(db, "taskLogs"));
-
-      batch.set(logRef, {
-
-        workDateISO: currentWorkDateISO,
-        workDate: currentWorkDateDisplay,
-        weekday: currentWorkDayName,
-
-        employeeId: String(employeeId || ""),
-        employeeName: employeeName,
-
-        assignment: currentAssignment,
-
-        area: task.area,
-        workId: task.workId || "",
-
-        task: task.task,
-        taskId: cleanTaskId,
-
-        schedule: task.schedule || "",
-        category: task.category || "",
-
-        status: status,
-        reason: reason,
-
-        timestamp: serverTimestamp()
-      });
-
-    });
-
-    await batch.commit();
-  }
-
-  function makeProgressId(task) {
-
-    const taskId =
-      String(task.area || "") + "_" +
-      String(task.category || "") + "_" +
-      String(task.schedule || "") + "_" +
-      String(task.task || "");
-
-    const cleanTaskId =
-      taskId
-        .toLowerCase()
-        .replace(/&/g, "and")
-        .replace(/[^a-z0-9]+/g, "_")
-        .replace(/^_+|_+$/g, "");
-
-    const raw =
-      currentWorkDateISO + "_" +
-      String(employeeId || "") + "_" +
-      currentAssignment + "_" +
-      cleanTaskId;
-
-    return raw.replace(/[^a-zA-Z0-9_-]/g, "_");
-  }
-
-  function showView(num) {
-    [2, 3, 4].forEach(function(viewNumber) {
-      document
-        .getElementById("view" + viewNumber)
-        .classList
-        .add("hidden");
-    });
+  if(allChecked){
 
     document
-      .getElementById("view" + num)
+      .getElementById("reasonBox")
+      .classList
+      .add("hidden");
+
+  }else{
+
+    document
+      .getElementById("reasonBox")
       .classList
       .remove("hidden");
+
   }
 
-  function backToCategories() {
-    drawCategories();
-    showView(2);
-  }
+}
 
-  function backToAreas() {
-    drawAreaButtons(selectedCategory);
-    showView(3);
-  }
+async function saveTaskChecklist(){
 
-  function logout() {
-    sessionStorage.clear();
-    window.location.href = "index.html";
-  }
+  document
+    .getElementById("loadingScreen")
+    .classList
+    .remove("hidden");
 
-  window.openCalendar = openCalendar;
-  window.changeWorkDateFromCalendar = changeWorkDateFromCalendar;
-  window.changeWorkDateFromBigPicker = changeWorkDateFromBigPicker;
-  window.completeWholeCategory = completeWholeCategory;
-  window.checkAllTasks = checkAllTasks;
-  window.updateReasonVisibility = updateReasonVisibility;
-  window.saveTaskChecklist = saveTaskChecklist;
-  window.backToCategories = backToCategories;
-  window.backToAreas = backToAreas;
-  window.logout = logout;
-  window.customConfirmYes = customConfirmYes;
-  window.customConfirmNo = customConfirmNo;
+  setTimeout(function(){
+
+    document
+      .getElementById("loadingScreen")
+      .classList
+      .add("hidden");
+
+    document.getElementById("message").innerText =
+      "TASK SAVED";
+
+    setTimeout(function(){
+
+      document
+        .getElementById("view4")
+        .classList
+        .add("hidden");
+
+      document
+        .getElementById("view3")
+        .classList
+        .remove("hidden");
+
+    },800);
+
+  },700);
+
+}
+
+function openTaskGroup(area){
+
+  document.getElementById("allTasksButton").innerText =
+    area + " ALL TASKS COMPLETED";
+
+}
 
 </script>
 
