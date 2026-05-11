@@ -354,15 +354,11 @@
     <h2 id="taskTitle"></h2>
     <h3 id="taskDateTitle"></h3>
 
-    <button class="green" onclick="completeAllTasks()">
-      ALL TASKS COMPLETED
-    </button>
+<button class="green" onclick="checkAllTasks()">
+  ALL TASKS COMPLETED
+</button>
 
-    <button class="red" onclick="showIncompleteChecklist()">
-      NO - SOMETHING NOT DONE
-    </button>
-
-    <div id="checklistBox" class="hidden">
+<div id="checklistBox">
 
       <h3>Select tasks NOT completed</h3>
 
@@ -383,8 +379,7 @@
 
       <textarea id="note" placeholder="Other reason / notes"></textarea>
 
-      <button onclick="submitIncomplete()">SAVE</button>
-
+<button class="green" onclick="saveTaskChecklist()">SAVE</button>
     </div>
 
     <p id="message"></p>
