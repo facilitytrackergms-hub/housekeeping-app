@@ -197,11 +197,17 @@
       gap: 3px;
     }
 
-    .check-row input {
-      width: auto;
-      transform: scale(1);
-      margin: 0;
-    }
+ .task-done {
+  background: #e8f5e9;
+  border-color: #2e7d32;
+}
+
+.task-missing {
+  background: #ffebee;
+  border-color: #c62828;
+  color: #c62828;
+  font-weight: bold;
+}
 
     #message {
       text-align: center;
@@ -942,7 +948,8 @@
 
   currentTaskList.forEach(function(task, index) {
     const div = document.createElement("div");
-    div.className = "check-row";
+    div.className =
+  isCompleted ? "check-row task-done" : "check-row task-missing";
 
     const savedStatus = areaProgress[task.task] || "";
     const isCompleted = savedStatus === "Completed";
