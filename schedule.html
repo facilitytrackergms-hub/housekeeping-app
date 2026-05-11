@@ -111,22 +111,26 @@
 
     .top-info-box {
       border: 2px solid #e0e0e0;
-      border-radius: 24px;
-      padding: 20px 12px 14px;
-      margin: 8px 0 18px;
+      border-radius: 18px;
+      padding: 10px;
+      margin: 4px 0 10px;
       background: #fafafa;
     }
 
     .top-info-box h2 {
-      font-size: 30px;
-      margin-bottom: 12px;
+      font-size: 24px;
+      margin-bottom: 0;
+    }
+
+    #employeeName {
+      display: none;
     }
 
     .date-section-box {
       border: 2px solid #e0e0e0;
-      border-radius: 24px;
-      padding: 16px 12px;
-      margin: 0 0 22px;
+      border-radius: 18px;
+      padding: 10px;
+      margin: 0 0 14px;
       background: #fafafa;
     }
 
@@ -134,7 +138,7 @@
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 14px;
+      gap: 10px;
       margin-bottom: 0;
     }
 
@@ -145,10 +149,10 @@
 
     .date-change-btn {
       width: auto;
-      font-size: 15px;
-      padding: 12px 18px;
+      font-size: 14px;
+      padding: 10px 14px;
       margin: 0;
-      border-radius: 16px;
+      border-radius: 14px;
       background: #555;
       white-space: nowrap;
     }
@@ -167,16 +171,17 @@
 
     .category-section-box {
       display: grid;
-      gap: 20px;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
       margin-top: 8px;
     }
 
     #categoryButtons button {
-      min-height: 88px;
-      font-size: 24px;
-      border-radius: 24px;
+      min-height: 92px;
+      font-size: 20px;
+      border-radius: 18px;
       margin: 0;
-      padding: 20px 10px;
+      padding: 14px 8px;
       line-height: 1.15;
     }
 
@@ -366,10 +371,6 @@
 <div class="card">
 
   <div id="view2">
-
-    <div class="view-center">
-      <div class="view-tag">VIEW 2</div>
-    </div>
 
     <div class="top-info-box">
       <h2 id="employeeName">Welcome</h2>
