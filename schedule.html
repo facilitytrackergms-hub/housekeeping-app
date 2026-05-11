@@ -673,35 +673,43 @@ allTasksForDay =
     hideLoading();
   }
 
-  async function loadProgressData() {
-    progressData = {};
+ async function loadProgressData() {
+  progressData = {};
 
-    const progressQuery = query(
-      collection(db, "taskProgress"),
-      where("workDateISO", "==", currentWorkDateISO)
-    );
+  const progressQuery = query(
+    collection(db, "taskProgress"),
+    where("workDateISO", "==", currentWorkDateISO)
+  );
 
-    const progressSnap = await getDocs(progressQuery);
+  const progressSnap = await getDocs(progressQuery);
 
-    progressSnap.docs.forEach(function(progressDoc) {
-      const item = progressDoc.data();
+  progressSnap.docs.forEach(function(progressDoc) {
+    const item = progressDoc.data();
 
-      if (item.assignment !== currentAssignment) return;
-      if (String(item.employeeId || "") !== String(employeeId || "")) return;
+    if (item.assignment !== currentAssignment) return;
+    if (String(item.employeeId || "") !== String(employeeId || "")) return;
 
-      const area = item.area || "";
-      const task = item.task || "";
-      const status = item.status || "";
+    const area = item.area || "";
+    const task = item.task || "";
+    const status = item.status || "";
 
-      if (!area || !task) return;
+    if (!area || !status) return;
 
-      if (!progressData[area]) {
-        progressData[area] = {};
-      }
+    if (!progressData[area]) {
+      progressData[area] = {};
+    }
 
+    if (task) {
       progressData[area][task] = status;
-    });
-  }
+    }
+
+    if (status === "Incomplete") {
+      progressData[area][""] = "Incomplete";
+    } else if (!progressData[area][""]) {
+      progressData[area][""] = status;
+    }
+  });
+}
 
   function drawCategories() {
     const box = document.getElementById("categoryButtons");
