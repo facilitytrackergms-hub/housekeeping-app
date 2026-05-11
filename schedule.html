@@ -655,7 +655,7 @@ allTasksForDay =
 
     return {
       area: item.areaName,
-      task: item.areaName,
+      task: "",
       category: item.category,
       schedule: item.scheduleDay,
       assignment: currentAssignment,
@@ -1100,9 +1100,11 @@ allTasksForDay =
 
         assignment: currentAssignment,
         area: task.area,
-        task: task.task,
-        schedule: task.schedule || "",
-        category: task.category || "",
+workId: task.workId || "",
+task: task.task,
+taskId: task.id || "",
+schedule: task.schedule || "",
+category: task.category || "",
 
         status: status,
         reason: reason,
@@ -1146,12 +1148,12 @@ allTasksForDay =
   }
 
   function makeProgressId(task) {
-    const raw =
-      currentWorkDateISO + "_" +
-      String(employeeId || "") + "_" +
-      currentAssignment + "_" +
-      task.area + "_" +
-      task.task;
+const raw =
+  currentWorkDateISO + "_" +
+  String(employeeId || "") + "_" +
+  currentAssignment + "_" +
+  (task.workId || task.area) + "_" +
+  (task.id || task.task);
 
     return raw.replace(/[^a-zA-Z0-9_-]/g, "_");
   }
