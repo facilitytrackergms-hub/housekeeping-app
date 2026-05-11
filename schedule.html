@@ -271,6 +271,7 @@
     }
 
     .custom-modal-box {
+      position: relative;
       width: 90%;
       max-width: 380px;
       background: white;
@@ -299,6 +300,22 @@
   flex: 1;
   font-size: 14px;
   padding: 10px 4px;
+}
+
+.modal-close-x {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: #555;
+  color: white;
+  font-size: 20px;
+  font-weight: bold;
+  padding: 0;
+  margin: 0;
+  line-height: 30px;
 }
   </style>
 </head>
@@ -411,6 +428,8 @@
 <div id="customConfirmModal" class="custom-modal-bg hidden">
 
   <div class="custom-modal-box">
+
+    <button class="modal-close-x" onclick="customConfirmNo()">×</button>
 
     <h3 id="customConfirmTitle">Confirm</h3>
 
