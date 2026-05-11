@@ -1137,9 +1137,7 @@
 
       const savedStatus = areaProgress[task.task] || "";
 
-      const isCompleted =
-        savedStatus === "Completed" ||
-        (selectedCategory === "Dehumidifier" && selectedDehumidifierPeriod !== "");
+      const isCompleted = savedStatus === "Completed";
 
       const div = document.createElement("div");
 
