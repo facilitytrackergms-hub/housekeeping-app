@@ -343,7 +343,7 @@
       >
     </div>
 
-    <button id="completeAllCategoryButton" class="green" onclick="completeWholeCategory()">
+    <button id="completeAllCategoryButton" class="green hidden" onclick="completeWholeCategory()">
       ALL
     </button>
 
@@ -417,6 +417,25 @@
 
 </div>
 
+<div id="roomActionModal" class="custom-modal-bg hidden">
+
+  <div class="custom-modal-box">
+
+    <h3 id="roomActionTitle">Room</h3>
+
+    <p>Choose one</p>
+
+    <div class="custom-modal-row">
+      <button class="green" onclick="roomActionSave()">SAVE</button>
+      <button onclick="roomActionTasks()">TASKS</button>
+    </div>
+
+    <button class="back" onclick="roomActionCancel()">CANCEL</button>
+
+  </div>
+
+</div>
+
 <div id="loadingScreen" class="loading-bg hidden">
   <div class="spinner"></div>
 </div>
@@ -479,6 +498,7 @@
   let allTasksForDay = [];
   let progressData = {};
   let currentTaskList = [];
+  let pendingRoomActionArea = "";
 
   let customConfirmResolve = null;
 
@@ -816,7 +836,7 @@
         getProgressColor(counts.completed, counts.incomplete, total);
 
       btn.onclick = function() {
-        openTaskGroup(area);
+        showRoomAction(area);
       };
 
       box.appendChild(btn);
@@ -888,7 +908,38 @@
     return "yellow";
   }
 
-  async function openTaskGroup(area) {
+  function showRoomAction(area) {
+    pendingRoomActionArea = area;
+    document.getElementById("roomActionTitle").innerText = area;
+    document.getElementById("roomActionModal").classList.remove("hidden");
+  }
+
+  function roomActionCancel() {
+    document.getElementById("roomActionModal").classList.add("hidden");
+    pendingRoomActionArea = "";
+  }
+
+  async function roomActionTasks() {
+    const area = pendingRoomActionArea;
+    document.getElementById("roomActionModal").classList.add("hidden");
+
+    if (!area) return;
+
+    await openTaskGroup(area);
+  }
+
+  async function roomActionSave() {
+    const area = pendingRoomActionArea;
+    document.getElementById("roomActionModal").classList.add("hidden");
+
+    if (!area) return;
+
+    await openTaskGroup(area, true);
+    checkAllTasks();
+    await saveTaskChecklist(true);
+  }
+
+  async function openTaskGroup(area, stayHidden) {
     currentArea = area;
 
     const selectedWork =
@@ -936,7 +987,9 @@
 
     buildChecklist();
 
-    showView(4);
+    if (!stayHidden) {
+      showView(4);
+    }
   }
 
   function buildChecklist() {
@@ -1033,7 +1086,7 @@
     }
   }
 
-  async function saveTaskChecklist() {
+  async function saveTaskChecklist(skipReturnDelay) {
     showLoading();
 
     const saveItems = [];
@@ -1072,10 +1125,17 @@
 
     document.getElementById("message").innerText = "TASK SAVED";
 
-    setTimeout(function() {
-      drawAreaButtons(selectedCategory);
+    drawAreaButtons(selectedCategory);
+    drawCategories();
+
+    if (!skipReturnDelay) {
+      setTimeout(function() {
+        drawAreaButtons(selectedCategory);
+        showView(3);
+      }, 800);
+    } else {
       showView(3);
-    }, 800);
+    }
   }
 
   function getReasonText() {
@@ -1378,6 +1438,10 @@
   window.changeWorkDateFromCalendar = changeWorkDateFromCalendar;
   window.changeWorkDateFromBigPicker = changeWorkDateFromBigPicker;
   window.completeWholeCategory = completeWholeCategory;
+  window.showRoomAction = showRoomAction;
+  window.roomActionSave = roomActionSave;
+  window.roomActionTasks = roomActionTasks;
+  window.roomActionCancel = roomActionCancel;
   window.confirmCheckAllTasks = confirmCheckAllTasks;
   window.checkAllTasks = checkAllTasks;
   window.updateChecklistColors = updateChecklistColors;
