@@ -1011,45 +1011,75 @@ allTasksForDay =
     showView(3);
   }
 
-  async function completeWholeCategory() {
-    const categoryTasks =
-      allTasksForDay.filter(function(task) {
-        return task.category === selectedCategory;
-      });
+ async function completeWholeCategory() {
+  const categoryAreas =
+    allTasksForDay.filter(function(item) {
+      return item.category === selectedCategory;
+    });
 
-    if (categoryTasks.length === 0) {
-      alert("No tasks in this category.");
-      return;
-    }
-
-    const confirmMessage =
-      "Mark ALL " + selectedCategory + " tasks completed for " +
-      currentWorkDateDisplay + "?";
-
-    const confirmed = await showCustomConfirm(confirmMessage);
-
-    if (!confirmed) {
-      return;
-    }
-
-    showLoading();
-
-    await saveTaskStatuses(
-      categoryTasks.map(function(task) {
-        return {
-          task: task,
-          status: "Completed",
-          reason: ""
-        };
-      })
-    );
-
-    hideLoading();
-
-    drawAreaButtons(selectedCategory);
-    drawCategories();
+  if (categoryAreas.length === 0) {
+    alert("No areas in this category.");
+    return;
   }
 
+  const confirmMessage =
+    "Mark ALL " + selectedCategory + " tasks completed for " +
+    currentWorkDateDisplay + "?";
+
+  const confirmed = await showCustomConfirm(confirmMessage);
+
+  if (!confirmed) {
+    return;
+  }
+
+  showLoading();
+
+  const saveItems = [];
+
+  for (let i = 0; i < categoryAreas.length; i++) {
+    const areaItem = categoryAreas[i];
+
+    const taskQuery = query(
+      collection(db, "tasks_new"),
+      where("workId", "==", areaItem.workId)
+    );
+
+    const taskSnap = await getDocs(taskQuery);
+
+    taskSnap.docs.forEach(function(taskDoc) {
+      const taskData = taskDoc.data();
+
+      if (taskData.active === false) {
+        return;
+      }
+
+      saveItems.push({
+        task: {
+          id: taskDoc.id,
+          area: areaItem.area,
+          areaName: areaItem.area,
+          workId: areaItem.workId,
+          task: taskData.taskName,
+          category: areaItem.category,
+          schedule: areaItem.schedule,
+          assignment: currentAssignment,
+          active: taskData.active
+        },
+        status: "Completed",
+        reason: ""
+      });
+    });
+  }
+
+  await saveTaskStatuses(saveItems);
+
+  hideLoading();
+
+  await loadAssignmentTasks();
+
+  drawAreaButtons(selectedCategory);
+  drawCategories();
+}
   function showCustomConfirm(message) {
     document.getElementById("customConfirmText").innerText = message;
     document.getElementById("customConfirmModal").classList.remove("hidden");
