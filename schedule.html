@@ -927,8 +927,7 @@
         return task.active !== false;
       });
 
-    document.getElementById("allTasksButton").innerText =
-      area + " ALL TASKS COMPLETED";
+    document.getElementById("allTasksButton").innerText = area;
 
     document.getElementById("message").innerText = "";
     document.getElementById("reason").value = "";
@@ -956,7 +955,7 @@
       isCompleted ? "check-row task-done" : "check-row task-missing";
 
     div.innerHTML =
-      '<input type="checkbox" id="task_' + index + '" onchange="updateReasonVisibility()" ' +
+      '<input type="checkbox" id="task_' + index + '" onchange="updateChecklistColors()" ' +
       (isCompleted ? "checked" : "") +
       ">" +
       task.task;
@@ -968,12 +967,40 @@
 }
   function checkAllTasks() {
     currentTaskList.forEach(function(task, index) {
-      document.getElementById("task_" + index).checked = true;
+      const checkbox = document.getElementById("task_" + index);
+
+      if (checkbox) {
+        checkbox.checked = true;
+      }
     });
+
+    updateChecklistColors();
 
     document.getElementById("reasonBox").classList.add("hidden");
     document.getElementById("reason").value = "";
     document.getElementById("note").value = "";
+  }
+
+  function updateChecklistColors() {
+    currentTaskList.forEach(function(task, index) {
+      const checkbox = document.getElementById("task_" + index);
+
+      if (!checkbox) return;
+
+      const row = checkbox.closest(".check-row");
+
+      if (!row) return;
+
+      if (checkbox.checked) {
+        row.classList.remove("task-missing");
+        row.classList.add("task-done");
+      } else {
+        row.classList.remove("task-done");
+        row.classList.add("task-missing");
+      }
+    });
+
+    updateReasonVisibility();
   }
 
   function updateReasonVisibility() {
@@ -1327,6 +1354,7 @@
   window.changeWorkDateFromBigPicker = changeWorkDateFromBigPicker;
   window.completeWholeCategory = completeWholeCategory;
   window.checkAllTasks = checkAllTasks;
+  window.updateChecklistColors = updateChecklistColors;
   window.updateReasonVisibility = updateReasonVisibility;
   window.saveTaskChecklist = saveTaskChecklist;
   window.backToCategories = backToCategories;
