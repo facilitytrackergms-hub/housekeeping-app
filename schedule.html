@@ -948,11 +948,12 @@
 
   currentTaskList.forEach(function(task, index) {
     const div = document.createElement("div");
-    div.className =
-  isCompleted ? "check-row task-done" : "check-row task-missing";
 
     const savedStatus = areaProgress[task.task] || "";
     const isCompleted = savedStatus === "Completed";
+
+    div.className =
+      isCompleted ? "check-row task-done" : "check-row task-missing";
 
     div.innerHTML =
       '<input type="checkbox" id="task_' + index + '" onchange="updateReasonVisibility()" ' +
@@ -965,7 +966,6 @@
 
   updateReasonVisibility();
 }
-
   function checkAllTasks() {
     currentTaskList.forEach(function(task, index) {
       document.getElementById("task_" + index).checked = true;
