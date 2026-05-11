@@ -785,9 +785,6 @@
 
     document.getElementById("bigDatePicker").value = currentWorkDateISO;
 
-    document.getElementById("completeAllCategoryButton").innerText =
-      "ALL " + category.toUpperCase();
-
     document.getElementById("areaDateTitle").innerText =
       currentWorkDayName;
 
@@ -998,34 +995,43 @@
   }
 
   function buildChecklist() {
-  const box = document.getElementById("checklist");
-  box.innerHTML = "";
 
-  const areaProgress = progressData[currentArea] || {};
+    const box = document.getElementById("checklist");
+    box.innerHTML = "";
 
-  currentTaskList.forEach(function(task, index) {
-    const div = document.createElement("div");
+    const areaProgress = progressData[currentArea] || {};
 
-    const savedStatus = areaProgress[task.task] || "";
-    const isCompleted = savedStatus === "Completed";
+    currentTaskList.forEach(function(task, index) {
 
-    div.className =
-      isCompleted ? "check-row task-done" : "check-row task-missing";
+      const savedStatus = areaProgress[task.task] || "";
+      const isCompleted = savedStatus === "Completed";
 
-    div.innerHTML =
-      '<input type="checkbox" id="task_' + index + '" onchange="updateChecklistColors()" ' +
-      (isCompleted ? "checked" : "") +
-      ">" +
-      task.task;
+      const div = document.createElement("div");
 
-    box.appendChild(div);
+      div.className =
+        isCompleted
+          ? "check-row task-done"
+          : "check-row task-missing";
 
-    const btn = document.getElementById("task_" + index);
-    btn.dataset.done = isCompleted ? "true" : "false";
-  });
+      div.innerHTML =
+        '<button ' +
+        'id="task_' + index + '" ' +
+        'class="task-toggle-btn ' +
+        (isCompleted ? 'green' : 'red') +
+        '" ' +
+        'data-done="' + (isCompleted ? 'true' : 'false') + '" ' +
+        'onclick="toggleTaskButton(' + index + ')">' +
+        task.task +
+        '</button>';
 
-  updateReasonVisibility();
-}
+      box.appendChild(div);
+
+    });
+
+    updateReasonVisibility();
+
+  }
+
   async function confirmCheckAllTasks() {
     const confirmed = await showCustomConfirm("All tasks done?");
 
@@ -1038,14 +1044,16 @@
 
   function checkAllTasks() {
     currentTaskList.forEach(function(task, index) {
-      const checkbox = document.getElementById("task_" + index);
+      const btn = document.getElementById("task_" + index);
 
-      if (checkbox) {
-        checkbox.checked = true;
+      if (btn) {
+        btn.dataset.done = "true";
+        btn.classList.remove("red");
+        btn.classList.add("green");
       }
     });
 
-    updateChecklistColors();
+    updateReasonVisibility();
 
     document.getElementById("reasonBox").classList.add("hidden");
     document.getElementById("reason").value = "";
@@ -1054,20 +1062,24 @@
 
   function updateChecklistColors() {
     currentTaskList.forEach(function(task, index) {
-      const checkbox = document.getElementById("task_" + index);
+      const btn = document.getElementById("task_" + index);
 
-      if (!checkbox) return;
+      if (!btn) return;
 
-      const row = checkbox.closest(".check-row");
+      const row = btn.closest(".check-row");
 
       if (!row) return;
 
-      if (checkbox.checked) {
+      if (btn.dataset.done === "true") {
         row.classList.remove("task-missing");
         row.classList.add("task-done");
+        btn.classList.remove("red");
+        btn.classList.add("green");
       } else {
         row.classList.remove("task-done");
         row.classList.add("task-missing");
+        btn.classList.remove("green");
+        btn.classList.add("red");
       }
     });
 
@@ -1100,15 +1112,11 @@
 
     if (btn.dataset.done === "true") {
       btn.dataset.done = "false";
-      btn.classList.remove("green");
-      btn.classList.add("red");
     } else {
       btn.dataset.done = "true";
-      btn.classList.remove("red");
-      btn.classList.add("green");
     }
 
-    updateReasonVisibility();
+    updateChecklistColors();
   }
 
   async function saveTaskChecklist() {
@@ -1484,6 +1492,7 @@
   window.checkAllTasks = checkAllTasks;
   window.updateChecklistColors = updateChecklistColors;
   window.updateReasonVisibility = updateReasonVisibility;
+  window.toggleTaskButton = toggleTaskButton;
   window.saveTaskChecklist = saveTaskChecklist;
   window.backToCategories = backToCategories;
   window.backToAreas = backToAreas;
