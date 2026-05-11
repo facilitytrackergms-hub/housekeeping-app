@@ -359,8 +359,8 @@
       <div class="view-tag">VIEW 7</div>
     </div>
 
-    <button id="allTasksButton" class="green" onclick="checkAllTasks()">
-      ALL TASKS COMPLETED
+    <button id="allTasksButton" class="green" onclick="confirmCheckAllTasks()">
+      ALL TASKS
     </button>
 
     <div id="checklistBox">
@@ -965,6 +965,16 @@
 
   updateReasonVisibility();
 }
+  async function confirmCheckAllTasks() {
+    const confirmed = await showCustomConfirm("All tasks done?");
+
+    if (!confirmed) {
+      return;
+    }
+
+    checkAllTasks();
+  }
+
   function checkAllTasks() {
     currentTaskList.forEach(function(task, index) {
       const checkbox = document.getElementById("task_" + index);
@@ -1094,9 +1104,7 @@
       return;
     }
 
-    const confirmMessage =
-      "Mark ALL " + selectedCategory + " tasks completed for " +
-      currentWorkDateDisplay + "?";
+    const confirmMessage = getCompleteAllConfirmText(selectedCategory);
 
     const confirmed = await showCustomConfirm(confirmMessage);
 
@@ -1151,6 +1159,23 @@
 
     drawAreaButtons(selectedCategory);
     drawCategories();
+  }
+
+
+  function getCompleteAllConfirmText(category) {
+    if (category === "Weekly Room" || category === "Daily Room") {
+      return "All rooms done?";
+    }
+
+    if (category === "Common Area") {
+      return "All areas done?";
+    }
+
+    if (category === "Dehumidifier") {
+      return "All dehumidifiers done?";
+    }
+
+    return "All tasks done?";
   }
 
   function showCustomConfirm(message) {
@@ -1353,6 +1378,7 @@
   window.changeWorkDateFromCalendar = changeWorkDateFromCalendar;
   window.changeWorkDateFromBigPicker = changeWorkDateFromBigPicker;
   window.completeWholeCategory = completeWholeCategory;
+  window.confirmCheckAllTasks = confirmCheckAllTasks;
   window.checkAllTasks = checkAllTasks;
   window.updateChecklistColors = updateChecklistColors;
   window.updateReasonVisibility = updateReasonVisibility;
