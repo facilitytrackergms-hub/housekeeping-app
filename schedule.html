@@ -875,28 +875,59 @@ allTasksForDay =
     return "yellow";
   }
 
-  function openTaskGroup(area) {
-    currentArea = area;
+ async function openTaskGroup(area) {
+  currentArea = area;
 
-    currentTaskList =
-      allTasksForDay.filter(function(task) {
-        return task.area === area && task.category === selectedCategory;
-      });
+  const selectedWork =
+    allTasksForDay.find(function(item) {
+      return item.area === area && item.category === selectedCategory;
+    });
 
-    document.getElementById("taskTitle").innerText = area;
-
-    document.getElementById("taskDateTitle").innerText =
-      currentWorkDayName;
-
-    document.getElementById("message").innerText = "";
-    document.getElementById("reason").value = "";
-    document.getElementById("note").value = "";
-    document.getElementById("checklistBox").classList.add("hidden");
-
-    buildChecklist();
-
-    showView(4);
+  if (!selectedWork) {
+    alert("Area not found.");
+    return;
   }
+
+  const taskQuery = query(
+    collection(db, "tasks_new"),
+    where("workId", "==", selectedWork.workId)
+  );
+
+  const taskSnap = await getDocs(taskQuery);
+
+  currentTaskList =
+    taskSnap.docs.map(function(taskDoc) {
+      const taskData = taskDoc.data();
+
+      return {
+        id: taskDoc.id,
+        area: selectedWork.area,
+        areaName: selectedWork.area,
+        workId: selectedWork.workId,
+        task: taskData.taskName,
+        category: selectedWork.category,
+        schedule: selectedWork.schedule,
+        assignment: currentAssignment,
+        active: taskData.active
+      };
+    }).filter(function(task) {
+      return task.active !== false;
+    });
+
+  document.getElementById("taskTitle").innerText = area;
+
+  document.getElementById("taskDateTitle").innerText =
+    currentWorkDayName;
+
+  document.getElementById("message").innerText = "";
+  document.getElementById("reason").value = "";
+  document.getElementById("note").value = "";
+  document.getElementById("checklistBox").classList.add("hidden");
+
+  buildChecklist();
+
+  showView(4);
+}
 
   function buildChecklist() {
     const box = document.getElementById("checklist");
