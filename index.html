@@ -139,15 +139,17 @@
 
       <h1>Employee Login</h1>
 
-      <input
-        type="password"
-        id="pin"
-        placeholder="Enter PIN"
-        autocomplete="new-password"
-        autocorrect="off"
-        autocapitalize="off"
-        spellcheck="false"
-      >
+     <input
+  type="password"
+  inputmode="numeric"
+  pattern="[0-9]*"
+  id="pin"
+  placeholder="Enter PIN"
+  autocomplete="off"
+  autocorrect="off"
+  autocapitalize="off"
+  spellcheck="false"
+>
 
       <button onclick="checkPin()">
         NEXT
