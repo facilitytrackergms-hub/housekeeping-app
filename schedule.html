@@ -122,6 +122,25 @@
       margin-bottom: 0;
     }
 
+    #coverScheduleSelect {
+      margin: 6px 0 0;
+      font-size: 18px;
+      font-weight: bold;
+      text-align: center;
+      text-align-last: center;
+      border-radius: 14px;
+      padding: 8px;
+      background: white;
+    }
+
+    .cover-btn {
+      background: #1976d2 !important;
+      font-size: 15px;
+      padding: 9px;
+      border-radius: 12px;
+      margin: 8px 0 0;
+    }
+
     #employeeName {
       display: none;
     }
@@ -381,6 +400,12 @@
     <div class="top-info-box">
       <h2 id="employeeName">Welcome</h2>
       <h2 id="assignmentTitle"></h2>
+
+      <button id="coverScheduleButton" class="cover-btn" onclick="showCoverScheduleDropdown()">
+        COVER SCHEDULE
+      </button>
+
+      <select id="coverScheduleSelect" class="hidden" onchange="changeCoverSchedule()"></select>
     </div>
 
     <div class="date-section-box">
@@ -547,7 +572,9 @@
     sessionData.name ||
     "Employee";
 
+  let homeAssignment = selectedDailyTask.assignment;
   let currentAssignment = selectedDailyTask.assignment;
+  let allAssignments = [];
   let currentWorkDateISO = getTodayISO();
   let currentWorkDateDisplay = "";
   let currentWorkDayName = "";
@@ -571,6 +598,71 @@
     currentAssignment;
 
   startSchedule();
+
+  function loadCoverScheduleDropdown(settingsDocs) {
+    const select = document.getElementById("coverScheduleSelect");
+
+    allAssignments = [];
+
+    settingsDocs.forEach(function(docItem) {
+      const data = docItem.data();
+
+      Object.keys(data).forEach(function(key) {
+        const value = String(data[key] || "").trim();
+
+        if (!value) return;
+
+        if (
+          value.toLowerCase().includes("schedule") ||
+          value.toLowerCase().includes("laundry")
+        ) {
+          if (!allAssignments.includes(value)) {
+            allAssignments.push(value);
+          }
+        }
+      });
+    });
+
+    if (!allAssignments.includes(homeAssignment)) {
+      allAssignments.unshift(homeAssignment);
+    }
+
+    allAssignments.sort();
+
+    select.innerHTML = "";
+
+    allAssignments.forEach(function(assignment) {
+      const option = document.createElement("option");
+      option.value = assignment;
+      option.innerText = assignment;
+
+      if (assignment === currentAssignment) {
+        option.selected = true;
+      }
+
+      select.appendChild(option);
+    });
+  }
+
+  function showCoverScheduleDropdown() {
+    document.getElementById("coverScheduleSelect").classList.remove("hidden");
+    document.getElementById("coverScheduleButton").classList.add("hidden");
+  }
+
+  async function changeCoverSchedule() {
+    const select = document.getElementById("coverScheduleSelect");
+
+    if (!select.value) return;
+
+    currentAssignment = select.value;
+    selectedCategory = "";
+    currentArea = "";
+
+    await loadAssignmentTasks();
+
+    drawCategories();
+    showView(2);
+  }
 
   async function startSchedule() {
     await loadAssignmentTasks();
@@ -666,7 +758,15 @@
 
     updateDateDisplay();
 
-    document.getElementById("assignmentTitle").innerText = currentAssignment;
+    document.getElementById("assignmentTitle").innerText =
+      currentAssignment === homeAssignment
+        ? currentAssignment
+        : currentAssignment + " COVER";
+
+    const coverSelect = document.getElementById("coverScheduleSelect");
+    if (coverSelect) {
+      coverSelect.value = currentAssignment;
+    }
 
     document.getElementById("workDateTitle").innerText =
       currentWorkDayName;
@@ -677,6 +777,8 @@
     const settingsSnap = await getDocs(
       query(collection(db, "settings"))
     );
+
+    loadCoverScheduleDropdown(settingsSnap.docs);
 
     let housekeepingMode = "two";
 
@@ -1618,6 +1720,8 @@
     window.location.href = "index.html";
   }
 
+  window.showCoverScheduleDropdown = showCoverScheduleDropdown;
+  window.changeCoverSchedule = changeCoverSchedule;
   window.openCalendar = openCalendar;
   window.changeWorkDateFromCalendar = changeWorkDateFromCalendar;
   window.changeWorkDateFromBigPicker = changeWorkDateFromBigPicker;
