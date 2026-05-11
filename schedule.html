@@ -209,6 +209,14 @@
   font-weight: bold;
 }
 
+.task-toggle-btn{
+  width:100%;
+  margin:0;
+  font-size:15px;
+  padding:10px 4px;
+  border-radius:10px;
+}
+
     #message {
       text-align: center;
       font-size: 18px;
@@ -343,7 +351,7 @@
       >
     </div>
 
-    <button id="completeAllCategoryButton" class="green hidden" onclick="completeWholeCategory()">
+    <button id="completeAllCategoryButton" class="green" onclick="completeWholeCategory()">
       ALL
     </button>
 
@@ -404,32 +412,14 @@
 
   <div class="custom-modal-box">
 
-    <h3>Confirm</h3>
+    <h3 id="customConfirmTitle">Confirm</h3>
 
     <p id="customConfirmText"></p>
 
     <div class="custom-modal-row">
-      <button class="green" onclick="customConfirmYes()">YES</button>
-      <button class="back" onclick="customConfirmNo()">CANCEL</button>
+      <button id="customConfirmYesButton" class="green" onclick="customConfirmYes()">YES</button>
+      <button id="customConfirmNoButton" class="back" onclick="customConfirmNo()">CANCEL</button>
     </div>
-
-  </div>
-
-</div>
-
-<div id="roomActionModal" class="custom-modal-bg hidden">
-
-  <div class="custom-modal-box">
-
-    <h3 id="roomActionTitle">Room</h3>
-
-  <div style="font-size:34px;">✅</div>
-    <div class="custom-modal-row">
-      <button class="green" onclick="roomActionSave()">SAVE</button>
-      <button onclick="roomActionTasks()">TASKS</button>
-    </div>
-
-    <button class="back" onclick="roomActionCancel()">CANCEL</button>
 
   </div>
 
@@ -497,9 +487,10 @@
   let allTasksForDay = [];
   let progressData = {};
   let currentTaskList = [];
-  let pendingRoomActionArea = "";
 
   let customConfirmResolve = null;
+  let customConfirmYesValue = true;
+  let customConfirmNoValue = false;
 
   document.getElementById("employeeName").innerText =
     "Welcome, " + employeeName;
@@ -835,7 +826,7 @@
         getProgressColor(counts.completed, counts.incomplete, total);
 
       btn.onclick = function() {
-        showRoomAction(area);
+        openAreaChoice(area);
       };
 
       box.appendChild(btn);
@@ -907,38 +898,7 @@
     return "yellow";
   }
 
-  function showRoomAction(area) {
-    pendingRoomActionArea = area;
-    document.getElementById("roomActionTitle").innerText = area;
-    document.getElementById("roomActionModal").classList.remove("hidden");
-  }
-
-  function roomActionCancel() {
-    document.getElementById("roomActionModal").classList.add("hidden");
-    pendingRoomActionArea = "";
-  }
-
-  async function roomActionTasks() {
-    const area = pendingRoomActionArea;
-    document.getElementById("roomActionModal").classList.add("hidden");
-
-    if (!area) return;
-
-    await openTaskGroup(area);
-  }
-
-  async function roomActionSave() {
-    const area = pendingRoomActionArea;
-    document.getElementById("roomActionModal").classList.add("hidden");
-
-    if (!area) return;
-
-    await openTaskGroup(area, true);
-    checkAllTasks();
-    await saveTaskChecklist(true);
-  }
-
-  async function openTaskGroup(area, stayHidden) {
+  async function loadTaskGroupData(area) {
     currentArea = area;
 
     const selectedWork =
@@ -948,7 +908,7 @@
 
     if (!selectedWork) {
       alert("Area not found.");
-      return;
+      return false;
     }
 
     const taskQuery = query(
@@ -977,6 +937,31 @@
         return task.active !== false;
       });
 
+    return true;
+  }
+
+  async function openAreaChoice(area) {
+    const choice = await showCustomChoice(area, "", "SAVE", "TASKS");
+
+    if (choice === "save") {
+      const loaded = await loadTaskGroupData(area);
+
+      if (!loaded) return;
+
+      await saveCurrentAreaComplete();
+      return;
+    }
+
+    if (choice === "tasks") {
+      await openTaskGroup(area);
+    }
+  }
+
+  async function openTaskGroup(area) {
+    const loaded = await loadTaskGroupData(area);
+
+    if (!loaded) return;
+
     document.getElementById("allTasksButton").innerText = area;
 
     document.getElementById("message").innerText = "";
@@ -986,9 +971,30 @@
 
     buildChecklist();
 
-    if (!stayHidden) {
-      showView(4);
-    }
+    showView(4);
+  }
+
+  async function saveCurrentAreaComplete() {
+    showLoading();
+
+    const saveItems = [];
+
+    currentTaskList.forEach(function(task) {
+      saveItems.push({
+        task: task,
+        status: "Completed",
+        reason: ""
+      });
+    });
+
+    await saveTaskStatuses(saveItems);
+
+    await loadAssignmentTasks();
+
+    hideLoading();
+
+    drawAreaButtons(selectedCategory);
+    showView(3);
   }
 
   function buildChecklist() {
@@ -1013,6 +1019,9 @@
       task.task;
 
     box.appendChild(div);
+
+    const btn = document.getElementById("task_" + index);
+    btn.dataset.done = isCompleted ? "true" : "false";
   });
 
   updateReasonVisibility();
@@ -1069,9 +1078,9 @@
     let allChecked = true;
 
     currentTaskList.forEach(function(task, index) {
-      const checkbox = document.getElementById("task_" + index);
+      const btn = document.getElementById("task_" + index);
 
-      if (!checkbox.checked) {
+      if (btn.dataset.done !== "true") {
         allChecked = false;
       }
     });
@@ -1085,7 +1094,24 @@
     }
   }
 
-  async function saveTaskChecklist(skipReturnDelay) {
+
+  function toggleTaskButton(index) {
+    const btn = document.getElementById("task_" + index);
+
+    if (btn.dataset.done === "true") {
+      btn.dataset.done = "false";
+      btn.classList.remove("green");
+      btn.classList.add("red");
+    } else {
+      btn.dataset.done = "true";
+      btn.classList.remove("red");
+      btn.classList.add("green");
+    }
+
+    updateReasonVisibility();
+  }
+
+  async function saveTaskChecklist() {
     showLoading();
 
     const saveItems = [];
@@ -1094,7 +1120,7 @@
 
     currentTaskList.forEach(function(task, index) {
       const checked =
-        document.getElementById("task_" + index).checked;
+        document.getElementById("task_" + index).dataset.done === "true";
 
       const status =
         checked ? "Completed" : "Incomplete";
@@ -1124,17 +1150,10 @@
 
     document.getElementById("message").innerText = "TASK SAVED";
 
-    drawAreaButtons(selectedCategory);
-    drawCategories();
-
-    if (!skipReturnDelay) {
-      setTimeout(function() {
-        drawAreaButtons(selectedCategory);
-        showView(3);
-      }, 800);
-    } else {
+    setTimeout(function() {
+      drawAreaButtons(selectedCategory);
       showView(3);
-    }
+    }, 800);
   }
 
   function getReasonText() {
@@ -1238,7 +1257,30 @@
   }
 
   function showCustomConfirm(message) {
-    document.getElementById("customConfirmText").innerText = message;
+    return showCustomModal("Confirm", message, "YES", "CANCEL", true, false);
+  }
+
+  function showCustomChoice(title, message, yesText, noText) {
+    return showCustomModal(title, message, yesText, noText, "save", "tasks");
+  }
+
+  function showCustomModal(title, message, yesText, noText, yesValue, noValue) {
+    const textBox = document.getElementById("customConfirmText");
+
+    document.getElementById("customConfirmTitle").innerText = title;
+    textBox.innerText = message;
+    document.getElementById("customConfirmYesButton").innerText = yesText;
+    document.getElementById("customConfirmNoButton").innerText = noText;
+
+    if (message) {
+      textBox.classList.remove("hidden");
+    } else {
+      textBox.classList.add("hidden");
+    }
+
+    customConfirmYesValue = yesValue;
+    customConfirmNoValue = noValue;
+
     document.getElementById("customConfirmModal").classList.remove("hidden");
 
     return new Promise(function(resolve) {
@@ -1250,7 +1292,7 @@
     document.getElementById("customConfirmModal").classList.add("hidden");
 
     if (customConfirmResolve) {
-      customConfirmResolve(true);
+      customConfirmResolve(customConfirmYesValue);
     }
   }
 
@@ -1258,7 +1300,7 @@
     document.getElementById("customConfirmModal").classList.add("hidden");
 
     if (customConfirmResolve) {
-      customConfirmResolve(false);
+      customConfirmResolve(customConfirmNoValue);
     }
   }
 
@@ -1437,10 +1479,7 @@
   window.changeWorkDateFromCalendar = changeWorkDateFromCalendar;
   window.changeWorkDateFromBigPicker = changeWorkDateFromBigPicker;
   window.completeWholeCategory = completeWholeCategory;
-  window.showRoomAction = showRoomAction;
-  window.roomActionSave = roomActionSave;
-  window.roomActionTasks = roomActionTasks;
-  window.roomActionCancel = roomActionCancel;
+  window.openAreaChoice = openAreaChoice;
   window.confirmCheckAllTasks = confirmCheckAllTasks;
   window.checkAllTasks = checkAllTasks;
   window.updateChecklistColors = updateChecklistColors;
