@@ -630,19 +630,8 @@
       >
     </div>
 
-<div class="button-row">
-  <button class="green" onclick="loadReassignmentAreas()">LOAD</button>
+    <button class="green" onclick="loadReassignmentAreas()">LOAD</button>
 
-  <button class="yellow" onclick="checkAssignmentCounts()">
-    CHECK COUNT
-  </button>
-</div>
-
-<div id="assignmentCountBox" class="task-card hidden">
-  <h3>Assignment Workload</h3>
-
-  <div id="assignmentCountResults"></div>
-</div>
     <div id="reassignmentAreaList" class="rooms-grid"></div>
 
     <button class="back" onclick="backToAdminCategories()">BACK</button>
@@ -2507,6 +2496,69 @@
     await loadReassignmentAreas();
   }
 
+
+  async function checkAssignmentCounts() {
+    const category = document.getElementById("reassignCategory").value;
+
+    if (!category) {
+      showAppMessage("Select category.");
+      return;
+    }
+
+    updateReassignmentDateDisplay();
+    setReassignmentDateVisibility();
+
+    showLoading();
+
+    const taskQuery = query(
+      collection(db, "tasks"),
+      where("category", "==", category)
+    );
+
+    const snap = await getDocs(taskQuery);
+
+    let tasks =
+      snap.docs.map(function(taskDoc) {
+        return {
+          id: taskDoc.id,
+          ...taskDoc.data()
+        };
+      });
+
+    tasks = filterReassignmentTasksByDate(tasks, category);
+
+    const assignments = [
+      "HK Schedule 1",
+      "HK Schedule 2",
+      "Laundry"
+    ];
+
+    let message = "";
+
+    assignments.forEach(function(assignment) {
+      const areas =
+        [...new Set(tasks.filter(function(task) {
+          return task.assignment === assignment;
+        }).map(function(task) {
+          return task.area;
+        }).filter(function(area) {
+          return String(area || "").trim() !== "";
+        }))];
+
+      message += assignment + ": " + areas.length + " rooms\n";
+    });
+
+    if (category === "Weekly Room" || category === "Weekly Laundry") {
+      message = category + " - " + reassignWorkDayName + "\n\n" + message;
+    } else {
+      message = category + "\n\n" + message;
+    }
+
+    hideLoading();
+
+    showAppMessage(message, "Assignment Workload");
+  }
+
   /* =========================
      49 - LOGOUT
   ========================== */
@@ -2586,6 +2638,7 @@
   window.moveReassignmentArea = moveReassignmentArea;
   window.changeReassignmentCategory = changeReassignmentCategory;
   window.changeReassignmentDate = changeReassignmentDate;
+  window.checkAssignmentCounts = checkAssignmentCounts;
 
   /* =========================
      54 - WINDOW FUNCTIONS - EMPLOYEES
