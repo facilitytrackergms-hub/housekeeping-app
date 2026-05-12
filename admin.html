@@ -630,8 +630,19 @@
       >
     </div>
 
-    <button class="green" onclick="loadReassignmentAreas()">LOAD</button>
+<div class="button-row">
+  <button class="green" onclick="loadReassignmentAreas()">LOAD</button>
 
+  <button class="yellow" onclick="checkAssignmentCounts()">
+    CHECK COUNT
+  </button>
+</div>
+
+<div id="assignmentCountBox" class="task-card hidden">
+  <h3>Assignment Workload</h3>
+
+  <div id="assignmentCountResults"></div>
+</div>
     <div id="reassignmentAreaList" class="rooms-grid"></div>
 
     <button class="back" onclick="backToAdminCategories()">BACK</button>
