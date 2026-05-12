@@ -200,6 +200,39 @@
       background: #fafafa;
     }
 
+
+    .workload-card {
+      border: 1px solid #ccc;
+      border-radius: 14px;
+      padding: 12px;
+      margin: 10px 0;
+      background: #fafafa;
+    }
+
+    .workload-card h3 {
+      margin: 0 0 10px;
+      text-align: left;
+      font-size: 20px;
+    }
+
+    .workload-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      border-bottom: 1px solid #ddd;
+      padding: 6px 0;
+      font-size: 16px;
+      font-weight: bold;
+    }
+
+    .workload-total {
+      font-size: 18px;
+      font-weight: bold;
+      text-align: center;
+      margin-top: 10px;
+      padding-top: 8px;
+    }
+
     .check-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -648,6 +681,26 @@
 
   </div>
 
+  <!-- =========================
+       10C - ADMIN VIEW 11 - WORKLOAD
+  ========================== -->
+
+  <div id="adminWorkloadView" class="hidden">
+
+    <div class="view-center">
+      <div class="view-tag">ADMIN VIEW 11</div>
+    </div>
+
+    <h2>Assignment Workload</h2>
+
+    <div class="assignment-title" id="workloadDayTitle"></div>
+
+    <div id="workloadResults"></div>
+
+    <button class="back" onclick="backToReassignment()">BACK</button>
+
+  </div>
+
 </div>
 
 <div id="loadingScreen" class="loading-bg hidden">
@@ -810,7 +863,8 @@
       "adminEditView",
       "adminEmployeesView",
       "adminEmployeeEditView",
-      "adminReassignmentView"
+      "adminReassignmentView",
+      "adminWorkloadView"
     ].forEach(function(id) {
       const el = document.getElementById(id);
 
@@ -2508,110 +2562,107 @@
 
 
   async function checkAssignmentCounts() {
+    updateReassignmentDateDisplay();
 
-  updateReassignmentDateDisplay();
+    showLoading();
 
-  showLoading();
+    const taskQuery = query(
+      collection(db, "tasks")
+    );
 
-  const taskQuery = query(
-    collection(db, "tasks")
-  );
+    const snap = await getDocs(taskQuery);
 
-  const snap = await getDocs(taskQuery);
-
-  const allTasks =
-    snap.docs.map(function(taskDoc) {
-      return {
-        id: taskDoc.id,
-        ...taskDoc.data()
-      };
-    });
-
-  const assignments = [
-    "HK Schedule 1",
-    "HK Schedule 2",
-    "Laundry"
-  ];
-
-  let message = "";
-
-  assignments.forEach(function(assignment) {
-
-    const assignmentTasks =
-      allTasks.filter(function(task) {
-        return task.assignment === assignment;
+    const allTasks =
+      snap.docs.map(function(taskDoc) {
+        return {
+          id: taskDoc.id,
+          ...taskDoc.data()
+        };
       });
 
-    function countAreas(categoryName, weeklyMode) {
+    const assignments = [
+      "HK Schedule 1",
+      "HK Schedule 2",
+      "Laundry"
+    ];
 
-      let filtered = assignmentTasks.filter(function(task) {
-        return task.category === categoryName;
-      });
+    const resultBox = document.getElementById("workloadResults");
+    resultBox.innerHTML = "";
 
-      if (weeklyMode) {
-        filtered =
-          filtered.filter(function(task) {
-            return String(task.schedule || "").trim().toLowerCase() ===
-              String(reassignWorkDayName || "").trim().toLowerCase();
-          });
+    document.getElementById("workloadDayTitle").innerText =
+      "Weekly counts use " + reassignWorkDayName;
+
+    assignments.forEach(function(assignment) {
+      const assignmentTasks =
+        allTasks.filter(function(task) {
+          return task.assignment === assignment;
+        });
+
+      function countAreas(categoryName, weeklyMode) {
+        let filtered = assignmentTasks.filter(function(task) {
+          return task.category === categoryName;
+        });
+
+        if (weeklyMode) {
+          filtered =
+            filtered.filter(function(task) {
+              return String(task.schedule || "").trim().toLowerCase() ===
+                String(reassignWorkDayName || "").trim().toLowerCase();
+            });
+        }
+
+        const uniqueAreas =
+          [...new Set(filtered.map(function(task) {
+            return task.area;
+          }).filter(function(area) {
+            return String(area || "").trim() !== "";
+          }))];
+
+        return uniqueAreas.length;
       }
 
-      const uniqueAreas =
-        [...new Set(filtered.map(function(task) {
-          return task.area;
-        }).filter(function(area) {
-          return String(area || "").trim() !== "";
-        }))];
+      const counts = [
+        ["Common Area", countAreas("Common Area", false)],
+        ["Weekly Room", countAreas("Weekly Room", true)],
+        ["Daily Room", countAreas("Daily Room", false)],
+        ["Dehumidifier", countAreas("Dehumidifier", false)],
+        ["Weekly Laundry", countAreas("Weekly Laundry", true)],
+        ["Daily Laundry", countAreas("Daily Laundry Check", false)]
+      ];
 
-      return uniqueAreas.length;
-    }
+      const total = counts.reduce(function(sum, item) {
+        return sum + item[1];
+      }, 0);
 
-    const commonAreas =
-      countAreas("Common Area", false);
+      const card = document.createElement("div");
+      card.className = "workload-card";
 
-    const weeklyRooms =
-      countAreas("Weekly Room", true);
+      let html =
+        "<h3>" + escapeHtml(assignment) + "</h3>";
 
-    const dailyRooms =
-      countAreas("Daily Room", false);
+      counts.forEach(function(item) {
+        html +=
+          '<div class="workload-row">' +
+          '<span>' + escapeHtml(item[0]) + '</span>' +
+          '<span>' + item[1] + '</span>' +
+          '</div>';
+      });
 
-    const dehumidifiers =
-      countAreas("Dehumidifier", false);
+      html +=
+        '<div class="workload-total">TOTAL: ' + total + '</div>';
 
-    const weeklyLaundry =
-      countAreas("Weekly Laundry", true);
+      card.innerHTML = html;
+      resultBox.appendChild(card);
+    });
 
-    const dailyLaundry =
-      countAreas("Daily Laundry Check", false);
+    hideLoading();
 
-    const total =
-      commonAreas +
-      weeklyRooms +
-      dailyRooms +
-      dehumidifiers +
-      weeklyLaundry +
-      dailyLaundry;
+    showAdminView("adminWorkloadView");
+  }
 
-    message +=
-      assignment + "\n\n" +
-
-      "Common Area: " + commonAreas + "\n" +
-      "Weekly Room: " + weeklyRooms + "\n" +
-      "Daily Room: " + dailyRooms + "\n" +
-      "Dehumidifier: " + dehumidifiers + "\n" +
-      "Weekly Laundry: " + weeklyLaundry + "\n" +
-      "Daily Laundry: " + dailyLaundry + "\n\n" +
-
-      "TOTAL: " + total + "\n\n";
-  });
-
-  hideLoading();
-
-  showAppMessage(
-    message,
-    "Assignment Workload"
-  );
-}
+  function backToReassignment() {
+    showAdminView("adminReassignmentView");
+  }
 
   /* =========================
      49 - LOGOUT
@@ -2693,6 +2744,7 @@
   window.changeReassignmentCategory = changeReassignmentCategory;
   window.changeReassignmentDate = changeReassignmentDate;
   window.checkAssignmentCounts = checkAssignmentCounts;
+  window.backToReassignment = backToReassignment;
 
   /* =========================
      54 - WINDOW FUNCTIONS - EMPLOYEES
