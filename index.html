@@ -157,29 +157,7 @@
 
     </div>
 
-    <div id="taskView">
-
-      <h2 id="welcomeName">
-        Welcome
-      </h2>
-
-      <button onclick="selectDailyTask('HK Schedule 1')">
-        HK Schedule 1
-      </button>
-
-      <button onclick="selectDailyTask('HK Schedule 2')">
-        HK Schedule 2
-      </button>
-
-      <button onclick="selectDailyTask('Laundry')">
-        Laundry
-      </button>
-
-      <button class="gray-button" onclick="goBackToPin()">
-        BACK
-      </button>
-
-    </div>
+    
 
     <div id="message"></div>
 
@@ -270,54 +248,33 @@ if (foundEmployee.role === "Admin") {
   return;
 }
 
-document.getElementById("message").style.display = "none";
-document.getElementById("pinView").style.display = "none";
-document.getElementById("taskView").style.display = "block";
+sessionStorage.setItem(
+  "currentEmployee",
+  JSON.stringify(foundEmployee)
+);
 
-      document.getElementById("welcomeName").innerHTML =
-        "Welcome, " + foundEmployee.firstName;
+sessionStorage.setItem(
+  "selectedDailyTask",
+  JSON.stringify({
+    assignment: foundEmployee.role,
+    schedule: "Daily"
+  })
+);
 
+showMessage("Login successful", true);
+
+setTimeout(function() {
+  window.location.href = "schedule.html";
+}, 800);
     } catch (error) {
       console.error("Login error details:", error);
       showMessage("Connection error", false);
     }
   }
 
-  function selectDailyTask(taskName) {
-    if (!foundEmployee) {
-      showMessage("Enter PIN first", false);
-      return;
-    }
 
-    sessionStorage.setItem(
-      "currentEmployee",
-      JSON.stringify(foundEmployee)
-    );
 
-    sessionStorage.setItem(
-      "selectedDailyTask",
-      JSON.stringify({
-        assignment: taskName,
-        schedule: "Daily"
-      })
-    );
-
-    showMessage("Login successful", true);
-
-    setTimeout(function() {
-      window.location.href = "schedule.html";
-    }, 800);
-  }
-
-  function goBackToPin() {
-    foundEmployee = null;
-
-    document.getElementById("taskView").style.display = "none";
-    document.getElementById("pinView").style.display = "block";
-    document.getElementById("message").style.display = "none";
-    document.getElementById("pin").value = "";
-    document.getElementById("pin").focus();
-  }
+  
 
   function showMessage(text, success) {
     const message =
@@ -345,8 +302,6 @@ document.getElementById("taskView").style.display = "block";
     });
 
   window.checkPin = checkPin;
-  window.selectDailyTask = selectDailyTask;
-  window.goBackToPin = goBackToPin;
 
 </script>
 
