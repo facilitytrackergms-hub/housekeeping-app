@@ -201,19 +201,28 @@ if (!pinInput) {
 showMessage("Checking...", true);
 
     try {
-      const pinNumber = Number(pinInput);
+     const pinNumber = Number(pinInput);
 
-      const employeeQuery = query(
-        collection(db, "employees"),
-        where("pin", "==", pinNumber)
-      );
+let employeeQuery = query(
+  collection(db, "employees"),
+  where("pin", "==", pinNumber)
+);
 
-      const employeeSnap = await getDocs(employeeQuery);
+let employeeSnap = await getDocs(employeeQuery);
 
-      if (employeeSnap.empty) {
-        showMessage("Invalid PIN", false);
-        return;
-      }
+if (employeeSnap.empty) {
+  employeeQuery = query(
+    collection(db, "employees"),
+    where("pin", "==", pinInput)
+  );
+
+  employeeSnap = await getDocs(employeeQuery);
+}
+
+if (employeeSnap.empty) {
+  showMessage("Invalid PIN", false);
+  return;
+}
 
       foundEmployee = null;
 
