@@ -2508,66 +2508,110 @@
 
 
   async function checkAssignmentCounts() {
-    const category = document.getElementById("reassignCategory").value;
 
-    if (!category) {
-      showAppMessage("Select category.");
-      return;
-    }
+  updateReassignmentDateDisplay();
 
-    updateReassignmentDateDisplay();
-    setReassignmentDateVisibility();
+  showLoading();
 
-    showLoading();
+  const taskQuery = query(
+    collection(db, "tasks")
+  );
 
-    const taskQuery = query(
-      collection(db, "tasks"),
-      where("category", "==", category)
-    );
+  const snap = await getDocs(taskQuery);
 
-    const snap = await getDocs(taskQuery);
+  const allTasks =
+    snap.docs.map(function(taskDoc) {
+      return {
+        id: taskDoc.id,
+        ...taskDoc.data()
+      };
+    });
 
-    let tasks =
-      snap.docs.map(function(taskDoc) {
-        return {
-          id: taskDoc.id,
-          ...taskDoc.data()
-        };
+  const assignments = [
+    "HK Schedule 1",
+    "HK Schedule 2",
+    "Laundry"
+  ];
+
+  let message = "";
+
+  assignments.forEach(function(assignment) {
+
+    const assignmentTasks =
+      allTasks.filter(function(task) {
+        return task.assignment === assignment;
       });
 
-    tasks = filterReassignmentTasksByDate(tasks, category);
+    function countAreas(categoryName, weeklyMode) {
 
-    const assignments = [
-      "HK Schedule 1",
-      "HK Schedule 2",
-      "Laundry"
-    ];
+      let filtered = assignmentTasks.filter(function(task) {
+        return task.category === categoryName;
+      });
 
-    let message = "";
+      if (weeklyMode) {
+        filtered =
+          filtered.filter(function(task) {
+            return String(task.schedule || "").trim().toLowerCase() ===
+              String(reassignWorkDayName || "").trim().toLowerCase();
+          });
+      }
 
-    assignments.forEach(function(assignment) {
-      const areas =
-        [...new Set(tasks.filter(function(task) {
-          return task.assignment === assignment;
-        }).map(function(task) {
+      const uniqueAreas =
+        [...new Set(filtered.map(function(task) {
           return task.area;
         }).filter(function(area) {
           return String(area || "").trim() !== "";
         }))];
 
-      message += assignment + ": " + areas.length + " rooms\n";
-    });
-
-    if (category === "Weekly Room" || category === "Weekly Laundry") {
-      message = category + " - " + reassignWorkDayName + "\n\n" + message;
-    } else {
-      message = category + "\n\n" + message;
+      return uniqueAreas.length;
     }
 
-    hideLoading();
+    const commonAreas =
+      countAreas("Common Area", false);
 
-    showAppMessage(message, "Assignment Workload");
-  }
+    const weeklyRooms =
+      countAreas("Weekly Room", true);
+
+    const dailyRooms =
+      countAreas("Daily Room", false);
+
+    const dehumidifiers =
+      countAreas("Dehumidifier", false);
+
+    const weeklyLaundry =
+      countAreas("Weekly Laundry", true);
+
+    const dailyLaundry =
+      countAreas("Daily Laundry Check", false);
+
+    const total =
+      commonAreas +
+      weeklyRooms +
+      dailyRooms +
+      dehumidifiers +
+      weeklyLaundry +
+      dailyLaundry;
+
+    message +=
+      assignment + "\n\n" +
+
+      "Common Area: " + commonAreas + "\n" +
+      "Weekly Room: " + weeklyRooms + "\n" +
+      "Daily Room: " + dailyRooms + "\n" +
+      "Dehumidifier: " + dehumidifiers + "\n" +
+      "Weekly Laundry: " + weeklyLaundry + "\n" +
+      "Daily Laundry: " + dailyLaundry + "\n\n" +
+
+      "TOTAL: " + total + "\n\n";
+  });
+
+  hideLoading();
+
+  showAppMessage(
+    message,
+    "Assignment Workload"
+  );
+}
 
   /* =========================
      49 - LOGOUT
