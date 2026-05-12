@@ -266,6 +266,51 @@
         transform: rotate(360deg);
       }
     }
+
+    /* =========================
+       05B - CUSTOM MESSAGE POPUP
+    ========================== */
+
+    .app-message-bg {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.35);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 100000;
+      padding: 18px;
+    }
+
+    .app-message-card {
+      width: 100%;
+      max-width: 360px;
+      background: white;
+      border-radius: 18px;
+      padding: 18px;
+      box-shadow: 0 6px 28px rgba(0,0,0,0.25);
+      text-align: center;
+    }
+
+    .app-message-card h3 {
+      margin: 0 0 10px;
+      font-size: 21px;
+    }
+
+    .app-message-card p {
+      margin: 0 0 14px;
+      font-size: 17px;
+      font-weight: bold;
+      line-height: 1.3;
+    }
+
+    .app-message-card button {
+      margin-top: 4px;
+    }
+
   </style>
 </head>
 
@@ -599,6 +644,15 @@
   <div class="spinner"></div>
 </div>
 
+<div id="appMessageBox" class="app-message-bg hidden">
+  <div class="app-message-card">
+    <h3 id="appMessageTitle">Message</h3>
+    <p id="appMessageText"></p>
+    <button class="green" onclick="closeAppMessage()">OK</button>
+  </div>
+</div>
+
+
 <script type="module">
 
   /* =========================
@@ -715,6 +769,25 @@
   function hideLoading() {
     document.getElementById("loadingScreen").classList.add("hidden");
   }
+
+  /* =========================
+     16B - CUSTOM MESSAGE FUNCTIONS
+  ========================== */
+
+  function showAppMessage(message, title) {
+    document.getElementById("appMessageTitle").innerText =
+      title || "Notice";
+
+    document.getElementById("appMessageText").innerText =
+      message;
+
+    document.getElementById("appMessageBox").classList.remove("hidden");
+  }
+
+  function closeAppMessage() {
+    document.getElementById("appMessageBox").classList.add("hidden");
+  }
+
 
   /* =========================
      17 - VIEW SWITCHING
@@ -2247,7 +2320,7 @@
     const category = document.getElementById("reassignCategory").value;
 
     if (!fromAssignment || !category) {
-      alert("Select from and category.");
+      showAppMessage("Select from and category.");
       return;
     }
 
@@ -2326,12 +2399,12 @@
     const category = document.getElementById("reassignCategory").value;
 
     if (!fromAssignment || !toAssignment || !category) {
-      alert("Select from, to, and category.");
+      showAppMessage("Select from, to, and category.");
       return;
     }
 
     if (fromAssignment === toAssignment) {
-      alert("Choose different assignments.");
+      showAppMessage("This assignment is already on the schedule. Choose another assignment.");
       return;
     }
 
@@ -2389,8 +2462,8 @@
     if (duplicateTask) {
       hideLoading();
 
-      alert(
-        "Move blocked. " +
+      showAppMessage(
+        "Cannot duplicate assignments. " +
         duplicateTask.area +
         " / " +
         duplicateTask.task +
@@ -2418,7 +2491,7 @@
 
     hideLoading();
 
-    alert("Moved.");
+    showAppMessage("Moved.");
 
     await loadReassignmentAreas();
   }
@@ -2471,6 +2544,7 @@
   window.changeAdminAssignment = changeAdminAssignment;
   window.searchAdminAreas = searchAdminAreas;
   window.changeAdminAreaScheduleDay = changeAdminAreaScheduleDay;
+  window.closeAppMessage = closeAppMessage;
 
   /* =========================
      53 - WINDOW FUNCTIONS - ADMIN TASKS
