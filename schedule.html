@@ -397,34 +397,33 @@
 
   <div id="view2">
 
-    <div class="top-info-box">
-      <h2 id="employeeName">Welcome</h2>
-      <h2 id="assignmentTitle"></h2>
-
-      <button id="coverScheduleButton" class="cover-btn" onclick="showCoverScheduleDropdown()">
-        COVER SCHEDULE
-      </button>
-
-      <select id="coverScheduleSelect" class="hidden" onchange="changeCoverSchedule()"></select>
-    </div>
-
     <div class="date-section-box">
-      <div class="date-row">
-        <h3 id="workDateTitle"></h3>
+  <div class="date-row">
+    <h3 id="workDateTitle"></h3>
 
-        <button class="date-change-btn" onclick="openCalendar()">
-          CHANGE DATE
-        </button>
+    <button class="date-change-btn" onclick="openCalendar()">
+      CHANGE DATE
+    </button>
 
-        <input
-          type="date"
-          id="quickDatePicker"
-          class="hidden-date"
-          onchange="changeWorkDateFromCalendar()"
-        >
-      </div>
-    </div>
+    <input
+      type="date"
+      id="quickDatePicker"
+      class="hidden-date"
+      onchange="changeWorkDateFromCalendar()"
+    >
+  </div>
+</div>
 
+<div class="top-info-box">
+  <h2 id="employeeName">Welcome</h2>
+  <h2 id="assignmentTitle"></h2>
+
+  <button id="coverScheduleButton" class="cover-btn" onclick="showCoverScheduleDropdown()">
+    COVER SCHEDULE
+  </button>
+
+  <select id="coverScheduleSelect" class="hidden" onchange="changeCoverSchedule()"></select>
+</div>
     <div id="categoryButtons" class="category-section-box"></div>
 
     <button class="back" onclick="logout()">LOGOUT</button>
