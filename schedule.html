@@ -621,6 +621,10 @@
       }
     });
 
+    if (!allAssignments.includes("Laundry")) {
+      allAssignments.push("Laundry");
+    }
+
     if (!allAssignments.includes(homeAssignment)) {
       allAssignments.unshift(homeAssignment);
     }
