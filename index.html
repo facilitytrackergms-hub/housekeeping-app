@@ -233,12 +233,13 @@ if (employeeSnap.empty) {
 
         if (active !== "No" && active !== "false") {
           foundEmployee = {
-            id: docSnap.id,
-            firstName: emp.firstName || emp.FirstName || "Employee",
-            employeeName: emp.employeeName || emp.name || emp.firstName || "Employee",
-            pin: pinNumber,
-            role: emp.role || "Housekeeping"
-          };
+  id: docSnap.id,
+  firstName: emp.firstName || emp.FirstName || "Employee",
+  employeeName: emp.employeeName || emp.name || emp.firstName || "Employee",
+  pin: pinNumber,
+  role: emp.role || "employee",
+  assignment: emp.assignment || emp.defaultAssignment || emp.schedule || emp.role || "HK Schedule 1"
+};
         }
       });
 
@@ -265,7 +266,7 @@ sessionStorage.setItem(
 sessionStorage.setItem(
   "selectedDailyTask",
   JSON.stringify({
-    assignment: foundEmployee.role,
+    assignment: foundEmployee.assignment,
     schedule: "Daily"
   })
 );
