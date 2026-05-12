@@ -734,7 +734,8 @@
     addDoc,
     updateDoc,
     deleteDoc,
-    serverTimestamp
+    serverTimestamp,
+    writeBatch
   } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
   /* =========================
@@ -768,46 +769,32 @@
      14 - GLOBAL ADMIN VARIABLES
   ========================== */
 
-  let currentAssignment =
-    sessionData.assignment ||
-    "HK Schedule 1";
-
+  let currentAssignment = sessionData.assignment || "HK Schedule 1";
   let currentWorkDateISO = getTodayISO();
   let currentWorkDayName = "";
-
   let reassignWorkDateISO = getTodayISO();
   let reassignWorkDayName = "";
 
+  let housekeepingMode = "two";
   let selectedCategory = "";
   let selectedArea = "";
+  let selectedAreaDocId = "";
+  let selectedAreaWorkId = "";
   let selectedAreaScheduleDay = "";
   let adminAreaSearchTerm = "";
 
-  let allTasksForDay = [];
-  let allTasksForAssignment = [];
+  let allAreas = [];
+  let allAreasForAssignment = [];
+  let allAreasForDay = [];
+  let allSubTasks = [];
   let currentAreaTasks = [];
-
   let currentEmployeeId = "";
-
   let currentEditingTaskId = "";
   let currentEditingTaskIndex = -1;
   let originalEditingTaskName = "";
 
-  const DEFAULT_WEEKLY_ROOM_TASKS = [
-    "Vac",
-    "Fridge",
-    "Bath",
-    "Mop",
-    "Toilet",
-    "Sink",
-    "Dust",
-    "Bed",
-    "AC Filter"
-  ];
-
-  const DEFAULT_DAILY_ROOM_TASKS = [
-    "Clean"
-  ];
+  const DEFAULT_WEEKLY_ROOM_TASKS = ["Vac", "Fridge", "Bath", "Mop", "Toilet", "Sink", "Dust", "Bed", "AC Filter"];
+  const DEFAULT_DAILY_ROOM_TASKS = ["Clean"];
 
   /* =========================
      15 - ADMIN STARTUP
@@ -838,19 +825,14 @@
   ========================== */
 
   function showAppMessage(message, title) {
-    document.getElementById("appMessageTitle").innerText =
-      title || "Notice";
-
-    document.getElementById("appMessageText").innerText =
-      message;
-
+    document.getElementById("appMessageTitle").innerText = title || "Notice";
+    document.getElementById("appMessageText").innerText = message;
     document.getElementById("appMessageBox").classList.remove("hidden");
   }
 
   function closeAppMessage() {
     document.getElementById("appMessageBox").classList.add("hidden");
   }
-
 
   /* =========================
      17 - VIEW SWITCHING
@@ -867,14 +849,10 @@
       "adminWorkloadView"
     ].forEach(function(id) {
       const el = document.getElementById(id);
-
-      if (el) {
-        el.classList.add("hidden");
-      }
+      if (el) el.classList.add("hidden");
     });
 
     updateAssignmentTitles();
-
     document.getElementById(viewId).classList.remove("hidden");
   }
 
@@ -887,10 +865,7 @@
       "adminEmployeeEditAssignmentTitle"
     ].forEach(function(id) {
       const el = document.getElementById(id);
-
-      if (el) {
-        el.innerText = currentAssignment;
-      }
+      if (el) el.innerText = currentAssignment;
     });
   }
 
@@ -903,57 +878,29 @@
     const yyyy = today.getFullYear();
     const mm = String(today.getMonth() + 1).padStart(2, "0");
     const dd = String(today.getDate()).padStart(2, "0");
-
     return yyyy + "-" + mm + "-" + dd;
   }
 
+  function getWeekdayName(iso) {
+    const date = new Date(iso + "T00:00:00");
+    return ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"][date.getDay()];
+  }
+
   function updateDateDisplay() {
-    const date = new Date(currentWorkDateISO + "T00:00:00");
-
-    const weekdays = [
-      "Sunday",
-      "Monday",
-      "Tuesday",
-      "Wednesday",
-      "Thursday",
-      "Friday",
-      "Saturday"
-    ];
-
-    currentWorkDayName = weekdays[date.getDay()];
+    currentWorkDayName = getWeekdayName(currentWorkDateISO);
   }
 
   function updateReassignmentDateDisplay() {
-    const date = new Date(reassignWorkDateISO + "T00:00:00");
-
-    const weekdays = [
-      "Sunday",
-      "Monday",
-      "Tuesday",
-      "Wednesday",
-      "Thursday",
-      "Friday",
-      "Saturday"
-    ];
-
-    reassignWorkDayName = weekdays[date.getDay()];
-
+    reassignWorkDayName = getWeekdayName(reassignWorkDateISO);
     const title = document.getElementById("reassignDateTitle");
-
-    if (title) {
-      title.innerText = reassignWorkDayName;
-    }
+    if (title) title.innerText = reassignWorkDayName;
   }
 
   async function changeAdminWorkDateFromBigPicker() {
     const picker = document.getElementById("adminBigDatePicker");
-
     if (!picker.value) return;
-
     currentWorkDateISO = picker.value;
-
     await loadAdminTasks();
-
     if (selectedCategory) {
       drawAdminAreaButtons(selectedCategory);
       showAdminView("adminAreaView");
@@ -966,71 +913,133 @@
 
   async function changeAdminAssignment() {
     currentAssignment = document.getElementById("adminAssignmentSelect").value;
+    selectedCategory = "";
     await loadAdminTasks();
     showAdminView("adminView2");
   }
 
   /* =========================
-     20 - LOAD TASKS FROM FIRESTORE
+     20 - LOAD AREAS AND SUB TASKS
   ========================== */
 
   async function loadAdminTasks() {
     showLoading();
-
     updateDateDisplay();
     updateAssignmentTitles();
 
     const dateTitle = document.getElementById("adminAreaDateTitle");
+    if (dateTitle) dateTitle.innerText = currentWorkDayName;
 
-    if (dateTitle) {
-      dateTitle.innerText = currentWorkDayName;
-    }
+    const settingsSnap = await getDocs(collection(db, "settings"));
+    housekeepingMode = "two";
 
-    const taskQuery = query(
-      collection(db, "tasks"),
-      where("assignment", "==", currentAssignment)
-    );
+    settingsSnap.docs.forEach(function(docItem) {
+      const data = docItem.data();
+      if (data.housekeepingMode) {
+        housekeepingMode = String(data.housekeepingMode).toLowerCase();
+      }
+    });
 
-    const taskSnap = await getDocs(taskQuery);
+    const areaSnap = await getDocs(collection(db, "areas"));
 
-    allTasksForAssignment =
-      taskSnap.docs.map(function(taskDoc) {
-        return {
-          id: taskDoc.id,
-          ...taskDoc.data()
-        };
-      });
+    allAreas = areaSnap.docs.map(function(areaDoc) {
+      return normalizeArea({ id: areaDoc.id, ...areaDoc.data() });
+    }).filter(function(area) {
+      return area.active !== false && area.active !== "No";
+    });
+
+    const subTaskSnap = await getDocs(collection(db, "tasks_new"));
+
+    allSubTasks = subTaskSnap.docs.map(function(taskDoc) {
+      return normalizeSubTask({ id: taskDoc.id, ...taskDoc.data() });
+    }).filter(function(task) {
+      return task.active !== false && task.active !== "No";
+    });
+
+    allAreasForAssignment = allAreas.filter(function(area) {
+      return getAreaAssignment(area) === currentAssignment;
+    });
+
+    allAreasForDay = allAreasForAssignment.filter(function(area) {
+      return isAreaForCurrentDay(area);
+    });
 
     updateTaskNameOptions();
-
-    allTasksForDay =
-      allTasksForAssignment.filter(function(item) {
-        const activeValue = item.active;
-
-        if (activeValue === false || activeValue === "No") {
-          return false;
-        }
-
-        const schedule =
-          String(item.schedule || "").trim().toLowerCase();
-
-        const scheduleDate =
-          String(item.scheduleDate || "").trim();
-
-        if (scheduleDate && scheduleDate === currentWorkDateISO) {
-          return true;
-        }
-
-        return (
-          schedule === "daily" ||
-          schedule === "weekly" ||
-          schedule === currentWorkDayName.toLowerCase()
-        );
-      });
-
     drawAdminCategories();
-
     hideLoading();
+  }
+
+  function normalizeArea(area) {
+    area.areaName = area.areaName || area.area || area.name || "";
+    area.category = area.category || "";
+    area.scheduleDay = area.scheduleDay || area.schedule || "daily";
+    area.workId = area.workId || buildWorkId(area.areaName, area.category, area.scheduleDay, getAreaAssignment(area));
+    return area;
+  }
+
+  function normalizeSubTask(task) {
+    task.taskName = task.taskName || task.task || "";
+    task.workId = task.workId || "";
+    return task;
+  }
+
+  function getAreaAssignment(area) {
+    if (housekeepingMode === "three") {
+      return String(area.threeHousekeeperSchedule || "").trim();
+    }
+    return String(area.twoHousekeeperSchedule || "").trim();
+  }
+
+  function isWeeklyCategory(category) {
+    return category === "Weekly Room" || category === "Weekly Laundry";
+  }
+
+  function isDailyOnlyCategory(category) {
+    return !isWeeklyCategory(category);
+  }
+
+  function isAreaForCurrentDay(area) {
+    const schedule = String(area.scheduleDay || "").trim().toLowerCase();
+    if (isDailyOnlyCategory(area.category)) return schedule === "daily" || schedule === "";
+    return schedule === currentWorkDayName.toLowerCase();
+  }
+
+  function isAreaForReassignDay(area) {
+    const schedule = String(area.scheduleDay || "").trim().toLowerCase();
+    if (isDailyOnlyCategory(area.category)) return schedule === "daily" || schedule === "";
+    return schedule === reassignWorkDayName.toLowerCase();
+  }
+
+  function getTasksForWorkId(workId) {
+    return allSubTasks.filter(function(task) {
+      return String(task.workId || "") === String(workId || "");
+    });
+  }
+
+  function buildWorkId(areaName, category, scheduleDay, assignment) {
+    return (
+      String(areaName || "") + "_" +
+      String(category || "") + "_" +
+      String(scheduleDay || "") + "_" +
+      String(assignment || "")
+    )
+    .toLowerCase()
+    .replace(/&/g, "and")
+    .replace(/[^a-z0-9]+/g, "_")
+    .replace(/^_+|_+$/g, "");
+  }
+
+  function getAreaUpdateData(areaName, assignment, category, scheduleDay, workId) {
+    return {
+      areaName: areaName,
+      category: category,
+      scheduleDay: scheduleDay,
+      workId: workId,
+      twoHousekeeperSchedule: assignment,
+      threeHousekeeperSchedule: assignment,
+      active: true,
+      updatedAt: serverTimestamp()
+    };
   }
 
   /* =========================
@@ -1039,17 +1048,15 @@
 
   function updateTaskNameOptions() {
     const list = document.getElementById("taskNameOptions");
-
     if (!list) return;
 
     list.innerHTML = "";
 
-    const names =
-      [...new Set(allTasksForAssignment.map(function(task) {
-        return String(task.task || "").trim();
-      }).filter(function(name) {
-        return name !== "";
-      }))];
+    const names = [...new Set(allSubTasks.map(function(task) {
+      return String(task.taskName || "").trim();
+    }).filter(function(name) {
+      return name !== "";
+    }))];
 
     names.forEach(function(name) {
       const option = document.createElement("option");
@@ -1066,14 +1073,12 @@
     const box = document.getElementById("adminCategoryButtons");
     box.innerHTML = "";
 
-    const buttons =
-      currentAssignment === "Laundry"
-        ? ["Weekly Laundry", "Daily Laundry Check", "Reassignment", "Employees", "Logout"]
-        : ["Common Area", "Weekly Room", "Daily Room", "Dehumidifier", "Reassignment", "Employees", "Logout"];
+    const buttons = currentAssignment === "Laundry"
+      ? ["Weekly Laundry", "Daily Laundry Check", "Reassignment", "Employees", "Logout"]
+      : ["Common Area", "Weekly Room", "Daily Room", "Dehumidifier", "Reassignment", "Employees", "Logout"];
 
     buttons.forEach(function(item) {
       const btn = document.createElement("button");
-
       btn.innerText = item;
 
       if (item === "Logout") {
@@ -1117,69 +1122,46 @@
     setAdminBulkTaskBoxVisibility(category);
 
     document.getElementById("adminBigDatePicker").value = currentWorkDateISO;
-
-    document.getElementById("adminAddAreaButton").innerText =
-      "ADD NEW " + category.toUpperCase();
-
-    document.getElementById("adminAreaDateTitle").innerText =
-      currentWorkDayName;
+    document.getElementById("adminAddAreaButton").innerText = "ADD NEW " + category.toUpperCase();
+    document.getElementById("adminAreaDateTitle").innerText = currentWorkDayName;
 
     updateAssignmentTitles();
 
-    let categoryTasks = [];
-
-    if (category === "Weekly Room" || category === "Weekly Laundry") {
-      categoryTasks =
-        allTasksForAssignment.filter(function(task) {
-          return (
-            task.category === category &&
-            String(task.schedule || "").trim().toLowerCase() ===
-            String(currentWorkDayName || "").trim().toLowerCase()
-          );
-        });
-    } else {
-      categoryTasks =
-        allTasksForDay.filter(function(task) {
-          return task.category === category;
-        });
-    }
-
-    let areas =
-      [...new Set(categoryTasks.map(function(task) {
-        return task.area;
-      }))];
+    let areas = allAreasForAssignment.filter(function(area) {
+      if (area.category !== category) return false;
+      if (isWeeklyCategory(category)) {
+        return String(area.scheduleDay || "").trim().toLowerCase() === currentWorkDayName.toLowerCase();
+      }
+      return isAreaForCurrentDay(area);
+    });
 
     if (adminAreaSearchTerm) {
-      areas =
-        areas.filter(function(area) {
-          return String(area || "")
-            .toLowerCase()
-            .includes(adminAreaSearchTerm.toLowerCase());
-        });
+      areas = areas.filter(function(area) {
+        return String(area.areaName || "").toLowerCase().includes(adminAreaSearchTerm.toLowerCase());
+      });
     }
 
     areas.forEach(function(area) {
-      const areaTasks =
-        categoryTasks.filter(function(task) {
-          return task.area === area;
-        });
-
-      const total = areaTasks.length;
-
+      const total = getTasksForWorkId(area.workId).length;
       const btn = document.createElement("button");
 
-      btn.className = "red";
-
+      btn.className = total > 0 ? "yellow" : "red";
       btn.innerHTML =
-        '<div class="room-number">' + escapeHtml(area) + '</div>' +
+        '<div class="room-number">' + escapeHtml(area.areaName) + '</div>' +
         '<div class="room-counter">' + total + ' TASKS</div>';
 
       btn.onclick = function() {
-        openAdminEditArea(area);
+        openAdminEditArea(area.id);
       };
 
       box.appendChild(btn);
     });
+
+    if (box.innerHTML === "") {
+      const empty = document.createElement("h3");
+      empty.innerText = "No areas found.";
+      box.appendChild(empty);
+    }
   }
 
   /* =========================
@@ -1187,15 +1169,12 @@
   ========================== */
 
   function searchAdminAreas() {
-    adminAreaSearchTerm =
-      document.getElementById("adminAreaSearchInput").value.trim();
-
+    adminAreaSearchTerm = document.getElementById("adminAreaSearchInput").value.trim();
     drawAdminAreaButtons(selectedCategory);
   }
 
   function setAdminAreaSearchVisibility(category) {
     const searchBox = document.getElementById("adminAreaSearchInput");
-
     if (category === "Weekly Room" || category === "Weekly Laundry") {
       searchBox.classList.remove("hidden");
     } else {
@@ -1203,35 +1182,18 @@
     }
   }
 
- function getDefaultTasksForSelectedCategory() {
-  if (selectedCategory === "Weekly Room") {
-    return DEFAULT_WEEKLY_ROOM_TASKS;
+  function getDefaultTasksForSelectedCategory() {
+    if (selectedCategory === "Weekly Room") return DEFAULT_WEEKLY_ROOM_TASKS;
+    if (selectedCategory === "Daily Room") return DEFAULT_DAILY_ROOM_TASKS;
+    if (selectedCategory === "Weekly Laundry") return ["Laundry Service"];
+    if (selectedCategory === "Daily Laundry Check") return ["Laundry Service"];
+    return [];
   }
-
-  if (selectedCategory === "Daily Room") {
-    return DEFAULT_DAILY_ROOM_TASKS;
-  }
-
-  if (selectedCategory === "Weekly Laundry") {
-    return ["Laundry Service"];
-  }
-
-  if (selectedCategory === "Daily Laundry Check") {
-    return ["Laundry Service"];
-  }
-
-  return [];
-}
 
   function setAdminBulkTaskBoxVisibility(category) {
     const box = document.getElementById("adminBulkTaskBox");
 
-    if (
-      category === "Weekly Room" ||
-      category === "Daily Room" ||
-      category === "Weekly Laundry" ||
-      category === "Daily Laundry Check"
-    ) {
+    if (["Weekly Room", "Daily Room", "Weekly Laundry", "Daily Laundry Check"].includes(category)) {
       drawTaskCheckboxes("adminBulkTaskChecks", getDefaultTasksForSelectedCategory(), "bulkTaskCheck");
       box.classList.remove("hidden");
     } else {
@@ -1242,12 +1204,7 @@
   function setAdminSingleTaskBoxVisibility(category) {
     const box = document.getElementById("adminSingleTaskBox");
 
-    if (
-      category === "Weekly Room" ||
-      category === "Daily Room" ||
-      category === "Weekly Laundry" ||
-      category === "Daily Laundry Check"
-    ) {
+    if (["Weekly Room", "Daily Room", "Weekly Laundry", "Daily Laundry Check"].includes(category)) {
       drawTaskCheckboxes("adminSingleTaskChecks", getDefaultTasksForSelectedCategory(), "singleTaskCheck");
       box.classList.remove("hidden");
     } else {
@@ -1262,35 +1219,20 @@
     taskList.forEach(function(taskName) {
       const label = document.createElement("label");
       label.className = "check-item";
-
       label.innerHTML =
         '<input type="checkbox" class="' + className + '" value="' + escapeHtml(taskName) + '">' +
         '<span>' + escapeHtml(taskName) + '</span>';
-
       box.appendChild(label);
     });
   }
 
   function getCheckedTaskNames(className) {
     return Array.from(document.querySelectorAll("." + className + ":checked"))
-      .map(function(input) {
-        return input.value;
-      });
-  }
-
-  function getScheduleForBulkTask() {
-    if (selectedCategory === "Weekly Room" || selectedCategory === "Weekly Laundry") {
-      return currentWorkDayName || "weekly";
-    }
-
-    return "daily";
+      .map(function(input) { return input.value; });
   }
 
   function getScheduleForSingleTask() {
-    if (selectedCategory === "Weekly Room" || selectedCategory === "Weekly Laundry") {
-      return selectedAreaScheduleDay || currentWorkDayName || "weekly";
-    }
-
+    if (isWeeklyCategory(selectedCategory)) return selectedAreaScheduleDay || currentWorkDayName;
     return "daily";
   }
 
@@ -1300,36 +1242,26 @@
 
   async function addCheckedTasksToAllAreas() {
     const checkedTasks = getCheckedTaskNames("bulkTaskCheck");
-
     if (checkedTasks.length === 0) {
       alert("Select tasks.");
       return;
     }
 
-    const schedule = getScheduleForBulkTask();
-
-    const areas =
-      [...new Set(allTasksForAssignment.filter(function(task) {
-        return (
-          task.category === selectedCategory &&
-          String(task.schedule || "").trim().toLowerCase() === String(schedule || "").trim().toLowerCase()
-        );
-      }).map(function(task) {
-        return task.area;
-      }).filter(function(area) {
-        return String(area || "").trim() !== "";
-      }))];
+    const areas = allAreasForAssignment.filter(function(area) {
+      return area.category === selectedCategory && (isWeeklyCategory(selectedCategory)
+        ? String(area.scheduleDay || "").trim().toLowerCase() === currentWorkDayName.toLowerCase()
+        : isAreaForCurrentDay(area));
+    });
 
     if (areas.length === 0) {
       alert("No rooms found.");
       return;
     }
 
-    const ok = confirm("Add checked tasks to all " + areas.length + " rooms? Duplicates will be skipped.");
+    const ok = confirm("Add checked tasks to all " + areas.length + " areas? Duplicates will be skipped.");
     if (!ok) return;
 
     showLoading();
-
     let addedCount = 0;
 
     for (let a = 0; a < areas.length; a++) {
@@ -1337,30 +1269,18 @@
 
       for (let t = 0; t < checkedTasks.length; t++) {
         const taskName = checkedTasks[t];
-
-        const exists =
-          allTasksForAssignment.some(function(task) {
-            return (
-              task.assignment === currentAssignment &&
-              task.category === selectedCategory &&
-              task.area === area &&
-              String(task.task || "").trim().toLowerCase() === taskName.toLowerCase() &&
-              String(task.schedule || "").trim().toLowerCase() === schedule.toLowerCase()
-            );
-          });
+        const exists = allSubTasks.some(function(task) {
+          return task.workId === area.workId && String(task.taskName || "").trim().toLowerCase() === taskName.toLowerCase();
+        });
 
         if (!exists) {
-          await addDoc(collection(db, "tasks"), {
-            assignment: currentAssignment,
-            category: selectedCategory,
-            area: area,
-            task: taskName,
-            schedule: schedule,
+          await addDoc(collection(db, "tasks_new"), {
+            workId: area.workId,
+            taskName: taskName,
             active: true,
             createdAt: serverTimestamp(),
             updatedAt: serverTimestamp()
           });
-
           addedCount++;
         }
       }
@@ -1368,56 +1288,50 @@
 
     await loadAdminTasks();
     drawAdminAreaButtons(selectedCategory);
-
     hideLoading();
-
     alert("Added " + addedCount + " missing tasks.");
   }
 
   async function deleteCheckedTasksFromAllAreas() {
     const checkedTasks = getCheckedTaskNames("bulkTaskCheck");
-
     if (checkedTasks.length === 0) {
       alert("Select tasks.");
       return;
     }
 
-    const schedule = getScheduleForBulkTask();
+    const checkedLower = checkedTasks.map(function(taskName) {
+      return String(taskName || "").trim().toLowerCase();
+    });
 
-    const checkedLower =
-      checkedTasks.map(function(taskName) {
-        return String(taskName || "").trim().toLowerCase();
-      });
+    const areas = allAreasForAssignment.filter(function(area) {
+      return area.category === selectedCategory && (isWeeklyCategory(selectedCategory)
+        ? String(area.scheduleDay || "").trim().toLowerCase() === currentWorkDayName.toLowerCase()
+        : isAreaForCurrentDay(area));
+    });
 
-    const tasksToDelete =
-      allTasksForAssignment.filter(function(task) {
-        return (
-          task.assignment === currentAssignment &&
-          task.category === selectedCategory &&
-          checkedLower.includes(String(task.task || "").trim().toLowerCase()) &&
-          String(task.schedule || "").trim().toLowerCase() === schedule.toLowerCase()
-        );
-      });
+    const areaWorkIds = areas.map(function(area) { return area.workId; });
+
+    const tasksToDelete = allSubTasks.filter(function(task) {
+      return areaWorkIds.includes(task.workId) && checkedLower.includes(String(task.taskName || "").trim().toLowerCase());
+    });
 
     if (tasksToDelete.length === 0) {
       alert("No matching tasks found.");
       return;
     }
 
-    const ok = confirm("Delete " + tasksToDelete.length + " matching tasks from all rooms?");
+    const ok = confirm("Delete " + tasksToDelete.length + " matching tasks?");
     if (!ok) return;
 
     showLoading();
 
     for (let i = 0; i < tasksToDelete.length; i++) {
-      await deleteDoc(doc(db, "tasks", tasksToDelete[i].id));
+      await deleteDoc(doc(db, "tasks_new", tasksToDelete[i].id));
     }
 
     await loadAdminTasks();
     drawAdminAreaButtons(selectedCategory);
-
     hideLoading();
-
     alert("Deleted " + tasksToDelete.length + " tasks.");
   }
 
@@ -1427,123 +1341,74 @@
 
   async function addCheckedTasksToSingleArea() {
     const checkedTasks = getCheckedTaskNames("singleTaskCheck");
-
     if (checkedTasks.length === 0) {
       alert("Select tasks.");
       return;
     }
 
-    const area = document.getElementById("adminEditAreaInput").value.trim();
-    const assignment = document.getElementById("adminEditAssignmentInput").value.trim();
-    const category = document.getElementById("adminEditCategoryInput").value.trim();
-    const schedule = getScheduleForSingleTask();
-
-    if (!area || !assignment || !category) {
-      alert("Fill area and assignment.");
-      return;
-    }
+    const saved = await ensureCurrentAreaSaved();
+    if (!saved) return;
 
     showLoading();
-
     let addedCount = 0;
 
     for (let i = 0; i < checkedTasks.length; i++) {
       const taskName = checkedTasks[i];
-
-      const exists =
-        allTasksForAssignment.some(function(task) {
-          return (
-            task.assignment === assignment &&
-            task.category === category &&
-            task.area === area &&
-            String(task.task || "").trim().toLowerCase() === taskName.toLowerCase() &&
-            String(task.schedule || "").trim().toLowerCase() === schedule.toLowerCase()
-          );
-        });
+      const exists = allSubTasks.some(function(task) {
+        return task.workId === selectedAreaWorkId && String(task.taskName || "").trim().toLowerCase() === taskName.toLowerCase();
+      });
 
       if (!exists) {
-        await addDoc(collection(db, "tasks"), {
-          assignment: assignment,
-          category: category,
-          area: area,
-          task: taskName,
-          schedule: schedule,
+        await addDoc(collection(db, "tasks_new"), {
+          workId: selectedAreaWorkId,
+          taskName: taskName,
           active: true,
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp()
         });
-
         addedCount++;
       }
     }
 
-    currentAssignment = assignment;
-    selectedCategory = category;
-    selectedArea = area;
-    selectedAreaScheduleDay = schedule;
-
-    document.getElementById("adminAssignmentSelect").value = assignment;
-    document.getElementById("adminAreaScheduleInput").value = schedule;
-
     await loadAdminTasks();
-    openAdminEditArea(area);
-
+    openAdminEditArea(selectedAreaDocId);
     hideLoading();
-
-    document.getElementById("adminMessage").innerText =
-      "Added " + addedCount + " missing tasks.";
+    document.getElementById("adminMessage").innerText = "Added " + addedCount + " missing tasks.";
   }
 
   async function deleteCheckedTasksFromSingleArea() {
     const checkedTasks = getCheckedTaskNames("singleTaskCheck");
-
     if (checkedTasks.length === 0) {
       alert("Select tasks.");
       return;
     }
 
-    const area = document.getElementById("adminEditAreaInput").value.trim();
-    const assignment = document.getElementById("adminEditAssignmentInput").value.trim();
-    const category = document.getElementById("adminEditCategoryInput").value.trim();
-    const schedule = getScheduleForSingleTask();
+    const checkedLower = checkedTasks.map(function(taskName) {
+      return String(taskName || "").trim().toLowerCase();
+    });
 
-    const checkedLower =
-      checkedTasks.map(function(taskName) {
-        return String(taskName || "").trim().toLowerCase();
-      });
-
-    const tasksToDelete =
-      allTasksForAssignment.filter(function(task) {
-        return (
-          task.assignment === assignment &&
-          task.category === category &&
-          task.area === area &&
-          checkedLower.includes(String(task.task || "").trim().toLowerCase()) &&
-          String(task.schedule || "").trim().toLowerCase() === schedule.toLowerCase()
-        );
-      });
+    const tasksToDelete = currentAreaTasks.filter(function(task) {
+      return checkedLower.includes(String(task.taskName || "").trim().toLowerCase());
+    });
 
     if (tasksToDelete.length === 0) {
       alert("No matching tasks found.");
       return;
     }
 
-    const ok = confirm("Delete " + tasksToDelete.length + " matching tasks from this room?");
+    const ok = confirm("Delete " + tasksToDelete.length + " matching tasks from this area?");
     if (!ok) return;
 
     showLoading();
 
     for (let i = 0; i < tasksToDelete.length; i++) {
-      await deleteDoc(doc(db, "tasks", tasksToDelete[i].id));
+      await deleteDoc(doc(db, "tasks_new", tasksToDelete[i].id));
     }
 
     await loadAdminTasks();
-    openAdminEditArea(area);
-
+    openAdminEditArea(selectedAreaDocId);
     hideLoading();
-
-    document.getElementById("adminMessage").innerText =
-      "Deleted " + tasksToDelete.length + " tasks.";
+    document.getElementById("adminMessage").innerText = "Deleted " + tasksToDelete.length + " tasks.";
   }
 
   /* =========================
@@ -1552,22 +1417,13 @@
 
   function setAdminAreaViewTag(category) {
     const tag = document.getElementById("adminAreaViewTag");
-
-    if (category === "Common Area") {
-      tag.innerText = "ADMIN VIEW 3";
-    } else if (category === "Weekly Room") {
-      tag.innerText = "ADMIN VIEW 4";
-    } else if (category === "Daily Room") {
-      tag.innerText = "ADMIN VIEW 5";
-    } else if (category === "Dehumidifier") {
-      tag.innerText = "ADMIN VIEW 6";
-    } else if (category === "Weekly Laundry") {
-      tag.innerText = "ADMIN VIEW 4";
-    } else if (category === "Daily Laundry Check") {
-      tag.innerText = "ADMIN VIEW 5";
-    } else {
-      tag.innerText = "ADMIN VIEW 3";
-    }
+    if (category === "Common Area") tag.innerText = "ADMIN VIEW 3";
+    else if (category === "Weekly Room") tag.innerText = "ADMIN VIEW 4";
+    else if (category === "Daily Room") tag.innerText = "ADMIN VIEW 5";
+    else if (category === "Dehumidifier") tag.innerText = "ADMIN VIEW 6";
+    else if (category === "Weekly Laundry") tag.innerText = "ADMIN VIEW 4";
+    else if (category === "Daily Laundry Check") tag.innerText = "ADMIN VIEW 5";
+    else tag.innerText = "ADMIN VIEW 3";
   }
 
   /* =========================
@@ -1578,7 +1434,7 @@
     const pickerBox = document.getElementById("adminAreaBigDatePickerBox");
     const dateTitle = document.getElementById("adminAreaDateTitle");
 
-    if (category === "Weekly Room" || category === "Weekly Laundry") {
+    if (isWeeklyCategory(category)) {
       pickerBox.classList.remove("hidden");
       dateTitle.classList.remove("hidden");
     } else {
@@ -1591,22 +1447,49 @@
      30 - OPEN EXISTING AREA EDITOR
   ========================== */
 
-  function openAdminEditArea(area) {
-    selectedArea = area;
+  function openAdminEditArea(areaId) {
+    const area = allAreas.find(function(item) { return item.id === areaId; });
 
-    currentAreaTasks =
-      allTasksForAssignment.filter(function(task) {
-        return task.area === area && task.category === selectedCategory;
-      });
-
-    selectedAreaScheduleDay = "";
-
-    if (selectedCategory === "Weekly Room" || selectedCategory === "Weekly Laundry") {
-      selectedAreaScheduleDay = currentWorkDayName;
+    if (!area) {
+      alert("Area not found.");
+      return;
     }
 
-    document.getElementById("adminEditTitle").innerText = area;
-    document.getElementById("adminEditAreaInput").value = area;
+    selectedArea = area.areaName;
+    selectedAreaDocId = area.id;
+    selectedAreaWorkId = area.workId;
+    selectedAreaScheduleDay = isWeeklyCategory(area.category) ? area.scheduleDay : "daily";
+    selectedCategory = area.category;
+    currentAreaTasks = getTasksForWorkId(area.workId);
+
+    document.getElementById("adminEditTitle").innerText = area.areaName;
+    document.getElementById("adminEditAreaInput").value = area.areaName;
+    document.getElementById("adminEditAssignmentInput").value = getAreaAssignment(area) || currentAssignment;
+    document.getElementById("adminEditCategoryInput").value = area.category;
+    document.getElementById("adminAreaScheduleInput").value = selectedAreaScheduleDay;
+    document.getElementById("adminMessage").innerText = "";
+
+    updateAssignmentTitles();
+    setAreaScheduleBoxVisibility();
+    setAdminSingleTaskBoxVisibility(selectedCategory);
+    closeAdminSubTaskEditor();
+    drawAdminSubTaskButtons();
+    showAdminView("adminEditView");
+  }
+
+  /* =========================
+     31 - OPEN NEW AREA EDITOR
+  ========================== */
+
+  function openNewAdminArea() {
+    selectedArea = "";
+    selectedAreaDocId = "";
+    selectedAreaWorkId = "";
+    currentAreaTasks = [];
+    selectedAreaScheduleDay = isWeeklyCategory(selectedCategory) ? currentWorkDayName : "daily";
+
+    document.getElementById("adminEditTitle").innerText = "New Area";
+    document.getElementById("adminEditAreaInput").value = "";
     document.getElementById("adminEditAssignmentInput").value = currentAssignment;
     document.getElementById("adminEditCategoryInput").value = selectedCategory;
     document.getElementById("adminAreaScheduleInput").value = selectedAreaScheduleDay;
@@ -1617,36 +1500,6 @@
     setAdminSingleTaskBoxVisibility(selectedCategory);
     closeAdminSubTaskEditor();
     drawAdminSubTaskButtons();
-
-    showAdminView("adminEditView");
-  }
-
-  /* =========================
-     31 - OPEN NEW AREA EDITOR
-  ========================== */
-
-  function openNewAdminArea() {
-    selectedArea = "";
-    currentAreaTasks = [];
-    selectedAreaScheduleDay = "";
-
-    if (selectedCategory === "Weekly Room" || selectedCategory === "Weekly Laundry") {
-      selectedAreaScheduleDay = currentWorkDayName;
-    }
-
-    document.getElementById("adminEditTitle").innerText = "New Area";
-    document.getElementById("adminEditAreaInput").value = "";
-    document.getElementById("adminEditAssignmentInput").value = "";
-    document.getElementById("adminEditCategoryInput").value = selectedCategory;
-    document.getElementById("adminAreaScheduleInput").value = selectedAreaScheduleDay;
-    document.getElementById("adminMessage").innerText = "";
-
-    updateAssignmentTitles();
-    setAreaScheduleBoxVisibility();
-    setAdminSingleTaskBoxVisibility(selectedCategory);
-    closeAdminSubTaskEditor();
-    drawAdminSubTaskButtons();
-
     showAdminView("adminEditView");
   }
 
@@ -1658,7 +1511,7 @@
     const box = document.getElementById("adminAreaScheduleBox");
     const deleteButton = document.getElementById("deleteAreaButton");
 
-    if (selectedCategory === "Weekly Room" || selectedCategory === "Weekly Laundry") {
+    if (isWeeklyCategory(selectedCategory)) {
       box.classList.remove("hidden");
       deleteButton.innerText = "DELETE DAY";
     } else {
@@ -1668,9 +1521,7 @@
   }
 
   function changeAdminAreaScheduleDay() {
-    selectedAreaScheduleDay =
-      document.getElementById("adminAreaScheduleInput").value;
-
+    selectedAreaScheduleDay = document.getElementById("adminAreaScheduleInput").value;
     closeAdminSubTaskEditor();
     drawAdminSubTaskButtons();
   }
@@ -1683,32 +1534,15 @@
     const box = document.getElementById("adminSubtaskButtons");
     box.innerHTML = "";
 
-    let tasksToShow = currentAreaTasks;
-
-    if (selectedCategory === "Weekly Room" || selectedCategory === "Weekly Laundry") {
-      tasksToShow =
-        currentAreaTasks.filter(function(task) {
-          return String(task.schedule || "").trim().toLowerCase() ===
-            String(selectedAreaScheduleDay || "").trim().toLowerCase();
-        });
-    }
-
-    tasksToShow.forEach(function(task) {
-      const realIndex =
-        currentAreaTasks.findIndex(function(item) {
-          return item.id === task.id;
-        });
-
+    currentAreaTasks.forEach(function(task, index) {
       const btn = document.createElement("button");
-
       btn.className = "red";
-
       btn.innerHTML =
-        '<div class="room-number">' + escapeHtml(task.task || "Sub Task") + '</div>' +
-        '<div class="room-counter">' + escapeHtml(task.schedule || "") + '</div>';
+        '<div class="room-number">' + escapeHtml(task.taskName || "Sub Task") + '</div>' +
+        '<div class="room-counter">' + escapeHtml(selectedAreaScheduleDay || "daily") + '</div>';
 
       btn.onclick = function() {
-        openAdminSubTaskEditor(realIndex);
+        openAdminSubTaskEditor(index);
       };
 
       box.appendChild(btn);
@@ -1727,27 +1561,20 @@
 
   function openAdminSubTaskEditor(index) {
     const task = currentAreaTasks[index];
+    if (!task) return;
 
     currentEditingTaskIndex = index;
     currentEditingTaskId = task.id || "";
-    originalEditingTaskName = task.task || "";
+    originalEditingTaskName = task.taskName || "";
 
-    document.getElementById("adminSubtaskViewTag").innerText =
-      "ADMIN VIEW 7-1";
-
-    document.getElementById("adminSubtaskEditorTitle").innerText =
-      "Edit Sub Task";
-
-    document.getElementById("adminTaskNameInput").value =
-      task.task || "";
-
-    document.getElementById("adminTaskScheduleInput").value =
-      task.schedule || "";
+    document.getElementById("adminSubtaskViewTag").innerText = "ADMIN VIEW 7-1";
+    document.getElementById("adminSubtaskEditorTitle").innerText = "Edit Sub Task";
+    document.getElementById("adminTaskNameInput").value = task.taskName || "";
+    document.getElementById("adminTaskScheduleInput").value = selectedAreaScheduleDay || "daily";
 
     setSaveAllWeeklyButtonVisibility();
     setTaskScheduleBoxVisibility();
     updateAssignmentTitles();
-
     document.getElementById("adminSubtaskEditor").classList.remove("hidden");
   }
 
@@ -1760,19 +1587,14 @@
     currentEditingTaskId = "";
     originalEditingTaskName = "";
 
-    document.getElementById("adminSubtaskViewTag").innerText =
-      "ADMIN VIEW 7-1";
-
-    document.getElementById("adminSubtaskEditorTitle").innerText =
-      "New Sub Task";
-
+    document.getElementById("adminSubtaskViewTag").innerText = "ADMIN VIEW 7-1";
+    document.getElementById("adminSubtaskEditorTitle").innerText = "New Sub Task";
     document.getElementById("adminTaskNameInput").value = "";
-    document.getElementById("adminTaskScheduleInput").value = selectedAreaScheduleDay || "";
+    document.getElementById("adminTaskScheduleInput").value = selectedAreaScheduleDay || "daily";
 
     setSaveAllWeeklyButtonVisibility();
     setTaskScheduleBoxVisibility();
     updateAssignmentTitles();
-
     document.getElementById("adminSubtaskEditor").classList.remove("hidden");
   }
 
@@ -1784,7 +1606,6 @@
     currentEditingTaskIndex = -1;
     currentEditingTaskId = "";
     originalEditingTaskName = "";
-
     document.getElementById("adminSubtaskEditor").classList.add("hidden");
   }
 
@@ -1794,72 +1615,86 @@
 
   function setSaveAllWeeklyButtonVisibility() {
     const btn = document.getElementById("saveAllWeeklyButton");
-
-    if (selectedCategory === "Weekly Room" || selectedCategory === "Weekly Laundry") {
-      btn.classList.remove("hidden");
-    } else {
-      btn.classList.add("hidden");
-    }
+    if (isWeeklyCategory(selectedCategory)) btn.classList.remove("hidden");
+    else btn.classList.add("hidden");
   }
 
   function setTaskScheduleBoxVisibility() {
     const box = document.getElementById("adminTaskScheduleBox");
-
-    if (selectedCategory === "Weekly Room" || selectedCategory === "Weekly Laundry") {
-      box.classList.remove("hidden");
-    } else {
-      box.classList.add("hidden");
-    }
+    if (isWeeklyCategory(selectedCategory)) box.classList.remove("hidden");
+    else box.classList.add("hidden");
   }
 
   /* =========================
      38 - SAVE AREA ONLY
   ========================== */
 
-  async function saveAdminAreaOnly() {
-    const area = document.getElementById("adminEditAreaInput").value.trim();
+  async function ensureCurrentAreaSaved() {
+    const areaName = document.getElementById("adminEditAreaInput").value.trim();
     const assignment = document.getElementById("adminEditAssignmentInput").value.trim();
     const category = document.getElementById("adminEditCategoryInput").value.trim();
+    const scheduleDay = isWeeklyCategory(category)
+      ? document.getElementById("adminAreaScheduleInput").value.trim()
+      : "daily";
 
-    if (!area || !assignment || !category) {
+    if (!areaName || !assignment || !category) {
       alert("Fill area and assignment.");
-      return;
+      return false;
     }
 
-    if (currentAreaTasks.length === 0) {
-      selectedArea = area;
-      currentAssignment = assignment;
-      selectedCategory = category;
-      document.getElementById("adminAssignmentSelect").value = assignment;
-      updateAssignmentTitles();
-      document.getElementById("adminMessage").innerText = "Saved.";
-      return;
+    if (isWeeklyCategory(category) && !scheduleDay) {
+      alert("Select schedule day.");
+      return false;
     }
 
-    showLoading();
+    const newWorkId = buildWorkId(areaName, category, scheduleDay, assignment);
+    const oldWorkId = selectedAreaWorkId;
 
-    for (let i = 0; i < currentAreaTasks.length; i++) {
-      const task = currentAreaTasks[i];
+    const data = getAreaUpdateData(areaName, assignment, category, scheduleDay, newWorkId);
 
-      await updateDoc(doc(db, "tasks", task.id), {
-        assignment: assignment,
-        category: category,
-        area: area,
-        updatedAt: serverTimestamp()
+    if (selectedAreaDocId) {
+      await updateDoc(doc(db, "areas", selectedAreaDocId), data);
+
+      if (oldWorkId && oldWorkId !== newWorkId) {
+        const tasksToMove = allSubTasks.filter(function(task) {
+          return task.workId === oldWorkId;
+        });
+
+        for (let i = 0; i < tasksToMove.length; i++) {
+          await updateDoc(doc(db, "tasks_new", tasksToMove[i].id), {
+            workId: newWorkId,
+            updatedAt: serverTimestamp()
+          });
+        }
+      }
+    } else {
+      const newDoc = await addDoc(collection(db, "areas"), {
+        ...data,
+        createdAt: serverTimestamp()
       });
+      selectedAreaDocId = newDoc.id;
     }
 
+    selectedArea = areaName;
     currentAssignment = assignment;
     selectedCategory = category;
-    selectedArea = area;
-
+    selectedAreaScheduleDay = scheduleDay;
+    selectedAreaWorkId = newWorkId;
     document.getElementById("adminAssignmentSelect").value = assignment;
+    return true;
+  }
+
+  async function saveAdminAreaOnly() {
+    showLoading();
+    const saved = await ensureCurrentAreaSaved();
+    if (!saved) {
+      hideLoading();
+      return;
+    }
 
     await loadAdminTasks();
-    openAdminEditArea(area);
-
+    openAdminEditArea(selectedAreaDocId);
     hideLoading();
-
     document.getElementById("adminMessage").innerText = "Saved.";
   }
 
@@ -1868,63 +1703,47 @@
   ========================== */
 
   async function saveAdminSubTask() {
-    const area = document.getElementById("adminEditAreaInput").value.trim();
-    const assignment = document.getElementById("adminEditAssignmentInput").value.trim();
-    const category = document.getElementById("adminEditCategoryInput").value.trim();
-
     const taskName = document.getElementById("adminTaskNameInput").value.trim();
 
-    let schedule = "";
-
-    try {
-      schedule = getScheduleForSubTask(category);
-    } catch (error) {
-      return;
-    }
-
-    if (!area || !assignment || !category || !taskName) {
-      alert("Fill area, assignment, and task name.");
+    if (!taskName) {
+      alert("Fill task name.");
       return;
     }
 
     showLoading();
 
+    const saved = await ensureCurrentAreaSaved();
+    if (!saved) {
+      hideLoading();
+      return;
+    }
+
     if (currentEditingTaskId) {
-      await updateDoc(doc(db, "tasks", currentEditingTaskId), {
-        assignment: assignment,
-        category: category,
-        area: area,
-        task: taskName,
-        schedule: schedule,
+      await updateDoc(doc(db, "tasks_new", currentEditingTaskId), {
+        workId: selectedAreaWorkId,
+        taskName: taskName,
         active: true,
         updatedAt: serverTimestamp()
       });
     } else {
-      await addDoc(collection(db, "tasks"), {
-        assignment: assignment,
-        category: category,
-        area: area,
-        task: taskName,
-        schedule: schedule,
-        active: true,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp()
+      const exists = allSubTasks.some(function(task) {
+        return task.workId === selectedAreaWorkId && String(task.taskName || "").trim().toLowerCase() === taskName.toLowerCase();
       });
+
+      if (!exists) {
+        await addDoc(collection(db, "tasks_new"), {
+          workId: selectedAreaWorkId,
+          taskName: taskName,
+          active: true,
+          createdAt: serverTimestamp(),
+          updatedAt: serverTimestamp()
+        });
+      }
     }
 
-    currentAssignment = assignment;
-    selectedCategory = category;
-    selectedArea = area;
-    selectedAreaScheduleDay = schedule;
-
-    document.getElementById("adminAssignmentSelect").value = assignment;
-    document.getElementById("adminAreaScheduleInput").value = schedule;
-
     await loadAdminTasks();
-    openAdminEditArea(area);
-
+    openAdminEditArea(selectedAreaDocId);
     hideLoading();
-
     document.getElementById("adminMessage").innerText = "Saved.";
   }
 
@@ -1936,31 +1755,18 @@
     const assignment = document.getElementById("adminEditAssignmentInput").value.trim();
     const category = document.getElementById("adminEditCategoryInput").value.trim();
     const taskName = document.getElementById("adminTaskNameInput").value.trim();
+    const schedule = document.getElementById("adminTaskScheduleInput").value.trim();
 
-    let schedule = "";
-
-    try {
-      schedule = getScheduleForSubTask(category);
-    } catch (error) {
+    if (!assignment || !category || !taskName || !schedule) {
+      alert("Fill assignment, task name, and schedule day.");
       return;
     }
 
-    if (!assignment || !category || !taskName) {
-      alert("Fill assignment and task name.");
-      return;
-    }
-
-    const areas =
-      [...new Set(allTasksForAssignment.filter(function(task) {
-        return (
-          task.category === category &&
-          String(task.schedule || "").trim().toLowerCase() === String(schedule || "").trim().toLowerCase()
-        );
-      }).map(function(task) {
-        return task.area;
-      }).filter(function(area) {
-        return String(area || "").trim() !== "";
-      }))];
+    const areas = allAreas.filter(function(area) {
+      return getAreaAssignment(area) === assignment &&
+        area.category === category &&
+        String(area.scheduleDay || "").trim().toLowerCase() === schedule.toLowerCase();
+    });
 
     if (areas.length === 0) {
       alert("No weekly rooms found for this day.");
@@ -1975,34 +1781,32 @@
     for (let i = 0; i < areas.length; i++) {
       const area = areas[i];
 
-      const existingTask =
-        allTasksForAssignment.find(function(task) {
-          const taskNameToMatch =
-            originalEditingTaskName || taskName;
+      let existingTask = null;
 
-          return (
-            task.assignment === assignment &&
-            task.category === category &&
-            task.area === area &&
-            String(task.task || "").trim().toLowerCase() === String(taskNameToMatch || "").trim().toLowerCase() &&
-            String(task.schedule || "").trim().toLowerCase() === String(schedule || "").trim().toLowerCase()
-          );
+      if (originalEditingTaskName) {
+        existingTask = allSubTasks.find(function(task) {
+          return task.workId === area.workId &&
+            String(task.taskName || "").trim().toLowerCase() === originalEditingTaskName.toLowerCase();
         });
+      }
+
+      if (!existingTask) {
+        existingTask = allSubTasks.find(function(task) {
+          return task.workId === area.workId &&
+            String(task.taskName || "").trim().toLowerCase() === taskName.toLowerCase();
+        });
+      }
 
       if (existingTask) {
-        await updateDoc(doc(db, "tasks", existingTask.id), {
-          task: taskName,
-          schedule: schedule,
+        await updateDoc(doc(db, "tasks_new", existingTask.id), {
+          taskName: taskName,
           active: true,
           updatedAt: serverTimestamp()
         });
       } else {
-        await addDoc(collection(db, "tasks"), {
-          assignment: assignment,
-          category: category,
-          area: area,
-          task: taskName,
-          schedule: schedule,
+        await addDoc(collection(db, "tasks_new"), {
+          workId: area.workId,
+          taskName: taskName,
           active: true,
           createdAt: serverTimestamp(),
           updatedAt: serverTimestamp()
@@ -2010,15 +1814,9 @@
       }
     }
 
-    currentAssignment = assignment;
-    selectedCategory = category;
-    selectedAreaScheduleDay = schedule;
-
     await loadAdminTasks();
-    openAdminEditArea(selectedArea);
-
+    if (selectedAreaDocId) openAdminEditArea(selectedAreaDocId);
     hideLoading();
-
     document.getElementById("adminMessage").innerText = "Saved to all rooms for " + schedule + ".";
   }
 
@@ -2036,17 +1834,10 @@
     if (!ok) return;
 
     showLoading();
-
-    await deleteDoc(doc(db, "tasks", currentEditingTaskId));
-
+    await deleteDoc(doc(db, "tasks_new", currentEditingTaskId));
     await loadAdminTasks();
-
-    if (selectedArea) {
-      openAdminEditArea(selectedArea);
-    } else {
-      showAdminView("adminAreaView");
-    }
-
+    if (selectedAreaDocId) openAdminEditArea(selectedAreaDocId);
+    else showAdminView("adminAreaView");
     hideLoading();
   }
 
@@ -2055,51 +1846,29 @@
   ========================== */
 
   async function deleteAdminArea() {
-    if (currentAreaTasks.length === 0) {
+    if (!selectedAreaDocId) {
       backToAdminAreas();
       return;
     }
 
-    let tasksToDelete = currentAreaTasks;
-    let confirmText = "Delete this whole area and all sub tasks?";
+    const ok = confirm(isWeeklyCategory(selectedCategory)
+      ? "Delete this day and all sub tasks?"
+      : "Delete this whole area and all sub tasks?");
 
-    if (selectedCategory === "Weekly Room" || selectedCategory === "Weekly Laundry") {
-      if (!selectedAreaScheduleDay) {
-        alert("Select schedule day.");
-        return;
-      }
-
-      tasksToDelete =
-        currentAreaTasks.filter(function(task) {
-          return String(task.schedule || "").trim().toLowerCase() ===
-            String(selectedAreaScheduleDay || "").trim().toLowerCase();
-        });
-
-      confirmText = "Delete only " + selectedAreaScheduleDay + " tasks for this room?";
-    }
-
-    if (tasksToDelete.length === 0) {
-      alert("No tasks found for this day.");
-      return;
-    }
-
-    const ok = confirm(confirmText);
     if (!ok) return;
 
     showLoading();
 
+    const tasksToDelete = getTasksForWorkId(selectedAreaWorkId);
+
     for (let i = 0; i < tasksToDelete.length; i++) {
-      await deleteDoc(doc(db, "tasks", tasksToDelete[i].id));
+      await deleteDoc(doc(db, "tasks_new", tasksToDelete[i].id));
     }
 
+    await deleteDoc(doc(db, "areas", selectedAreaDocId));
     await loadAdminTasks();
-
-    if (selectedArea) {
-      openAdminEditArea(selectedArea);
-    } else {
-      showAdminView("adminAreaView");
-    }
-
+    drawAdminAreaButtons(selectedCategory);
+    showAdminView("adminAreaView");
     hideLoading();
   }
 
@@ -2127,12 +1896,8 @@
     showLoading();
 
     const snap = await getDocs(collection(db, "employees"));
-
     const employees = snap.docs.map(function(empDoc) {
-      return {
-        id: empDoc.id,
-        ...empDoc.data()
-      };
+      return { id: empDoc.id, ...empDoc.data() };
     });
 
     const box = document.getElementById("employeeList");
@@ -2140,21 +1905,13 @@
 
     employees.forEach(function(emp) {
       const btn = document.createElement("button");
-
-      const name =
-        ((emp.firstName || "") + " " + (emp.lastName || "")).trim() ||
-        emp.employeeName ||
-        emp.name ||
-        "Employee";
+      const name = ((emp.firstName || "") + " " + (emp.lastName || "")).trim() || emp.employeeName || emp.name || "Employee";
 
       btn.innerHTML =
         '<div class="room-number">' + escapeHtml(name) + '</div>' +
         '<div class="room-counter">PIN: ' + escapeHtml(emp.pin || "") + '</div>';
 
-      btn.onclick = function() {
-        openEmployeeEditor(emp);
-      };
-
+      btn.onclick = function() { openEmployeeEditor(emp); };
       box.appendChild(btn);
     });
 
@@ -2165,9 +1922,7 @@
     }
 
     hideLoading();
-
     updateAssignmentTitles();
-
     showAdminView("adminEmployeesView");
   }
 
@@ -2177,7 +1932,6 @@
 
   function openNewEmployee() {
     currentEmployeeId = "";
-
     document.getElementById("employeeEditTitle").innerText = "New Employee";
     document.getElementById("empFirstName").value = "";
     document.getElementById("empLastName").value = "";
@@ -2186,9 +1940,7 @@
     document.getElementById("empRole").value = "";
     document.getElementById("empActive").value = "";
     document.getElementById("employeeMessage").innerText = "";
-
     updateAssignmentTitles();
-
     showAdminView("adminEmployeeEditView");
   }
 
@@ -2198,12 +1950,7 @@
 
   function openEmployeeEditor(emp) {
     currentEmployeeId = emp.id;
-
-    const name =
-      ((emp.firstName || "") + " " + (emp.lastName || "")).trim() ||
-      emp.employeeName ||
-      emp.name ||
-      "Employee";
+    const name = ((emp.firstName || "") + " " + (emp.lastName || "")).trim() || emp.employeeName || emp.name || "Employee";
 
     document.getElementById("employeeEditTitle").innerText = name;
     document.getElementById("empFirstName").value = emp.firstName || "";
@@ -2211,12 +1958,10 @@
     document.getElementById("empPin").value = emp.pin || "";
     document.getElementById("empAssignment").value = emp.assignment || "";
     document.getElementById("empRole").value = emp.role || "";
-    document.getElementById("empActive").value =
-      emp.active === false ? "false" : "true";
+    document.getElementById("empActive").value = emp.active === false ? "false" : "true";
     document.getElementById("employeeMessage").innerText = "";
 
     updateAssignmentTitles();
-
     showAdminView("adminEmployeeEditView");
   }
 
@@ -2238,7 +1983,6 @@
     }
 
     const active = activeValue === "true";
-
     showLoading();
 
     const data = {
@@ -2260,7 +2004,6 @@
     }
 
     hideLoading();
-
     document.getElementById("employeeMessage").innerText = "Saved.";
   }
 
@@ -2278,48 +2021,9 @@
     if (!ok) return;
 
     showLoading();
-
     await deleteDoc(doc(db, "employees", currentEmployeeId));
-
     hideLoading();
-
     openEmployees();
-  }
-
-  /* =========================
-     48A - DUPLICATE TASK CHECK
-  ========================== */
-
-  async function taskAlreadyExistsInTargetAssignment(task, targetAssignment) {
-    const duplicateQuery = query(
-      collection(db, "tasks"),
-      where("area", "==", task.area),
-      where("category", "==", task.category),
-      where("task", "==", task.task),
-      where("schedule", "==", task.schedule),
-      where("assignment", "==", targetAssignment)
-    );
-
-    const snap = await getDocs(duplicateQuery);
-
-    return snap.docs.some(function(docSnap) {
-      return docSnap.id !== task.id;
-    });
-  }
-
-  async function findDuplicateTaskForTargetAssignment(tasks, targetAssignment) {
-    for (let i = 0; i < tasks.length; i++) {
-      const exists = await taskAlreadyExistsInTargetAssignment(
-        tasks[i],
-        targetAssignment
-      );
-
-      if (exists) {
-        return tasks[i];
-      }
-    }
-
-    return null;
   }
 
   /* =========================
@@ -2329,27 +2033,20 @@
   async function openReassignment() {
     reassignWorkDateISO = currentWorkDateISO;
     updateReassignmentDateDisplay();
-
     document.getElementById("reassignFrom").value = currentAssignment;
     document.getElementById("reassignTo").value = "";
     document.getElementById("reassignCategory").value = "Common Area";
     document.getElementById("reassignDatePicker").value = reassignWorkDateISO;
     document.getElementById("reassignmentAreaList").innerHTML = "";
-
     setReassignmentDateVisibility();
-
     showAdminView("adminReassignmentView");
   }
 
   function setReassignmentDateVisibility() {
     const category = document.getElementById("reassignCategory").value;
     const box = document.getElementById("reassignDateBox");
-
-    if (category === "Weekly Room" || category === "Weekly Laundry") {
-      box.classList.remove("hidden");
-    } else {
-      box.classList.add("hidden");
-    }
+    if (isWeeklyCategory(category)) box.classList.remove("hidden");
+    else box.classList.add("hidden");
   }
 
   async function changeReassignmentCategory() {
@@ -2359,24 +2056,10 @@
 
   async function changeReassignmentDate() {
     const picker = document.getElementById("reassignDatePicker");
-
     if (!picker.value) return;
-
     reassignWorkDateISO = picker.value;
     updateReassignmentDateDisplay();
-
     await loadReassignmentAreas();
-  }
-
-  function filterReassignmentTasksByDate(tasks, category) {
-    if (category !== "Weekly Room" && category !== "Weekly Laundry") {
-      return tasks;
-    }
-
-    return tasks.filter(function(task) {
-      return String(task.schedule || "").trim().toLowerCase() ===
-        String(reassignWorkDayName || "").trim().toLowerCase();
-    });
   }
 
   async function loadReassignmentAreas() {
@@ -2390,79 +2073,44 @@
 
     updateReassignmentDateDisplay();
     setReassignmentDateVisibility();
-
     showLoading();
 
-    const taskQuery = query(
-      collection(db, "tasks"),
-      where("assignment", "==", fromAssignment),
-      where("category", "==", category)
-    );
-
-    const snap = await getDocs(taskQuery);
-
-    let tasks =
-      snap.docs.map(function(taskDoc) {
-        return {
-          id: taskDoc.id,
-          ...taskDoc.data()
-        };
-      });
-
-    tasks = filterReassignmentTasksByDate(tasks, category);
-
-    const areas =
-      [...new Set(tasks.map(function(task) {
-        return task.area;
-      }).filter(function(area) {
-        return String(area || "").trim() !== "";
-      }))];
+    const areas = allAreas.filter(function(area) {
+      return getAreaAssignment(area) === fromAssignment &&
+        area.category === category &&
+        (isWeeklyCategory(category) ? isAreaForReassignDay(area) : true);
+    });
 
     const box = document.getElementById("reassignmentAreaList");
     box.innerHTML = "";
 
     areas.forEach(function(area) {
-      const count =
-        tasks.filter(function(task) {
-          return task.area === area;
-        }).length;
-
+      const count = getTasksForWorkId(area.workId).length;
       const btn = document.createElement("button");
-
       btn.className = "yellow";
-
       btn.innerHTML =
-        '<div class="room-number">' + escapeHtml(area) + '</div>' +
+        '<div class="room-number">' + escapeHtml(area.areaName) + '</div>' +
         '<div class="room-counter">' + count + ' TASKS</div>';
-
-      btn.onclick = function() {
-        moveReassignmentArea(area);
-      };
-
+      btn.onclick = function() { moveReassignmentArea(area.id); };
       box.appendChild(btn);
     });
 
     if (box.innerHTML === "") {
       const empty = document.createElement("h3");
-
-      if (category === "Weekly Room" || category === "Weekly Laundry") {
-        empty.innerText = "No areas found for " + reassignWorkDayName + ".";
-      } else {
-        empty.innerText = "No areas found.";
-      }
-
+      empty.innerText = isWeeklyCategory(category) ? "No areas found for " + reassignWorkDayName + "." : "No areas found.";
       box.appendChild(empty);
     }
 
     hideLoading();
   }
 
-  async function moveReassignmentArea(area) {
-    const fromAssignment = document.getElementById("reassignFrom").value;
+  async function moveReassignmentArea(areaId) {
+    const area = allAreas.find(function(item) { return item.id === areaId; });
     const toAssignment = document.getElementById("reassignTo").value;
+    const fromAssignment = document.getElementById("reassignFrom").value;
     const category = document.getElementById("reassignCategory").value;
 
-    if (!fromAssignment || !toAssignment || !category) {
+    if (!area || !fromAssignment || !toAssignment || !category) {
       showAppMessage("Select from, to, and category.");
       return;
     }
@@ -2472,153 +2120,69 @@
       return;
     }
 
-    updateReassignmentDateDisplay();
+    const duplicate = allAreas.find(function(item) {
+      return item.id !== area.id &&
+        getAreaAssignment(item) === toAssignment &&
+        item.category === area.category &&
+        String(item.areaName || "").trim().toLowerCase() === String(area.areaName || "").trim().toLowerCase() &&
+        String(item.scheduleDay || "").trim().toLowerCase() === String(area.scheduleDay || "").trim().toLowerCase();
+    });
 
-    let confirmText =
-      "Move " +
-      area +
-      " to " +
-      toAssignment +
-      "?";
-
-    if (category === "Weekly Room" || category === "Weekly Laundry") {
-      confirmText =
-        "Move " +
-        area +
-        " " +
-        reassignWorkDayName +
-        " tasks to " +
-        toAssignment +
-        "?";
+    if (duplicate) {
+      showAppMessage("Cannot duplicate assignments. This area already exists in " + toAssignment + ".");
+      return;
     }
 
-    const ok = confirm(confirmText);
-
+    const ok = confirm("Move " + area.areaName + " to " + toAssignment + "?");
     if (!ok) return;
 
     showLoading();
 
-    const taskQuery = query(
-      collection(db, "tasks"),
-      where("assignment", "==", fromAssignment),
-      where("category", "==", category),
-      where("area", "==", area)
-    );
+    const oldWorkId = area.workId;
+    const newWorkId = buildWorkId(area.areaName, area.category, area.scheduleDay, toAssignment);
 
-    const snap = await getDocs(taskQuery);
+    await updateDoc(doc(db, "areas", area.id), {
+      twoHousekeeperSchedule: toAssignment,
+      threeHousekeeperSchedule: toAssignment,
+      workId: newWorkId,
+      updatedAt: serverTimestamp()
+    });
 
-    let tasks =
-      snap.docs.map(function(taskDoc) {
-        return {
-          id: taskDoc.id,
-          ...taskDoc.data()
-        };
+    const tasksToMove = getTasksForWorkId(oldWorkId);
+
+    for (let i = 0; i < tasksToMove.length; i++) {
+      await updateDoc(doc(db, "tasks_new", tasksToMove[i].id), {
+        workId: newWorkId,
+        updatedAt: serverTimestamp()
       });
-
-    tasks = filterReassignmentTasksByDate(tasks, category);
-
-    const duplicateTask =
-      await findDuplicateTaskForTargetAssignment(
-        tasks,
-        toAssignment
-      );
-
-    if (duplicateTask) {
-      hideLoading();
-
-      showAppMessage(
-        "Cannot duplicate assignments. " +
-        duplicateTask.area +
-        " / " +
-        duplicateTask.task +
-        " / " +
-        duplicateTask.schedule +
-        " already exists in " +
-        toAssignment +
-        "."
-      );
-
-      return;
-    }
-
-    for (let i = 0; i < tasks.length; i++) {
-      await updateDoc(
-        doc(db, "tasks", tasks[i].id),
-        {
-          assignment: toAssignment,
-          updatedAt: serverTimestamp()
-        }
-      );
     }
 
     await loadAdminTasks();
-
     hideLoading();
-
     showAppMessage("Moved.");
-
     await loadReassignmentAreas();
   }
 
-
   async function checkAssignmentCounts() {
     updateReassignmentDateDisplay();
-
     showLoading();
 
-    const taskQuery = query(
-      collection(db, "tasks")
-    );
-
-    const snap = await getDocs(taskQuery);
-
-    const allTasks =
-      snap.docs.map(function(taskDoc) {
-        return {
-          id: taskDoc.id,
-          ...taskDoc.data()
-        };
-      });
-
-    const assignments = [
-      "HK Schedule 1",
-      "HK Schedule 2",
-      "Laundry"
-    ];
-
+    const assignments = ["HK Schedule 1", "HK Schedule 2", "Laundry"];
     const resultBox = document.getElementById("workloadResults");
     resultBox.innerHTML = "";
 
-    document.getElementById("workloadDayTitle").innerText =
-      "Weekly counts use " + reassignWorkDayName;
+    document.getElementById("workloadDayTitle").innerText = "Weekly counts use " + reassignWorkDayName;
 
     assignments.forEach(function(assignment) {
-      const assignmentTasks =
-        allTasks.filter(function(task) {
-          return task.assignment === assignment;
-        });
-
       function countAreas(categoryName, weeklyMode) {
-        let filtered = assignmentTasks.filter(function(task) {
-          return task.category === categoryName;
-        });
-
-        if (weeklyMode) {
-          filtered =
-            filtered.filter(function(task) {
-              return String(task.schedule || "").trim().toLowerCase() ===
-                String(reassignWorkDayName || "").trim().toLowerCase();
-            });
-        }
-
-        const uniqueAreas =
-          [...new Set(filtered.map(function(task) {
-            return task.area;
-          }).filter(function(area) {
-            return String(area || "").trim() !== "";
-          }))];
-
-        return uniqueAreas.length;
+        return allAreas.filter(function(area) {
+          if (getAreaAssignment(area) !== assignment) return false;
+          if (area.category !== categoryName) return false;
+          if (weeklyMode) {
+            return String(area.scheduleDay || "").trim().toLowerCase() === reassignWorkDayName.toLowerCase();
+          }
+          return true;
+        }).length;
       }
 
       const counts = [
@@ -2630,15 +2194,11 @@
         ["Daily Laundry", countAreas("Daily Laundry Check", false)]
       ];
 
-      const total = counts.reduce(function(sum, item) {
-        return sum + item[1];
-      }, 0);
-
+      const total = counts.reduce(function(sum, item) { return sum + item[1]; }, 0);
       const card = document.createElement("div");
       card.className = "workload-card";
 
-      let html =
-        "<h3>" + escapeHtml(assignment) + "</h3>";
+      let html = "<h3>" + escapeHtml(assignment) + "</h3>";
 
       counts.forEach(function(item) {
         html +=
@@ -2648,15 +2208,12 @@
           '</div>';
       });
 
-      html +=
-        '<div class="workload-total">TOTAL: ' + total + '</div>';
-
+      html += '<div class="workload-total">TOTAL: ' + total + '</div>';
       card.innerHTML = html;
       resultBox.appendChild(card);
     });
 
     hideLoading();
-
     showAdminView("adminWorkloadView");
   }
 
@@ -2690,17 +2247,14 @@
   ========================== */
 
   function getScheduleForSubTask(category) {
-    if (category === "Weekly Room" || category === "Weekly Laundry") {
+    if (isWeeklyCategory(category)) {
       const selectedDay = document.getElementById("adminTaskScheduleInput").value;
-
       if (!selectedDay) {
         alert("Select schedule day.");
         throw new Error("Missing schedule day");
       }
-
       return selectedDay;
     }
-
     return "daily";
   }
 
