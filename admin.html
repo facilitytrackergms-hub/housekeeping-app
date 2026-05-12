@@ -566,7 +566,7 @@
     </select>
 
     <label>Category</label>
-    <select id="reassignCategory">
+    <select id="reassignCategory" onchange="changeReassignmentCategory()">
       <option>Common Area</option>
       <option>Weekly Room</option>
       <option>Daily Room</option>
@@ -574,6 +574,16 @@
       <option>Weekly Laundry</option>
       <option>Daily Laundry Check</option>
     </select>
+
+    <div id="reassignDateBox" class="hidden">
+      <h3 id="reassignDateTitle"></h3>
+
+      <input
+        type="date"
+        id="reassignDatePicker"
+        onchange="changeReassignmentDate()"
+      >
+    </div>
 
     <button class="green" onclick="loadReassignmentAreas()">LOAD</button>
 
@@ -647,6 +657,9 @@
 
   let currentWorkDateISO = getTodayISO();
   let currentWorkDayName = "";
+
+  let reassignWorkDateISO = getTodayISO();
+  let reassignWorkDayName = "";
 
   let selectedCategory = "";
   let selectedArea = "";
@@ -771,6 +784,28 @@
     ];
 
     currentWorkDayName = weekdays[date.getDay()];
+  }
+
+  function updateReassignmentDateDisplay() {
+    const date = new Date(reassignWorkDateISO + "T00:00:00");
+
+    const weekdays = [
+      "Sunday",
+      "Monday",
+      "Tuesday",
+      "Wednesday",
+      "Thursday",
+      "Friday",
+      "Saturday"
+    ];
+
+    reassignWorkDayName = weekdays[date.getDay()];
+
+    const title = document.getElementById("reassignDateTitle");
+
+    if (title) {
+      title.innerText = reassignWorkDayName;
+    }
   }
 
   async function changeAdminWorkDateFromBigPicker() {
@@ -2119,12 +2154,56 @@
   ========================== */
 
   async function openReassignment() {
+    reassignWorkDateISO = currentWorkDateISO;
+    updateReassignmentDateDisplay();
+
     document.getElementById("reassignFrom").value = currentAssignment;
     document.getElementById("reassignTo").value = "";
     document.getElementById("reassignCategory").value = "Common Area";
+    document.getElementById("reassignDatePicker").value = reassignWorkDateISO;
     document.getElementById("reassignmentAreaList").innerHTML = "";
 
+    setReassignmentDateVisibility();
+
     showAdminView("adminReassignmentView");
+  }
+
+  function setReassignmentDateVisibility() {
+    const category = document.getElementById("reassignCategory").value;
+    const box = document.getElementById("reassignDateBox");
+
+    if (category === "Weekly Room" || category === "Weekly Laundry") {
+      box.classList.remove("hidden");
+    } else {
+      box.classList.add("hidden");
+    }
+  }
+
+  async function changeReassignmentCategory() {
+    setReassignmentDateVisibility();
+    document.getElementById("reassignmentAreaList").innerHTML = "";
+  }
+
+  async function changeReassignmentDate() {
+    const picker = document.getElementById("reassignDatePicker");
+
+    if (!picker.value) return;
+
+    reassignWorkDateISO = picker.value;
+    updateReassignmentDateDisplay();
+
+    await loadReassignmentAreas();
+  }
+
+  function filterReassignmentTasksByDate(tasks, category) {
+    if (category !== "Weekly Room" && category !== "Weekly Laundry") {
+      return tasks;
+    }
+
+    return tasks.filter(function(task) {
+      return String(task.schedule || "").trim().toLowerCase() ===
+        String(reassignWorkDayName || "").trim().toLowerCase();
+    });
   }
 
   async function loadReassignmentAreas() {
@@ -2136,6 +2215,9 @@
       return;
     }
 
+    updateReassignmentDateDisplay();
+    setReassignmentDateVisibility();
+
     showLoading();
 
     const taskQuery = query(
@@ -2146,13 +2228,15 @@
 
     const snap = await getDocs(taskQuery);
 
-    const tasks =
+    let tasks =
       snap.docs.map(function(taskDoc) {
         return {
           id: taskDoc.id,
           ...taskDoc.data()
         };
       });
+
+    tasks = filterReassignmentTasksByDate(tasks, category);
 
     const areas =
       [...new Set(tasks.map(function(task) {
@@ -2187,7 +2271,13 @@
 
     if (box.innerHTML === "") {
       const empty = document.createElement("h3");
-      empty.innerText = "No areas found.";
+
+      if (category === "Weekly Room" || category === "Weekly Laundry") {
+        empty.innerText = "No areas found for " + reassignWorkDayName + ".";
+      } else {
+        empty.innerText = "No areas found.";
+      }
+
       box.appendChild(empty);
     }
 
@@ -2209,14 +2299,27 @@
       return;
     }
 
-    const ok =
-      confirm(
+    updateReassignmentDateDisplay();
+
+    let confirmText =
+      "Move " +
+      area +
+      " to " +
+      toAssignment +
+      "?";
+
+    if (category === "Weekly Room" || category === "Weekly Laundry") {
+      confirmText =
         "Move " +
         area +
-        " to " +
+        " " +
+        reassignWorkDayName +
+        " tasks to " +
         toAssignment +
-        "?"
-      );
+        "?";
+    }
+
+    const ok = confirm(confirmText);
 
     if (!ok) return;
 
@@ -2231,9 +2334,19 @@
 
     const snap = await getDocs(taskQuery);
 
-    for (let i = 0; i < snap.docs.length; i++) {
+    let tasks =
+      snap.docs.map(function(taskDoc) {
+        return {
+          id: taskDoc.id,
+          ...taskDoc.data()
+        };
+      });
+
+    tasks = filterReassignmentTasksByDate(tasks, category);
+
+    for (let i = 0; i < tasks.length; i++) {
       await updateDoc(
-        doc(db, "tasks", snap.docs[i].id),
+        doc(db, "tasks", tasks[i].id),
         {
           assignment: toAssignment,
           updatedAt: serverTimestamp()
@@ -2326,6 +2439,8 @@
   window.openReassignment = openReassignment;
   window.loadReassignmentAreas = loadReassignmentAreas;
   window.moveReassignmentArea = moveReassignmentArea;
+  window.changeReassignmentCategory = changeReassignmentCategory;
+  window.changeReassignmentDate = changeReassignmentDate;
 
   /* =========================
      54 - WINDOW FUNCTIONS - EMPLOYEES
