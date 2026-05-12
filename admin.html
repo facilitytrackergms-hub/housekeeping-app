@@ -979,21 +979,25 @@
     }
   }
 
-  /* =========================
-     25 - TASK CHECKBOXES
-  ========================== */
-
-  function getDefaultTasksForSelectedCategory() {
-    if (selectedCategory === "Weekly Room" || selectedCategory === "Weekly Laundry") {
-      return DEFAULT_WEEKLY_ROOM_TASKS;
-    }
-
-    if (selectedCategory === "Daily Room" || selectedCategory === "Daily Laundry Check") {
-      return DEFAULT_DAILY_ROOM_TASKS;
-    }
-
-    return [];
+ function getDefaultTasksForSelectedCategory() {
+  if (selectedCategory === "Weekly Room") {
+    return DEFAULT_WEEKLY_ROOM_TASKS;
   }
+
+  if (selectedCategory === "Daily Room") {
+    return DEFAULT_DAILY_ROOM_TASKS;
+  }
+
+  if (selectedCategory === "Weekly Laundry") {
+    return ["Laundry Service"];
+  }
+
+  if (selectedCategory === "Daily Laundry Check") {
+    return ["Laundry Service"];
+  }
+
+  return [];
+}
 
   function setAdminBulkTaskBoxVisibility(category) {
     const box = document.getElementById("adminBulkTaskBox");
