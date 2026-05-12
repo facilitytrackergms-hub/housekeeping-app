@@ -2150,6 +2150,42 @@
   }
 
   /* =========================
+     48A - DUPLICATE TASK CHECK
+  ========================== */
+
+  async function taskAlreadyExistsInTargetAssignment(task, targetAssignment) {
+    const duplicateQuery = query(
+      collection(db, "tasks"),
+      where("area", "==", task.area),
+      where("category", "==", task.category),
+      where("task", "==", task.task),
+      where("schedule", "==", task.schedule),
+      where("assignment", "==", targetAssignment)
+    );
+
+    const snap = await getDocs(duplicateQuery);
+
+    return snap.docs.some(function(docSnap) {
+      return docSnap.id !== task.id;
+    });
+  }
+
+  async function findDuplicateTaskForTargetAssignment(tasks, targetAssignment) {
+    for (let i = 0; i < tasks.length; i++) {
+      const exists = await taskAlreadyExistsInTargetAssignment(
+        tasks[i],
+        targetAssignment
+      );
+
+      if (exists) {
+        return tasks[i];
+      }
+    }
+
+    return null;
+  }
+
+  /* =========================
      48B - REASSIGNMENT
   ========================== */
 
@@ -2343,6 +2379,30 @@
       });
 
     tasks = filterReassignmentTasksByDate(tasks, category);
+
+    const duplicateTask =
+      await findDuplicateTaskForTargetAssignment(
+        tasks,
+        toAssignment
+      );
+
+    if (duplicateTask) {
+      hideLoading();
+
+      alert(
+        "Move blocked. " +
+        duplicateTask.area +
+        " / " +
+        duplicateTask.task +
+        " / " +
+        duplicateTask.schedule +
+        " already exists in " +
+        toAssignment +
+        "."
+      );
+
+      return;
+    }
 
     for (let i = 0; i < tasks.length; i++) {
       await updateDoc(
