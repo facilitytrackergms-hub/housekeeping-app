@@ -538,6 +538,51 @@
 
   </div>
 
+  <!-- =========================
+       10B - ADMIN VIEW 10 - REASSIGNMENT
+  ========================== -->
+
+  <div id="adminReassignmentView" class="hidden">
+
+    <div class="view-center">
+      <div class="view-tag">ADMIN VIEW 10</div>
+    </div>
+
+    <h2>Reassignment</h2>
+
+    <label>From</label>
+    <select id="reassignFrom">
+      <option>HK Schedule 1</option>
+      <option>HK Schedule 2</option>
+      <option>Laundry</option>
+    </select>
+
+    <label>To</label>
+    <select id="reassignTo">
+      <option value="">Select assignment</option>
+      <option>HK Schedule 1</option>
+      <option>HK Schedule 2</option>
+      <option>Laundry</option>
+    </select>
+
+    <label>Category</label>
+    <select id="reassignCategory">
+      <option>Common Area</option>
+      <option>Weekly Room</option>
+      <option>Daily Room</option>
+      <option>Dehumidifier</option>
+      <option>Weekly Laundry</option>
+      <option>Daily Laundry Check</option>
+    </select>
+
+    <button class="green" onclick="loadReassignmentAreas()">LOAD</button>
+
+    <div id="reassignmentAreaList" class="rooms-grid"></div>
+
+    <button class="back" onclick="backToAdminCategories()">BACK</button>
+
+  </div>
+
 </div>
 
 <div id="loadingScreen" class="loading-bg hidden">
@@ -668,9 +713,14 @@
       "adminAreaView",
       "adminEditView",
       "adminEmployeesView",
-      "adminEmployeeEditView"
+      "adminEmployeeEditView",
+      "adminReassignmentView"
     ].forEach(function(id) {
-      document.getElementById(id).classList.add("hidden");
+      const el = document.getElementById(id);
+
+      if (el) {
+        el.classList.add("hidden");
+      }
     });
 
     updateAssignmentTitles();
@@ -846,8 +896,8 @@
 
     const buttons =
       currentAssignment === "Laundry"
-        ? ["Weekly Laundry", "Daily Laundry Check", "Employees", "Logout"]
-        : ["Common Area", "Weekly Room", "Daily Room", "Dehumidifier", "Employees", "Logout"];
+        ? ["Weekly Laundry", "Daily Laundry Check", "Reassignment", "Employees", "Logout"]
+        : ["Common Area", "Weekly Room", "Daily Room", "Dehumidifier", "Reassignment", "Employees", "Logout"];
 
     buttons.forEach(function(item) {
       const btn = document.createElement("button");
@@ -862,6 +912,8 @@
 
         if (item === "Employees") {
           btn.onclick = openEmployees;
+        } else if (item === "Reassignment") {
+          btn.onclick = openReassignment;
         } else {
           btn.onclick = function() {
             selectedCategory = item;
@@ -2063,6 +2115,142 @@
   }
 
   /* =========================
+     48B - REASSIGNMENT
+  ========================== */
+
+  async function openReassignment() {
+    document.getElementById("reassignFrom").value = currentAssignment;
+    document.getElementById("reassignTo").value = "";
+    document.getElementById("reassignCategory").value = "Common Area";
+    document.getElementById("reassignmentAreaList").innerHTML = "";
+
+    showAdminView("adminReassignmentView");
+  }
+
+  async function loadReassignmentAreas() {
+    const fromAssignment = document.getElementById("reassignFrom").value;
+    const category = document.getElementById("reassignCategory").value;
+
+    if (!fromAssignment || !category) {
+      alert("Select from and category.");
+      return;
+    }
+
+    showLoading();
+
+    const taskQuery = query(
+      collection(db, "tasks"),
+      where("assignment", "==", fromAssignment),
+      where("category", "==", category)
+    );
+
+    const snap = await getDocs(taskQuery);
+
+    const tasks =
+      snap.docs.map(function(taskDoc) {
+        return {
+          id: taskDoc.id,
+          ...taskDoc.data()
+        };
+      });
+
+    const areas =
+      [...new Set(tasks.map(function(task) {
+        return task.area;
+      }).filter(function(area) {
+        return String(area || "").trim() !== "";
+      }))];
+
+    const box = document.getElementById("reassignmentAreaList");
+    box.innerHTML = "";
+
+    areas.forEach(function(area) {
+      const count =
+        tasks.filter(function(task) {
+          return task.area === area;
+        }).length;
+
+      const btn = document.createElement("button");
+
+      btn.className = "yellow";
+
+      btn.innerHTML =
+        '<div class="room-number">' + escapeHtml(area) + '</div>' +
+        '<div class="room-counter">' + count + ' TASKS</div>';
+
+      btn.onclick = function() {
+        moveReassignmentArea(area);
+      };
+
+      box.appendChild(btn);
+    });
+
+    if (box.innerHTML === "") {
+      const empty = document.createElement("h3");
+      empty.innerText = "No areas found.";
+      box.appendChild(empty);
+    }
+
+    hideLoading();
+  }
+
+  async function moveReassignmentArea(area) {
+    const fromAssignment = document.getElementById("reassignFrom").value;
+    const toAssignment = document.getElementById("reassignTo").value;
+    const category = document.getElementById("reassignCategory").value;
+
+    if (!fromAssignment || !toAssignment || !category) {
+      alert("Select from, to, and category.");
+      return;
+    }
+
+    if (fromAssignment === toAssignment) {
+      alert("Choose different assignments.");
+      return;
+    }
+
+    const ok =
+      confirm(
+        "Move " +
+        area +
+        " to " +
+        toAssignment +
+        "?"
+      );
+
+    if (!ok) return;
+
+    showLoading();
+
+    const taskQuery = query(
+      collection(db, "tasks"),
+      where("assignment", "==", fromAssignment),
+      where("category", "==", category),
+      where("area", "==", area)
+    );
+
+    const snap = await getDocs(taskQuery);
+
+    for (let i = 0; i < snap.docs.length; i++) {
+      await updateDoc(
+        doc(db, "tasks", snap.docs[i].id),
+        {
+          assignment: toAssignment,
+          updatedAt: serverTimestamp()
+        }
+      );
+    }
+
+    await loadAdminTasks();
+
+    hideLoading();
+
+    alert("Moved.");
+
+    await loadReassignmentAreas();
+  }
+
+  /* =========================
      49 - LOGOUT
   ========================== */
 
@@ -2130,6 +2318,14 @@
   window.deleteCheckedTasksFromAllAreas = deleteCheckedTasksFromAllAreas;
   window.addCheckedTasksToSingleArea = addCheckedTasksToSingleArea;
   window.deleteCheckedTasksFromSingleArea = deleteCheckedTasksFromSingleArea;
+
+  /* =========================
+     53B - WINDOW FUNCTIONS - REASSIGNMENT
+  ========================== */
+
+  window.openReassignment = openReassignment;
+  window.loadReassignmentAreas = loadReassignmentAreas;
+  window.moveReassignmentArea = moveReassignmentArea;
 
   /* =========================
      54 - WINDOW FUNCTIONS - EMPLOYEES
