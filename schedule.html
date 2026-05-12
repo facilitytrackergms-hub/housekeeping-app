@@ -797,21 +797,46 @@
 
     loadCoverScheduleDropdown(areaSnap.docs, housekeepingMode);
 
-    const allAssignmentTasks =
-      areaSnap.docs.map(function(taskDoc) {
+    const allAreaItems =
+      areaSnap.docs.map(function(areaDoc) {
         return {
-          id: taskDoc.id,
-          ...taskDoc.data()
+          id: areaDoc.id,
+          ...areaDoc.data()
         };
       });
 
-    allTasksForDay =
-      allAssignmentTasks.filter(function(item) {
+    const taskSnap = await getDocs(
+      query(collection(db, "tasks_new"))
+    );
+
+    const tasksByWorkId = {};
+
+    taskSnap.docs.forEach(function(taskDoc) {
+      const taskData = taskDoc.data();
+      const workId = String(taskData.workId || "").trim();
+
+      if (!workId) return;
+      if (taskData.active === false || taskData.active === "No") return;
+
+      if (!tasksByWorkId[workId]) {
+        tasksByWorkId[workId] = [];
+      }
+
+      tasksByWorkId[workId].push({
+        id: taskDoc.id,
+        task: taskData.taskName || taskData.task || "",
+        active: taskData.active
+      });
+    });
+
+    allTasksForDay = [];
+
+    allAreaItems.forEach(function(item) {
 
         const activeValue = item.active;
 
         if (activeValue === false || activeValue === "No") {
-          return false;
+          return;
         }
 
         const areaSchedule =
@@ -824,7 +849,7 @@
           areaSchedule === currentWorkDayName.toLowerCase();
 
         if (!correctDay) {
-          return false;
+          return;
         }
 
         let assignmentField = "";
@@ -837,22 +862,29 @@
             item.twoHousekeeperSchedule || "";
         }
 
-        return (
-          String(assignmentField).trim() ===
+        if (
+          String(assignmentField).trim() !==
           String(currentAssignment).trim()
-        );
-      }).map(function(item) {
+        ) {
+          return;
+        }
 
-        return {
-          area: item.areaName,
-          task: "",
-          category: item.category,
-          schedule: item.scheduleDay,
-          assignment: currentAssignment,
-          active: item.active,
-          type: item.type,
-          workId: item.workId
-        };
+        const workId = String(item.workId || "").trim();
+        const subTasks = tasksByWorkId[workId] || [];
+
+        subTasks.forEach(function(subTask) {
+          allTasksForDay.push({
+            area: item.areaName,
+            task: subTask.task,
+            taskDocId: subTask.id,
+            category: item.category,
+            schedule: item.scheduleDay,
+            assignment: currentAssignment,
+            active: item.active,
+            type: item.type,
+            workId: workId
+          });
+        });
 
       });
 
@@ -1423,7 +1455,19 @@
         return item.category === selectedCategory;
       });
 
-    if (categoryAreas.length === 0) {
+    const uniqueCategoryAreas = [];
+    const usedWorkIds = {};
+
+    categoryAreas.forEach(function(item) {
+      const key = String(item.workId || item.area || "");
+
+      if (!key || usedWorkIds[key]) return;
+
+      usedWorkIds[key] = true;
+      uniqueCategoryAreas.push(item);
+    });
+
+    if (uniqueCategoryAreas.length === 0) {
       alert("No areas in this category.");
       return;
     }
@@ -1440,8 +1484,8 @@
 
     const saveItems = [];
 
-    for (let i = 0; i < categoryAreas.length; i++) {
-      const areaItem = categoryAreas[i];
+    for (let i = 0; i < uniqueCategoryAreas.length; i++) {
+      const areaItem = uniqueCategoryAreas[i];
 
       const taskQuery = query(
         collection(db, "tasks_new"),
