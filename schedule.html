@@ -437,12 +437,13 @@
       <div class="view-tag" id="areaViewTag">VIEW 3</div>
     </div>
 
-    <div id="areaBigDatePickerBox" class="top-date-box hidden">
+    <div id="areaBigDatePickerBox" class="top-date-box">
       <h3 id="areaDateTitle"></h3>
 
       <input
         type="date"
         id="bigDatePicker"
+        class="hidden"
         onchange="changeWorkDateFromBigPicker()"
       >
     </div>
@@ -1034,14 +1035,16 @@
 
   function setAreaDatePickerVisibility(category) {
     const pickerBox = document.getElementById("areaBigDatePickerBox");
+    const picker = document.getElementById("bigDatePicker");
     const dateTitle = document.getElementById("areaDateTitle");
 
+    pickerBox.classList.remove("hidden");
+    dateTitle.classList.remove("hidden");
+
     if (category === "Weekly Room" || category === "Weekly Laundry") {
-      pickerBox.classList.remove("hidden");
-      dateTitle.classList.remove("hidden");
+      picker.classList.remove("hidden");
     } else {
-      pickerBox.classList.add("hidden");
-      dateTitle.classList.add("hidden");
+      picker.classList.add("hidden");
     }
   }
 
@@ -1205,7 +1208,31 @@
     showView(4);
   }
 
+  function currentAreaAlreadySaved() {
+    if (!currentTaskList || currentTaskList.length === 0) return false;
+
+    const areaProgress = progressData[currentArea] || {};
+
+    return currentTaskList.every(function(task) {
+      return areaProgress[task.task] === "Completed";
+    });
+  }
+
+  async function confirmResaveIfNeeded() {
+    if (!currentAreaAlreadySaved()) {
+      return true;
+    }
+
+    return await showCustomModal("Already saved", "Update?", "YES", "NO", true, false);
+  }
+
   async function saveCurrentAreaComplete() {
+    const canSave = await confirmResaveIfNeeded();
+
+    if (!canSave) {
+      return;
+    }
+
     showLoading();
 
     const saveItems = [];
@@ -1355,6 +1382,12 @@
   }
 
   async function saveTaskChecklist() {
+    const canSave = await confirmResaveIfNeeded();
+
+    if (!canSave) {
+      return;
+    }
+
     showLoading();
 
     const saveItems = [];
