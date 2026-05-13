@@ -6,24 +6,43 @@
   <style>
     * { box-sizing: border-box; }
     body { margin: 0; padding: 20px; font-family: Arial, sans-serif; background: #eef2f7; }
-    .header { text-align: center; margin-bottom: 30px; }
-    h2 { color: #1847d1; margin-bottom: 5px; font-size: 28px; }
-    .tag { background: black; color: white; padding: 5px 12px; border-radius: 8px; font-size: 14px; }
-    .card { background: white; border-radius: 20px; padding: 25px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
-    .info { flex-grow: 1; }
-    .area-name { font-size: 20px; font-weight: bold; color: #333; }
-    .cat-name { font-size: 14px; color: #666; text-transform: uppercase; }
-    .start-btn { background: #2e5cff; color: white; border: none; border-radius: 12px; padding: 15px 25px; font-weight: bold; cursor: pointer; }
-    .logout { display: block; margin: 40px auto; color: #666; border: none; background: none; text-decoration: underline; }
+    .header { text-align: center; margin-bottom: 20px; background: #1847d1; color: white; padding: 20px; border-radius: 0 0 20px 20px; margin: -20px -20px 20px -20px; }
+    .tag { background: rgba(255,255,255,0.2); color: white; padding: 5px 12px; border-radius: 8px; font-size: 14px; }
+    
+    /* Category Buttons (View 2) */
+    .cat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 20px; }
+    .cat-btn { background: white; border-radius: 15px; padding: 30px 10px; text-align: center; font-weight: bold; color: #1847d1; border: 2px solid transparent; box-shadow: 0 4px 10px rgba(0,0,0,0.05); cursor: pointer; }
+    .cat-btn:active { background: #2e5cff; color: white; }
+
+    /* Area List (View 3) */
+    .card { background: white; border-radius: 15px; padding: 20px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; border-left: 10px solid #ccc; }
+    .status-red { border-left-color: #d9534f; }
+    .status-yellow { border-left-color: #f0ad4e; }
+    .status-green { border-left-color: #5cb85c; }
+    
+    .start-btn { background: #2e5cff; color: white; border: none; border-radius: 10px; padding: 12px 20px; font-weight: bold; }
+    .back-btn { background: #666; color: white; border: none; width: 100%; padding: 15px; border-radius: 10px; margin-top: 20px; }
   </style>
 </head>
 <body>
+
   <div class="header">
-    <h2 id="nameDisplay">Loading...</h2>
+    <h2 id="nameDisplay">Hi, ---</h2>
     <span id="assignDisplay" class="tag">---</span>
   </div>
-  <div id="list"></div>
-  <button class="logout" onclick="sessionStorage.clear(); window.location.href='index.html'">Logout</button>
+
+  <div id="view-categories">
+    <div class="cat-grid" id="catGrid">
+      </div>
+  </div>
+
+  <div id="view-areas" style="display:none;">
+    <h3 id="currentCat" style="color:#1847d1;">Category</h3>
+    <div id="areaList"></div>
+    <button class="back-btn" onclick="showCategories()">BACK TO CATEGORIES</button>
+  </div>
+
+  <button class="logout" style="display:block; margin:40px auto; border:none; background:none; text-decoration:underline; color:#666;" onclick="sessionStorage.clear(); window.location.href='index.html'">Logout</button>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
@@ -47,52 +66,67 @@
     document.getElementById("nameDisplay").innerText = `Hi, ${user.firstName}`;
     document.getElementById("assignDisplay").innerText = user.assignment;
 
-    async function loadSchedule() {
-      // 1. Get Global Mode
+    const HK_CATS = ["Common Area", "Weekly Room", "Daily Room", "Dehumidifier"];
+    const LAUNDRY_CATS = ["Weekly Laundry", "Daily Laundry Check"];
+
+    function init() {
+      const grid = document.getElementById("catGrid");
+      const cats = (user.assignment === "Laundry") ? LAUNDRY_CATS : HK_CATS;
+      
+      grid.innerHTML = cats.map(cat => `
+        <div class="cat-btn" onclick="loadAreas('${cat}')">${cat}</div>
+      `).join('');
+    }
+
+    window.loadAreas = async function(category) {
+      document.getElementById("view-categories").style.display = "none";
+      document.getElementById("view-areas").style.display = "block";
+      document.getElementById("currentCat").innerText = category;
+      
+      const areaList = document.getElementById("areaList");
+      areaList.innerHTML = "Loading areas...";
+
+      // 1. Get Mode from Settings
       const modeSnap = await getDoc(doc(db, "settings", "housekeepingMode"));
       const mode = modeSnap.exists() ? modeSnap.data().settingValue : "two";
+      const field = (mode === "three") ? "threeHousekeeperSchedule" : "twoHousekeeperSchedule";
 
-      // 2. Identify correct field to filter by (twoHousekeeperSchedule vs threeHousekeeperSchedule)
-      const scheduleField = (mode === "three") ? "threeHousekeeperSchedule" : "twoHousekeeperSchedule";
-      
-      // 3. Get Today's Day
+      // 2. Get Today's Day
       const day = new Intl.DateTimeFormat('en-US', { weekday: 'long' }).format(new Date());
 
-      // 4. Query the 'areas' collection based on user assignment and mode
+      // 3. Query Areas
       const q = query(
-        collection(db, "areas"), 
-        where(scheduleField, "==", user.assignment),
+        collection(db, "areas"),
+        where(field, "==", user.assignment),
+        where("category", "==", category),
         where("scheduleDay", "in", ["Daily", day])
       );
 
       const snap = await getDocs(q);
-      const listDiv = document.getElementById("list");
-      listDiv.innerHTML = "";
-
-      if (snap.empty) {
-        listDiv.innerHTML = `<p style="text-align:center;">No tasks scheduled for ${day}.</p>`;
-        return;
-      }
+      areaList.innerHTML = snap.empty ? "No areas found." : "";
 
       snap.forEach(d => {
         const data = d.data();
-        listDiv.innerHTML += `
-          <div class="card">
-            <div class="info">
-              <div class="cat-name">${data.category}</div>
-              <div class="area-name">${data.areaName}</div>
-            </div>
+        // Progress color logic (Defaulting to red until taskProgress is checked)
+        areaList.innerHTML += `
+          <div class="card status-red">
+            <div class="area-name">${data.areaName}</div>
             <button class="start-btn" onclick="openTask('${data.workId}', '${data.areaName}')">START</button>
           </div>`;
       });
     }
 
-    window.openTask = function(workId, areaName) {
-      sessionStorage.setItem("selectedWork", JSON.stringify({ workId: workId, areaName: areaName }));
-      window.location.href = "task-details.html";
-    };
+    window.showCategories = () => {
+      document.getElementById("view-categories").style.display = "block";
+      document.getElementById("view-areas").style.display = "none";
+    }
 
-    loadSchedule();
+    window.openTask = (workId, areaName) => {
+      sessionStorage.setItem("selectedWork", JSON.stringify({ workId, areaName }));
+      window.location.href = "task-details.html";
+    }
+
+    init();
   </script>
 </body>
 </html>
