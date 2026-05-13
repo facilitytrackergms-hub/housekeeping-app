@@ -4,39 +4,31 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Facility Tracker</title>
   <style>
+    /* 01 - GLOBAL STYLE */
     * { box-sizing: border-box; }
-    body { margin: 0; font-family: Arial, sans-serif; background: #f2f2f2; padding: 6px; }
-    .card { width: 100%; max-width: 430px; background: white; border-radius: 18px; padding: 12px; box-shadow: 0 4px 18px rgba(0,0,0,0.18); margin: auto; position: relative; }
+    body { margin: 0; font-family: Arial, sans-serif; background: #f2f2f2; padding: 10px; }
+    .card { width: 100%; max-width: 430px; background: white; border-radius: 20px; padding: 15px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); margin: auto; position: relative; }
     
-    .view-tag { display: inline-block; background: black; color: white; padding: 4px 10px; border-radius: 8px; font-size: 12px; margin-bottom: 6px; }
+    .view-tag { display: inline-block; background: black; color: white; padding: 4px 10px; border-radius: 8px; font-size: 12px; margin-bottom: 10px; }
     h2, h3 { text-align: center; margin: 5px 0; }
     
-    button { width: 100%; border: none; border-radius: 12px; background: #1976d2; color: white; font-size: 17px; font-weight: bold; padding: 14px; margin: 6px 0; cursor: pointer; }
+    button { width: 100%; border: none; border-radius: 15px; background: #1976d2; color: white; font-size: 18px; font-weight: bold; padding: 16px; margin: 8px 0; cursor: pointer; transition: 0.2s; }
     .red { background: #c62828 !important; }
     .back { background: #555 !important; }
     .hidden { display: none !important; }
 
-    /* Header UI */
-    .top-box { border: 2px solid #e0e0e0; border-radius: 18px; padding: 12px; margin-bottom: 10px; background: #fafafa; text-align: center; }
-    .date-row { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 10px; }
-    .date-btn { width: auto; padding: 8px 12px; background: #555; font-size: 14px; }
+    .top-box { border: 2px solid #e0e0e0; border-radius: 20px; padding: 15px; margin-bottom: 15px; background: #fafafa; text-align: center; }
+    .date-row { display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 10px; }
+    .date-btn { width: auto; padding: 10px 15px; background: #555; font-size: 16px; }
     
-    /* Category & Area Grids */
-    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-    #categoryButtons button { min-height: 100px; font-size: 16px; }
-    #areaButtons button { min-height: 70px; font-size: 18px; }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    #categoryButtons button { min-height: 110px; font-size: 17px; line-height: 1.2; }
+    #areaButtons button { min-height: 80px; font-size: 20px; }
 
-    /* Loading Spinner */
-    .loading-bg { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.7); display: flex; justify-content: center; align-items: center; z-index: 9999; }
-    .spinner { width: 50px; height: 50px; border: 5px solid #ddd; border-top: 5px solid #1976d2; border-radius: 50%; animation: spin 0.8s linear infinite; }
-    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
-
-    select { width: 100%; padding: 12px; border-radius: 10px; border: 2px solid #1976d2; margin-top: 5px; font-size: 16px; }
+    select { width: 100%; padding: 15px; border-radius: 12px; border: 2px solid #1976d2; margin-top: 10px; font-size: 16px; }
   </style>
 </head>
 <body>
-
-<div id="loadingScreen" class="loading-bg hidden"><div class="spinner"></div></div>
 
 <div class="card">
   <div id="view2">
@@ -45,27 +37,27 @@
     <div class="top-box">
       <div class="date-row">
         <button class="date-btn" onclick="adjustDate(-1)">◀</button>
-        <h3 id="dateDisplay">Today</h3>
+        <h3 id="dateDisplay" style="min-width: 140px;">Today</h3>
         <button class="date-btn" onclick="adjustDate(1)">▶</button>
       </div>
       <h2 id="empName">Hi, ---</h2>
-      <h3 id="assignDisplay" style="color:#1976d2;">---</h3>
+      <h3 id="assignDisplay" style="color:#1976d2; font-weight: bold;">---</h3>
       
-      <button id="coverBtn" style="font-size:12px; padding:8px; background:#666;" onclick="showCover()">COVER ANOTHER ASSIGNMENT</button>
+      <button id="coverBtn" style="font-size:13px; padding:10px; background:#666;" onclick="toggleCover()">COVER ANOTHER ASSIGNMENT</button>
       <div id="coverBox" class="hidden">
         <select id="assignSelect" onchange="updateAssignment(this.value)"></select>
       </div>
     </div>
 
     <div id="categoryButtons" class="grid-2"></div>
-    <button class="back" onclick="location.href='index.html'" style="margin-top:20px;">LOGOUT</button>
+    <button class="back" onclick="logout()" style="margin-top:20px;">LOGOUT</button>
   </div>
 
   <div id="view3" class="hidden">
     <div class="view-tag">V3 schedule.html</div>
-    <h2 id="catTitle" style="color:#1976d2;">Category</h2>
+    <h2 id="catTitle" style="color:#1976d2; margin-bottom: 15px;">Category</h2>
     <div id="areaButtons" class="grid-2"></div>
-    <button class="back" onclick="showV2()" style="margin-top:20px;">BACK</button>
+    <button class="back" onclick="showV2()" style="margin-top:20px; padding: 18px;">BACK TO CATEGORIES</button>
   </div>
 </div>
 
@@ -86,87 +78,72 @@
   const db = getFirestore(app);
 
   const session = JSON.parse(sessionStorage.getItem("currentEmployee"));
-  if(!session) location.href = "index.html";
+  if(!session) { window.location.href = "index.html"; }
 
   let currentAssign = session.assignment;
   let workDate = new Date();
-  let currentWorkDayName = "";
-  let allAreasForDay = [];
+  let matchedAreas = [];
 
-  // Helper functions for UI
-  const showLoading = () => document.getElementById("loadingScreen").classList.remove("hidden");
-  const hideLoading = () => document.getElementById("loadingScreen").classList.add("hidden");
+  // 1. BULLETPROOF DATA LOAD
+  async function loadData() {
+    const dayName = workDate.toLocaleDateString('en-US', { weekday: 'long' });
+    const today = dayName.toLowerCase().trim();
+    const myAssign = currentAssign.toLowerCase().trim();
 
-  function updateDateDisplay() {
-    const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-    currentWorkDayName = days[workDate.getDay()];
-    document.getElementById("dateDisplay").innerText = currentWorkDayName + ", " + workDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-  }
-
-  /* 01 - CORE DATA LOAD & FILTER */
-  async function loadAssignmentTasks() {
-    showLoading();
-    updateDateDisplay();
-    
-    document.getElementById("empName").innerText = "Hi, " + session.firstName;
+    document.getElementById("dateDisplay").innerText = dayName;
+    document.getElementById("empName").innerText = "Hi, " + (session.firstName || "User");
     document.getElementById("assignDisplay").innerText = currentAssign;
 
-    // A. Get the Mode (2 or 3) from settings
-    const modeDoc = await getDoc(doc(db, "settings", "housekeepingMode"));
-    const modeData = modeDoc.exists() ? modeDoc.data() : {};
-    const mode = (modeData.settingValue || modeData.value || "two").toLowerCase();
+    // A. Get Mode
+    const modeSnap = await getDoc(doc(db, "settings", "housekeepingMode"));
+    const modeData = modeSnap.exists() ? modeSnap.data() : {};
+    const mode = (modeData.settingValue || modeData.value || "two").toLowerCase().trim();
     const field = (mode === "three") ? "threeHousekeeperSchedule" : "twoHousekeeperSchedule";
 
-    // B. Fetch Areas
-    const areaSnap = await getDocs(collection(db, "areas"));
-    allAreasForDay = [];
-    const schedules = new Set();
+    // B. Get Areas
+    const snap = await getDocs(collection(db, "areas"));
+    matchedAreas = [];
+    const allAssignments = new Set();
 
-    areaSnap.forEach(aDoc => {
-      const area = aDoc.data();
-      const areaDay = String(area.scheduleDay || "").toLowerCase();
-      const today = currentWorkDayName.toLowerCase();
+    snap.forEach(d => {
+      const data = d.data();
+      const dbAssign = String(data[field] || "").toLowerCase().trim();
+      const dbDay = String(data.scheduleDay || "").toLowerCase().trim();
       
-      const sched = area[field];
-      if(sched) schedules.add(sched);
+      if(dbAssign) allAssignments.add(String(data[field]).trim());
 
-      // FILTER LOGIC: Match Assignment + Day (Daily or Today)
-      const isCorrectDay = (areaDay === "daily" || areaDay === today);
-      const isCorrectAssign = String(sched).trim() === String(currentAssign).trim();
-
-      if (isCorrectDay && isCorrectAssign) {
-        allAreasForDay.push({ id: aDoc.id, ...area });
+      // THE FILTER
+      if(dbAssign === myAssign && (dbDay === "daily" || dbDay === today)) {
+        matchedAreas.push(data);
       }
     });
 
-    // Populate Cover Dropdown
+    // C. Populate Dropdown
     const select = document.getElementById("assignSelect");
     select.innerHTML = '<option value="">Select Schedule...</option>' + 
-      Array.from(schedules).map(s => `<option value="${s}">${s}</option>`).join('');
+      Array.from(allAssignments).sort().map(s => `<option value="${s}">${s}</option>`).join('');
 
     drawCategories();
-    hideLoading();
   }
 
-  /* 02 - DRAW CATEGORIES */
+  // 2. VIEW DRAWING (Counting Areas correctly)
   function drawCategories() {
     const box = document.getElementById("categoryButtons");
     box.innerHTML = "";
     const cats = ["Common Area", "Weekly Room", "Daily Room", "Dehumidifier"];
 
     cats.forEach(cat => {
-      const count = allAreasForDay.filter(a => a.category === cat).length;
+      const catLower = cat.toLowerCase().trim();
+      const count = matchedAreas.filter(a => String(a.category || "").toLowerCase().trim() === catLower).length;
+      
       const btn = document.createElement("button");
       btn.className = (count > 0) ? "red" : "back";
       btn.innerText = `${cat} (${count})`;
-      btn.onclick = () => {
-        if(count > 0) showV3(cat);
-      };
+      btn.onclick = () => { if(count > 0) showV3(cat); };
       box.appendChild(btn);
     });
   }
 
-  /* 03 - DRAW AREA BUTTONS (VIEW 3) */
   function showV3(cat) {
     document.getElementById("view2").classList.add("hidden");
     document.getElementById("view3").classList.remove("hidden");
@@ -174,35 +151,32 @@
 
     const box = document.getElementById("areaButtons");
     box.innerHTML = "";
-    const filtered = allAreasForDay.filter(a => a.category === cat);
+    const catLower = cat.toLowerCase().trim();
+    const filtered = matchedAreas.filter(a => String(a.category || "").toLowerCase().trim() === catLower);
 
     filtered.forEach(area => {
       const btn = document.createElement("button");
       btn.className = "red";
-      btn.innerHTML = `<div class="room-number">${area.areaName}</div>`;
+      btn.innerHTML = `<div style="font-size: 22px;">${area.areaName}</div>`;
       btn.onclick = () => {
-        sessionStorage.setItem("selectedWork", JSON.stringify({ 
-          workId: area.workId, 
-          areaName: area.areaName 
-        }));
-        location.href = "tasks.html";
+        sessionStorage.setItem("selectedWork", JSON.stringify({ workId: area.workId, areaName: area.areaName }));
+        window.location.href = "tasks.html";
       };
       box.appendChild(btn);
     });
   }
 
-  // UTILS
   window.adjustDate = (n) => {
     workDate.setDate(workDate.getDate() + n);
-    loadAssignmentTasks();
+    loadData();
   };
 
-  window.showCover = () => document.getElementById("coverBox").classList.toggle("hidden");
+  window.toggleCover = () => document.getElementById("coverBox").classList.toggle("hidden");
 
   window.updateAssignment = (val) => {
     if(!val) return;
     currentAssign = val;
-    loadAssignmentTasks();
+    loadData();
     document.getElementById("coverBox").classList.add("hidden");
   };
 
@@ -211,8 +185,9 @@
     document.getElementById("view3").classList.add("hidden");
   };
 
-  // Initial Load
-  loadAssignmentTasks();
+  window.logout = () => { sessionStorage.clear(); window.location.href = "index.html"; };
+
+  loadData();
 </script>
 </body>
 </html>
