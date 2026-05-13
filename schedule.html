@@ -1,97 +1,50 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>GCR Schedule</title>
-  <style>
-    * { box-sizing: border-box; }
-    body { margin: 0; padding: 20px; font-family: Arial, sans-serif; background: #eef2f7; }
+/* 01 - TOGGLE DROPDOWN & FETCH EMPLOYEES */
+
+window.toggleCoverDropdown = async function() {
+  const dd = document.getElementById("coverDropdown");
+  const select = document.getElementById("assignmentSelect");
+
+  if (dd.style.display === "none") {
+    dd.style.display = "block";
     
-    /* Header Section */
-    .header { 
-      text-align: center; 
-      margin-bottom: 20px; 
-      background: #1847d1; 
-      color: white; 
-      padding: 25px 20px; 
-      border-radius: 0 0 25px 25px; 
-      margin: -20px -20px 20px -20px; 
-      position: relative; 
+    // Fetch employee names from Firebase to fill the options
+    try {
+      const q = query(collection(db, "employees"));
+      const snap = await getDocs(q);
+      
+      // Clear old options and add the default
+      select.innerHTML = '<option value="">Select Crew Member...</option>';
+      
+      snap.forEach(doc => {
+        const emp = doc.data();
+        // Only show people who have an assignment set up
+        if (emp.assignment) {
+          const opt = document.createElement("option");
+          opt.value = emp.assignment;
+          opt.innerText = `${emp.firstName} (${emp.assignment})`;
+          select.appendChild(opt);
+        }
+      });
+    } catch (e) {
+      console.error("Error loading employees:", e);
     }
-    
-    /* THE LABEL: V# filename */
-    .view-label { 
-      position: absolute; 
-      top: 10px; 
-      right: 15px; 
-      font-weight: bold; 
-      color: rgba(255,255,255,0.6); 
-      font-size: 11px; 
-    }
-    
-    .tag { background: rgba(255,255,255,0.2); color: white; padding: 5px 12px; border-radius: 8px; font-size: 14px; margin-bottom: 10px; display: inline-block; }
-    
-    /* Cover Button Style */
-    .cover-btn {
-      background: #ffffff;
-      color: #1847d1;
-      border: none;
-      border-radius: 8px;
-      padding: 8px 15px;
-      font-weight: bold;
-      font-size: 12px;
-      margin-top: 10px;
-      cursor: pointer;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
-    }
+  } else {
+    dd.style.display = "none";
+  }
+}
 
-    .cat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 20px; }
-    .cat-btn { background: white; border-radius: 15px; padding: 30px 10px; text-align: center; font-weight: bold; color: #1847d1; box-shadow: 0 4px 10px rgba(0,0,0,0.05); cursor: pointer; }
-  </style>
-</head>
-<body>
+/* 02 - CHANGE ASSIGNMENT (TRIGGER) */
 
-  <div class="header">
-    <div id="vNum" class="view-label">V2 schedule.html</div>
-    <h2 id="nameDisplay" style="margin: 0 0 10px 0;">Hi, ---</h2>
-    <span id="assignDisplay" class="tag">---</span>
-    <br>
-    <button class="cover-btn" onclick="toggleCoverDropdown()">COVER ANOTHER ASSIGNMENT</button>
-    
-    <div id="coverDropdown" style="display:none; margin-top:10px;">
-       <select id="assignmentSelect" onchange="changeAssignment(this.value)" style="padding:10px; border-radius:8px; width:80%;">
-          <option value="">Select Schedule...</option>
-          <option value="HK Schedule 1">HK Schedule 1</option>
-          <option value="HK Schedule 2">HK Schedule 2</option>
-          <option value="HK Schedule 3">HK Schedule 3</option>
-       </select>
-    </div>
-  </div>
-
-  <div id="view-categories">
-    <div class="cat-grid" id="catGrid"></div>
-  </div>
-
-  <script type="module">
-    // ... (Firebase initialization remains the same)
-
-    const user = JSON.parse(sessionStorage.getItem("currentEmployee"));
-    document.getElementById("nameDisplay").innerText = `Hi, ${user.firstName}`;
-    document.getElementById("assignDisplay").innerText = user.assignment;
-
-    window.toggleCoverDropdown = function() {
-      const dd = document.getElementById("coverDropdown");
-      dd.style.display = dd.style.display === "none" ? "block" : "none";
-    }
-
-    window.changeAssignment = function(newVal) {
-      if(!newVal) return;
-      user.assignment = newVal;
-      sessionStorage.setItem("currentEmployee", JSON.stringify(user));
-      location.reload(); // Refreshes to show the new schedule data
-    }
-
-    // Logic to build categories goes here...
-  </script>
-</body>
-</html>
+window.changeAssignment = function(newVal) {
+  if (!newVal) return;
+  
+  // Update the session locally so V2 and V3 refresh with the new data
+  const user = JSON.parse(sessionStorage.getItem("currentEmployee"));
+  user.assignment = newVal;
+  
+  sessionStorage.setItem("currentEmployee", JSON.stringify(user));
+  
+  // Close dropdown and refresh the view
+  document.getElementById("coverDropdown").style.display = "none";
+  location.reload(); 
+}
