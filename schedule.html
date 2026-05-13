@@ -6,7 +6,11 @@
   <style>
     * { box-sizing: border-box; }
     body { margin: 0; padding: 20px; font-family: Arial, sans-serif; background: #eef2f7; }
-    .header { text-align: center; margin-bottom: 20px; background: #1847d1; color: white; padding: 20px; border-radius: 0 0 20px 20px; margin: -20px -20px 20px -20px; }
+    .header { text-align: center; margin-bottom: 20px; background: #1847d1; color: white; padding: 20px; border-radius: 0 0 20px 20px; margin: -20px -20px 20px -20px; position: relative; }
+    
+    /* View Number Label */
+    .view-number { position: absolute; top: 10px; right: 20px; font-weight: bold; color: rgba(255,255,255,0.7); font-size: 14px; }
+    
     .tag { background: rgba(255,255,255,0.2); color: white; padding: 5px 12px; border-radius: 8px; font-size: 14px; }
     
     /* Category Buttons (View 2) */
@@ -27,13 +31,13 @@
 <body>
 
   <div class="header">
+    <div id="viewNumberDisplay" class="view-number">V2</div>
     <h2 id="nameDisplay">Hi, ---</h2>
     <span id="assignDisplay" class="tag">---</span>
   </div>
 
   <div id="view-categories">
-    <div class="cat-grid" id="catGrid">
-      </div>
+    <div class="cat-grid" id="catGrid"></div>
   </div>
 
   <div id="view-areas" style="display:none;">
@@ -63,7 +67,7 @@
     const user = JSON.parse(sessionStorage.getItem("currentEmployee"));
     if (!user) window.location.href = "index.html";
 
-    document.getElementById("nameDisplay").innerText = `Hi, ${user.firstName}`;
+    document.getElementById("nameDisplay").innerText = `Hi, ${user.firstName || 'User'}`;
     document.getElementById("assignDisplay").innerText = user.assignment;
 
     const HK_CATS = ["Common Area", "Weekly Room", "Daily Room", "Dehumidifier"];
@@ -79,6 +83,7 @@
     }
 
     window.loadAreas = async function(category) {
+      document.getElementById("viewNumberDisplay").innerText = "V3"; // Switched to V3
       document.getElementById("view-categories").style.display = "none";
       document.getElementById("view-areas").style.display = "block";
       document.getElementById("currentCat").innerText = category;
@@ -86,15 +91,12 @@
       const areaList = document.getElementById("areaList");
       areaList.innerHTML = "Loading areas...";
 
-      // 1. Get Mode from Settings
       const modeSnap = await getDoc(doc(db, "settings", "housekeepingMode"));
       const mode = modeSnap.exists() ? modeSnap.data().settingValue : "two";
       const field = (mode === "three") ? "threeHousekeeperSchedule" : "twoHousekeeperSchedule";
 
-      // 2. Get Today's Day
       const day = new Intl.DateTimeFormat('en-US', { weekday: 'long' }).format(new Date());
 
-      // 3. Query Areas
       const q = query(
         collection(db, "areas"),
         where(field, "==", user.assignment),
@@ -107,7 +109,6 @@
 
       snap.forEach(d => {
         const data = d.data();
-        // Progress color logic (Defaulting to red until taskProgress is checked)
         areaList.innerHTML += `
           <div class="card status-red">
             <div class="area-name">${data.areaName}</div>
@@ -117,13 +118,15 @@
     }
 
     window.showCategories = () => {
+      document.getElementById("viewNumberDisplay").innerText = "V2"; // Back to V2
       document.getElementById("view-categories").style.display = "block";
       document.getElementById("view-areas").style.display = "none";
     }
 
     window.openTask = (workId, areaName) => {
       sessionStorage.setItem("selectedWork", JSON.stringify({ workId, areaName }));
-      window.location.href = "task-details.html";
+      // This will lead to V4 (Task Details)
+      window.location.href = "tasks.html"; 
     }
 
     init();
