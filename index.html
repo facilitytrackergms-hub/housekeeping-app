@@ -8,8 +8,16 @@
     body { margin: 0; padding: 0; font-family: Arial, sans-serif; background: #eef2f7; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
     .card { width: 92%; max-width: 420px; background: white; border-radius: 30px; padding: 35px 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.12); text-align: center; position: relative; }
     
-    /* View Number Label */
-    .view-number { position: absolute; top: 10px; right: 20px; font-weight: bold; color: #1847d1; font-size: 14px; }
+    /* UPDATED LABEL: View Number + File Name */
+    .view-header-label { 
+      position: absolute; 
+      top: 12px; 
+      right: 20px; 
+      font-weight: bold; 
+      color: #1847d1; 
+      font-size: 13px; 
+      letter-spacing: 0.5px;
+    }
     
     .view-tag { display: inline-block; background: black; color: white; padding: 4px 10px; border-radius: 8px; font-size: 12px; margin-bottom: 14px; }
     h1 { margin: 0 0 35px 0; font-size: 42px; color: #1847d1; }
@@ -21,7 +29,8 @@
 <body>
 
   <div class="card">
-    <div class="view-number">V1</div>
+    <div class="view-header-label">V1 (index.html)</div>
+    
     <div class="view-tag">LOGIN</div>
     <h1>GCR Login</h1>
     <input type="password" inputmode="numeric" id="pin" placeholder="Enter PIN">
@@ -62,27 +71,21 @@
         }
 
         const empDoc = snap.docs[0].data();
-        
-        // Save employee context for use in Mode 2 and Mode 3
-        const employeeData = {
-          pin: pinVal,
-          role: empDoc.role || "employee",
-          assignment: empDoc.assignment || "HK Schedule 1"
-        };
-        
-        sessionStorage.setItem("currentEmployee", JSON.stringify(employeeData));
+        sessionStorage.setItem("currentEmployee", JSON.stringify({
+          firstName: empDoc.firstName || "User",
+          assignment: empDoc.assignment || "HK Schedule 1",
+          role: empDoc.role || "Employee"
+        }));
 
-        // Logic check: Admins go to Admin View, Staff go to Schedule View
-        if (employeeData.role === "Admin") {
+        if (empDoc.role === "Admin") {
           window.location.href = "admin.html";
         } else {
           window.location.href = "schedule.html";
         }
 
       } catch (e) {
-        console.error(e);
         msg.style.display = "block";
-        msg.innerText = "Connection Error";
+        msg.innerText = "Error";
       }
     };
   </script>
