@@ -2,38 +2,32 @@
 <html>
 <head>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>GCR Admin</title>
+  <title>Admin Panel</title>
   <style>
     body { font-family: Arial, sans-serif; background: #eef2f7; padding: 20px; }
     .card { background: white; border-radius: 15px; padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
-    h2 { color: #1847d1; }
-    input, select { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ccc; border-radius: 8px; }
-    button { width: 100%; padding: 15px; background: #2e5cff; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
-    .log-item { border-bottom: 1px solid #eee; padding: 10px 0; font-size: 14px; }
+    .btn { padding: 15px; width: 48%; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; }
+    .active { background: #1c7a32; color: white; }
+    .inactive { background: #ddd; color: #666; }
   </style>
 </head>
 <body>
-  <h1>Admin Control</h1>
-
+  <h1>GCR Admin</h1>
   <div class="card">
-    <h2>Add Employee</h2>
-    <input type="text" id="empName" placeholder="Full Name">
-    <input type="number" id="empPin" placeholder="PIN">
-    <select id="empAssignment">
-      <option value="HK Schedule 1">HK Schedule 1</option>
-      <option value="HK Schedule 2">HK Schedule 2</option>
-    </select>
-    <button onclick="addEmployee()">ADD EMPLOYEE</button>
+    <h2>Housekeeping Mode</h2>
+    <div style="display: flex; justify-content: space-between;">
+      <button id="m2" class="btn" onclick="upd('two')">MODE 2</button>
+      <button id="m3" class="btn" onclick="upd('three')">MODE 3</button>
+    </div>
   </div>
-
   <div class="card">
-    <h2>Recent Activity</h2>
-    <div id="logContainer">Loading logs...</div>
+    <h2>Daily Logs</h2>
+    <div id="logs"></div>
   </div>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getFirestore, collection, addDoc, query, orderBy, limit, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { getFirestore, doc, setDoc, getDoc, collection, query, orderBy, limit, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyBgq_ooBeEN4noEyIxYPLVokgM6RjCO648",
@@ -47,33 +41,29 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    window.addEmployee = async function() {
-      const name = document.getElementById("empName").value;
-      const pin = Number(document.getElementById("empPin").value);
-      const assignment = document.getElementById("empAssignment").value;
-      
-      await addDoc(collection(db, "employees"), {
-        employeeName: name,
-        firstName: name.split(' ')[0],
-        pin: pin,
-        assignment: assignment,
-        role: "employee",
-        active: "Yes"
-      });
-      alert("Employee Added");
+    async function sync() {
+      const snap = await getDoc(doc(db, "settings", "housekeepingMode"));
+      const cur = snap.exists() ? snap.data().value : "two";
+      document.getElementById("m2").className = cur === "two" ? "btn active" : "btn inactive";
+      document.getElementById("m3").className = cur === "three" ? "btn active" : "btn inactive";
+    }
+
+    window.upd = async function(v) {
+      await setDoc(doc(db, "settings", "housekeepingMode"), { value: v });
+      sync();
     };
 
-    async function loadLogs() {
+    async function load() {
       const q = query(collection(db, "logs"), orderBy("timestamp", "desc"), limit(10));
       const snap = await getDocs(q);
-      const container = document.getElementById("logContainer");
-      container.innerHTML = "";
-      snap.forEach(doc => {
-        const data = doc.data();
-        container.innerHTML += `<div class="log-item"><b>${data.employeeName}</b> finished <b>${data.assignment}</b></div>`;
+      const list = document.getElementById("logs");
+      snap.forEach(d => {
+        list.innerHTML += `<p><b>${d.data().employeeName}</b> finished ${d.data().area}</p>`;
       });
     }
-    loadLogs();
+
+    sync();
+    load();
   </script>
 </body>
 </html>
