@@ -4,24 +4,60 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>GCR Schedule</title>
   <style>
+    /* 01 - GLOBAL STYLE */
     * { box-sizing: border-box; }
     body { margin: 0; padding: 20px; font-family: Arial, sans-serif; background: #eef2f7; }
-    .header { text-align: center; margin-bottom: 20px; background: #1847d1; color: white; padding: 20px; border-radius: 0 0 20px 20px; margin: -20px -20px 20px -20px; position: relative; }
     
-    /* View Number Label */
-    .view-number { position: absolute; top: 10px; right: 20px; font-weight: bold; color: rgba(255,255,255,0.7); font-size: 14px; }
+    .header { 
+      text-align: center; 
+      margin-bottom: 20px; 
+      background: #1847d1; 
+      color: white; 
+      padding: 20px; 
+      border-radius: 0 0 20px 20px; 
+      margin: -20px -20px 20px -20px; 
+      position: relative; 
+    }
+    
+    /* THE LABEL: V# filename */
+    .view-label { 
+      position: absolute; 
+      top: 12px; 
+      right: 20px; 
+      font-weight: bold; 
+      color: rgba(255,255,255,0.8); 
+      font-size: 13px; 
+    }
     
     .tag { background: rgba(255,255,255,0.2); color: white; padding: 5px 12px; border-radius: 8px; font-size: 14px; }
     
-    /* Category Buttons (View 2) */
+    /* 02 - CATEGORY GRID (V2) */
     .cat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 20px; }
-    .cat-btn { background: white; border-radius: 15px; padding: 30px 10px; text-align: center; font-weight: bold; color: #1847d1; border: 2px solid transparent; box-shadow: 0 4px 10px rgba(0,0,0,0.05); cursor: pointer; }
+    .cat-btn { 
+      background: white; 
+      border-radius: 15px; 
+      padding: 30px 10px; 
+      text-align: center; 
+      font-weight: bold; 
+      color: #1847d1; 
+      border: 2px solid transparent; 
+      box-shadow: 0 4px 10px rgba(0,0,0,0.05); 
+      cursor: pointer; 
+    }
     .cat-btn:active { background: #2e5cff; color: white; }
 
-    /* Area List (View 3) */
-    .card { background: white; border-radius: 15px; padding: 20px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; border-left: 10px solid #ccc; }
+    /* 03 - AREA LIST (V3) */
+    .card { 
+      background: white; 
+      border-radius: 15px; 
+      padding: 20px; 
+      margin-bottom: 12px; 
+      display: flex; 
+      justify-content: space-between; 
+      align-items: center; 
+      border-left: 10px solid #ccc; 
+    }
     .status-red { border-left-color: #d9534f; }
-    .status-yellow { border-left-color: #f0ad4e; }
     .status-green { border-left-color: #5cb85c; }
     
     .start-btn { background: #2e5cff; color: white; border: none; border-radius: 10px; padding: 12px 20px; font-weight: bold; }
@@ -31,7 +67,8 @@
 <body>
 
   <div class="header">
-    <div id="viewNumberDisplay" class="view-number">V2</div>
+    <div id="viewLabel" class="view-label">V2 schedule.html</div>
+    
     <h2 id="nameDisplay">Hi, ---</h2>
     <span id="assignDisplay" class="tag">---</span>
   </div>
@@ -83,7 +120,9 @@
     }
 
     window.loadAreas = async function(category) {
-      document.getElementById("viewNumberDisplay").innerText = "V3"; // Switched to V3
+      // Update label to V3 when entering Area view
+      document.getElementById("viewLabel").innerText = "V3 schedule.html";
+      
       document.getElementById("view-categories").style.display = "none";
       document.getElementById("view-areas").style.display = "block";
       document.getElementById("currentCat").innerText = category;
@@ -118,14 +157,15 @@
     }
 
     window.showCategories = () => {
-      document.getElementById("viewNumberDisplay").innerText = "V2"; // Back to V2
+      // Update label back to V2
+      document.getElementById("viewLabel").innerText = "V2 schedule.html";
+      
       document.getElementById("view-categories").style.display = "block";
       document.getElementById("view-areas").style.display = "none";
     }
 
     window.openTask = (workId, areaName) => {
       sessionStorage.setItem("selectedWork", JSON.stringify({ workId, areaName }));
-      // This will lead to V4 (Task Details)
       window.location.href = "tasks.html"; 
     }
 
