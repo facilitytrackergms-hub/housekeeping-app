@@ -41,21 +41,21 @@
     const pin = document.getElementById("pinInput").value;
     const error = document.getElementById("errorMsg");
     
-    // 1. GET CURRENT MODE
+    // 1. GET CURRENT MODE FROM DATABASE
     const modeSnap = await getDoc(doc(db, "settings", "housekeepingMode"));
     const modeData = modeSnap.exists() ? modeSnap.data() : {};
     const mode = (modeData.settingValue || modeData.value || "two").toLowerCase().trim();
 
-    // 2. DEFINE PIN MAPPING
     let assignment = "";
     let displayName = "";
 
+    // 2. DYNAMIC MAPPING BASED ON MODE
     if (mode === "three") {
       if (pin === "1234") { assignment = "Floor 1"; displayName = "Floor 1 Staff"; }
       else if (pin === "1235") { assignment = "Floor 2"; displayName = "Floor 2 Staff"; }
       else if (pin === "1236") { assignment = "Floor 3"; displayName = "Floor 3 Staff"; }
     } else {
-      // MODE 2 (Default)
+      // MODE 2
       if (pin === "1234") { assignment = "HK Schedule 1"; displayName = "HK 1 Staff"; }
       else if (pin === "1235") { assignment = "HK Schedule 2"; displayName = "HK 2 Staff"; }
     }
