@@ -4,20 +4,57 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Work History</title>
   <style>
+    /* 01 - GLOBAL STYLE */
     * { box-sizing: border-box; }
     body { margin: 0; padding: 20px; font-family: Arial, sans-serif; background: #eef2f7; }
-    .card { background: white; border-radius: 20px; padding: 25px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+    
+    .card { 
+      background: white; 
+      border-radius: 20px; 
+      padding: 25px; 
+      box-shadow: 0 4px 15px rgba(0,0,0,0.05); 
+      position: relative;
+    }
+
+    /* View Number Label */
+    .view-number { 
+      position: absolute; 
+      top: 15px; 
+      right: 20px; 
+      font-weight: bold; 
+      color: #1847d1; 
+      font-size: 14px; 
+    }
+
+    h2 { color: #1847d1; margin-top: 0; }
+    
+    /* 02 - LOG ITEM STYLE */
     .log-item { padding: 15px; border-bottom: 1px solid #eee; }
     .log-item:last-child { border-bottom: none; }
     .time { color: #666; font-size: 14px; }
     .emp-name { font-weight: bold; color: #1847d1; }
+
+    /* 03 - ACTION BUTTON */
+    .back-btn { 
+      margin-top: 20px; 
+      width: 100%; 
+      padding: 15px; 
+      border-radius: 10px; 
+      border: none; 
+      background: #5a5a5a; 
+      color: white; 
+      font-weight: bold; 
+      cursor: pointer;
+    }
   </style>
 </head>
 <body>
+
   <div class="card">
+    <div class="view-number">V5</div>
     <h2>Recent Activity</h2>
     <div id="logContainer">Loading logs...</div>
-    <button onclick="window.location.href='schedule.html'" style="margin-top:20px; width:100%; padding:15px; border-radius:10px; border:none; background:#5a5a5a; color:white; font-weight:bold;">BACK</button>
+    <button class="back-btn" onclick="window.location.href='schedule.html'">BACK</button>
   </div>
 
   <script type="module">
@@ -36,7 +73,9 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
+    /* 04 - LOAD LOGS */
     async function loadLogs() {
+      // Fetches the last 20 completions from the logs collection
       const q = query(collection(db, "logs"), orderBy("timestamp", "desc"), limit(20));
       const snap = await getDocs(q);
       const container = document.getElementById("logContainer");
@@ -47,12 +86,17 @@
         const date = data.timestamp ? data.timestamp.toDate().toLocaleString() : "N/A";
         container.innerHTML += `
           <div class="log-item">
-            <div class="emp-name">${data.employee}</div>
+            <div class="emp-name">${data.employeeName || "Unknown"}</div>
             <div>Completed: ${data.area}</div>
             <div class="time">${date}</div>
           </div>`;
       });
+
+      if (snap.empty) {
+        container.innerHTML = "No recent activity found.";
+      }
     }
+
     loadLogs();
   </script>
 </body>
