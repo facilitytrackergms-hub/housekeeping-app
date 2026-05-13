@@ -2,28 +2,28 @@
 <html>
 <head>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Employee Login</title>
+  <title>Housekeeping Schedule</title>
   <style>
     * { box-sizing: border-box; }
-    body { margin: 0; padding: 0; font-family: Arial, sans-serif; background: #eef2f7; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
-    .card { width: 92%; max-width: 420px; background: white; border-radius: 30px; padding: 35px 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.12); text-align: center; }
-    .view-tag { display: inline-block; background: black; color: white; padding: 4px 10px; border-radius: 8px; font-size: 12px; margin-bottom: 14px; }
-    h1 { margin: 0 0 35px 0; font-size: 42px; color: #1847d1; }
-    input { width: 100%; padding: 22px; font-size: 28px; border-radius: 18px; border: 2px solid #2e5cff; outline: none; margin-bottom: 22px; text-align: center; }
-    button { width: 100%; padding: 22px; font-size: 28px; font-weight: bold; border: none; border-radius: 18px; background: #2e5cff; color: white; cursor: pointer; }
-    #message { margin-top: 20px; padding: 22px; border-radius: 20px; font-size: 24px; font-weight: bold; display: none; }
+    body { margin: 0; padding: 20px; font-family: Arial, sans-serif; background: #eef2f7; }
+    .header { text-align: center; margin-bottom: 30px; }
+    h2 { color: #1847d1; font-size: 28px; margin-bottom: 5px; }
+    .assignment-tag { background: #000; color: #fff; padding: 5px 12px; border-radius: 8px; font-size: 14px; }
+    .task-card { background: white; border-radius: 20px; padding: 25px; margin-bottom: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); display: flex; justify-content: space-between; align-items: center; }
+    .task-info { font-size: 22px; font-weight: bold; color: #333; }
+    .go-btn { background: #2e5cff; color: white; border: none; border-radius: 12px; padding: 12px 25px; font-weight: bold; cursor: pointer; }
+    .logout-btn { display: block; margin: 40px auto; color: #666; background: none; border: none; font-size: 16px; text-decoration: underline; }
   </style>
 </head>
 <body>
-  <div class="card">
-    <div class="view-tag">LOGIN</div>
-    <div id="pinView">
-      <h1>GCR Login</h1>
-      <input type="password" inputmode="numeric" id="pin" placeholder="Enter PIN">
-      <button onclick="checkPin()">NEXT</button>
-    </div>
-    <div id="message"></div>
+  <div class="header">
+    <h2 id="welcomeMsg">Loading...</h2>
+    <span id="assignmentLabel" class="assignment-tag">---</span>
   </div>
+
+  <div id="scheduleContainer"></div>
+
+  <button class="logout-btn" onclick="sessionStorage.clear(); window.location.href='index.html'">Logout</button>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
@@ -35,33 +35,51 @@
       projectId: "gms-task-tracker",
       storageBucket: "gms-task-tracker.firebasestorage.app",
       messagingSenderId: "790880979860",
-      appId: "1:790880979860:web:6faee2a6e56955af3c1d81"
+      appId: "1:790880979860:web:6faee2a6e56955af3c1d81",
+      measurementId: "G-5TRHQMS039"
     };
 
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    window.checkPin = async function() {
-      const pinInput = document.getElementById("pin").value.trim();
-      if (!pinInput) return;
+    const user = JSON.parse(sessionStorage.getItem("currentEmployee"));
+    if (!user) window.location.href = "index.html";
 
-      try {
-        const q = query(collection(db, "employees"), where("pin", "==", Number(pinInput)));
-        const snap = await getDocs(q);
+    document.getElementById("welcomeMsg").innerText = `Hi, ${user.firstName}`;
+    document.getElementById("assignmentLabel").innerText = user.assignment;
 
-        if (snap.empty) {
-          const msg = document.getElementById("message");
-          msg.style.display = "block";
-          msg.innerHTML = "Invalid PIN";
-          msg.style.color = "red";
-          return;
-        }
+    async function loadSchedule() {
+      // Pulls distinct areas assigned to this employee's schedule group
+      const q = query(collection(db, "taskItems"), where("assignment", "==", user.assignment));
+      const snap = await getDocs(q);
+      const container = document.getElementById("scheduleContainer");
+      
+      // Use a Set to only show each unique Area/Assignment once
+      const uniqueAreas = new Set();
+      snap.forEach(doc => uniqueAreas.add(doc.data().assignment));
 
-        const emp = snap.docs[0].data();
-        sessionStorage.setItem("currentEmployee", JSON.stringify(emp));
-        window.location.href = emp.role === "Admin" ? "admin.html" : "schedule.html";
-      } catch (e) { console.error(e); }
+      if (uniqueAreas.size === 0) {
+        container.innerHTML = "<p style='text-align:center;'>No tasks assigned today.</p>";
+        return;
+      }
+
+      uniqueAreas.forEach(area => {
+        const card = document.createElement("div");
+        card.className = "task-card";
+        card.innerHTML = `
+          <div class="task-info">${area}</div>
+          <button class="go-btn" onclick="openTask('${area}')">START</button>
+        `;
+        container.appendChild(card);
+      });
+    }
+
+    window.openTask = function(area) {
+      sessionStorage.setItem("selectedDailyTask", JSON.stringify({ assignment: area }));
+      window.location.href = "task-details.html";
     };
+
+    loadSchedule();
   </script>
 </body>
 </html>
