@@ -84,7 +84,6 @@
   let workDate = new Date();
   let matchedAreas = [];
 
-  // 1. BULLETPROOF DATA LOAD
   async function loadData() {
     const dayName = workDate.toLocaleDateString('en-US', { weekday: 'long' });
     const today = dayName.toLowerCase().trim();
@@ -94,13 +93,11 @@
     document.getElementById("empName").innerText = "Hi, " + (session.firstName || "User");
     document.getElementById("assignDisplay").innerText = currentAssign;
 
-    // A. Get Mode
     const modeSnap = await getDoc(doc(db, "settings", "housekeepingMode"));
     const modeData = modeSnap.exists() ? modeSnap.data() : {};
     const mode = (modeData.settingValue || modeData.value || "two").toLowerCase().trim();
     const field = (mode === "three") ? "threeHousekeeperSchedule" : "twoHousekeeperSchedule";
 
-    // B. Get Areas
     const snap = await getDocs(collection(db, "areas"));
     matchedAreas = [];
     const allAssignments = new Set();
@@ -112,13 +109,11 @@
       
       if(dbAssign) allAssignments.add(String(data[field]).trim());
 
-      // THE FILTER
       if(dbAssign === myAssign && (dbDay === "daily" || dbDay === today)) {
         matchedAreas.push(data);
       }
     });
 
-    // C. Populate Dropdown
     const select = document.getElementById("assignSelect");
     select.innerHTML = '<option value="">Select Schedule...</option>' + 
       Array.from(allAssignments).sort().map(s => `<option value="${s}">${s}</option>`).join('');
@@ -126,7 +121,6 @@
     drawCategories();
   }
 
-  // 2. VIEW DRAWING (Counting Areas correctly)
   function drawCategories() {
     const box = document.getElementById("categoryButtons");
     box.innerHTML = "";
@@ -134,12 +128,15 @@
 
     cats.forEach(cat => {
       const catLower = cat.toLowerCase().trim();
-      const count = matchedAreas.filter(a => String(a.category || "").toLowerCase().trim() === catLower).length;
+      const filtered = matchedAreas.filter(a => String(a.category || "").toLowerCase().trim() === catLower);
+      
+      // FIX: Count unique area names
+      const uniqueRoomCount = [...new Set(filtered.map(a => a.areaName))].length;
       
       const btn = document.createElement("button");
-      btn.className = (count > 0) ? "red" : "back";
-      btn.innerText = `${cat} (${count})`;
-      btn.onclick = () => { if(count > 0) showV3(cat); };
+      btn.className = (uniqueRoomCount > 0) ? "red" : "back";
+      btn.innerText = `${cat} (${uniqueRoomCount})`;
+      btn.onclick = () => { if(uniqueRoomCount > 0) showV3(cat); };
       box.appendChild(btn);
     });
   }
@@ -154,7 +151,18 @@
     const catLower = cat.toLowerCase().trim();
     const filtered = matchedAreas.filter(a => String(a.category || "").toLowerCase().trim() === catLower);
 
-    filtered.forEach(area => {
+    // FIX: Show only one button per unique areaName
+    const uniqueRooms = [];
+    const seen = new Set();
+
+    filtered.forEach(item => {
+      if (!seen.has(item.areaName)) {
+        seen.add(item.areaName);
+        uniqueRooms.push(item);
+      }
+    });
+
+    uniqueRooms.forEach(area => {
       const btn = document.createElement("button");
       btn.className = "red";
       btn.innerHTML = `<div style="font-size: 22px;">${area.areaName}</div>`;
