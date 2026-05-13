@@ -16,14 +16,14 @@
       position: relative;
     }
 
-    /* View Number Label */
-    .view-number { 
+    /* THE LABEL: V# filename */
+    .view-label { 
       position: absolute; 
       top: 15px; 
       right: 20px; 
       font-weight: bold; 
       color: #1847d1; 
-      font-size: 14px; 
+      font-size: 13px; 
     }
 
     h2 { color: #1847d1; margin-top: 0; }
@@ -51,7 +51,7 @@
 <body>
 
   <div class="card">
-    <div class="view-number">V5</div>
+    <div class="view-label">V5 logs.html</div>
     <h2>Recent Activity</h2>
     <div id="logContainer">Loading logs...</div>
     <button class="back-btn" onclick="window.location.href='schedule.html'">BACK</button>
@@ -75,7 +75,6 @@
 
     /* 04 - LOAD LOGS */
     async function loadLogs() {
-      // Fetches the last 20 completions from the logs collection
       const q = query(collection(db, "logs"), orderBy("timestamp", "desc"), limit(20));
       const snap = await getDocs(q);
       const container = document.getElementById("logContainer");
