@@ -57,7 +57,10 @@
 
         const emp = snap.docs[0].data();
         sessionStorage.setItem("currentEmployee", JSON.stringify(emp));
+        
+        // Redirecting to schedule.html for staff and admin.html for admins
         window.location.href = emp.role === "admin" ? "admin.html" : "schedule.html";
+        
       } catch (e) {
         console.error(e);
         msg.style.display = "block";
