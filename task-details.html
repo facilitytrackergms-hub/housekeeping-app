@@ -10,6 +10,7 @@
     .item { display: flex; align-items: center; padding: 15px 0; border-bottom: 1px solid #eee; font-size: 18px; }
     input[type="checkbox"] { width: 25px; height: 25px; margin-right: 15px; }
     .submit-btn { margin-top: 25px; width: 100%; padding: 20px; background: #1c7a32; color: white; border: none; border-radius: 15px; font-size: 20px; font-weight: bold; cursor: pointer; }
+    .back-link { display: block; text-align: center; margin-top: 15px; color: #1847d1; text-decoration: none; font-weight: bold; }
   </style>
 </head>
 <body>
@@ -17,11 +18,12 @@
     <h2 id="areaTitle">Loading Area...</h2>
     <div id="checklist"></div>
     <button class="submit-btn" onclick="submitTasks()">FINISH AREA</button>
+    <a href="schedule.html" class="back-link">BACK TO SCHEDULE</a>
   </div>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getFirestore, collection, query, where, getDocs, addDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { getFirestore, collection, query, where, getDocs, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyBgq_ooBeEN4noEyIxYPLVokgM6RjCO648",
@@ -29,7 +31,8 @@
       projectId: "gms-task-tracker",
       storageBucket: "gms-task-tracker.firebasestorage.app",
       messagingSenderId: "790880979860",
-      appId: "1:790880979860:web:6faee2a6e56955af3c1d81"
+      appId: "1:790880979860:web:6faee2a6e56955af3c1d81",
+      measurementId: "G-5TRHQMS039"
     };
 
     const app = initializeApp(firebaseConfig);
@@ -38,24 +41,40 @@
     const selection = JSON.parse(sessionStorage.getItem("selectedDailyTask"));
     const user = JSON.parse(sessionStorage.getItem("currentEmployee"));
 
+    if (!selection || !user) window.location.href = "index.html";
+
     document.getElementById("areaTitle").innerText = selection.assignment;
 
     async function loadItems() {
       const q = query(collection(db, "taskItems"), where("assignment", "==", selection.assignment));
       const snap = await getDocs(q);
       const list = document.getElementById("checklist");
+      if (snap.empty) {
+          list.innerHTML = "<p>No specific tasks found for this area.</p>";
+          return;
+      }
       snap.forEach(doc => {
-        list.innerHTML += `<div class="item"><input type="checkbox" value="${doc.id}"> ${doc.data().name}</div>`;
+        list.innerHTML += `<div class="item"><input type="checkbox" value="${doc.id}"> ${doc.data().name || doc.data().taskName}</div>`;
       });
     }
 
     window.submitTasks = async function() {
-      await addDoc(collection(db, "logs"), {
-        employee: user.employeeName,
-        area: selection.assignment,
-        timestamp: new Date()
-      });
-      window.location.href = "schedule.html";
+      try {
+        const btn = document.querySelector(".submit-btn");
+        btn.innerText = "SAVING...";
+        btn.disabled = true;
+
+        await addDoc(collection(db, "logs"), {
+          employeeName: user.employeeName,
+          assignment: selection.assignment,
+          timestamp: serverTimestamp()
+        });
+        
+        window.location.href = "schedule.html";
+      } catch (e) {
+        console.error("Error logging task:", e);
+        alert("Failed to save. Check connection.");
+      }
     };
 
     loadItems();
