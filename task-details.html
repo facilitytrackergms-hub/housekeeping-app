@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Task Checklist</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; padding: 20px; font-family: Arial, sans-serif; background: #eef2f7; }
+    .card { background: white; border-radius: 20px; padding: 25px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+    .item { display: flex; align-items: center; padding: 15px 0; border-bottom: 1px solid #eee; font-size: 18px; }
+    input[type="checkbox"] { width: 25px; height: 25px; margin-right: 15px; }
+    .submit-btn { margin-top: 25px; width: 100%; padding: 20px; background: #1c7a32; color: white; border: none; border-radius: 15px; font-size: 20px; font-weight: bold; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h2 id="areaTitle">Loading Area...</h2>
+    <div id="checklist"></div>
+    <button class="submit-btn" onclick="submitTasks()">FINISH AREA</button>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getFirestore, collection, query, where, getDocs, addDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBgq_ooBeEN4noEyIxYPLVokgM6RjCO648",
+      authDomain: "gms-task-tracker.firebaseapp.com",
+      projectId: "gms-task-tracker",
+      storageBucket: "gms-task-tracker.firebasestorage.app",
+      messagingSenderId: "790880979860",
+      appId: "1:790880979860:web:6faee2a6e56955af3c1d81"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    const selection = JSON.parse(sessionStorage.getItem("selectedDailyTask"));
+    const user = JSON.parse(sessionStorage.getItem("currentEmployee"));
+
+    document.getElementById("areaTitle").innerText = selection.assignment;
+
+    async function loadItems() {
+      const q = query(collection(db, "taskItems"), where("assignment", "==", selection.assignment));
+      const snap = await getDocs(q);
+      const list = document.getElementById("checklist");
+      snap.forEach(doc => {
+        list.innerHTML += `<div class="item"><input type="checkbox" value="${doc.id}"> ${doc.data().name}</div>`;
+      });
+    }
+
+    window.submitTasks = async function() {
+      await addDoc(collection(db, "logs"), {
+        employee: user.employeeName,
+        area: selection.assignment,
+        timestamp: new Date()
+      });
+      window.location.href = "schedule.html";
+    };
+
+    loadItems();
+  </script>
+</body>
+</html>
