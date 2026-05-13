@@ -4,27 +4,22 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Facility Tracker</title>
   <style>
-    /* 01 - GLOBAL STYLE */
+    /* 01 - STYLE RESTORED */
     * { box-sizing: border-box; }
     body { margin: 0; font-family: Arial, sans-serif; background: #f2f2f2; padding: 10px; }
     .card { width: 100%; max-width: 430px; background: white; border-radius: 20px; padding: 15px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); margin: auto; position: relative; }
-    
     .view-tag { display: inline-block; background: black; color: white; padding: 4px 10px; border-radius: 8px; font-size: 12px; margin-bottom: 10px; }
     h2, h3 { text-align: center; margin: 5px 0; }
-    
-    button { width: 100%; border: none; border-radius: 15px; background: #1976d2; color: white; font-size: 18px; font-weight: bold; padding: 16px; margin: 8px 0; cursor: pointer; transition: 0.2s; }
+    button { width: 100%; border: none; border-radius: 15px; background: #1976d2; color: white; font-size: 18px; font-weight: bold; padding: 16px; margin: 8px 0; cursor: pointer; }
     .red { background: #c62828 !important; }
     .back { background: #555 !important; }
     .hidden { display: none !important; }
-
     .top-box { border: 2px solid #e0e0e0; border-radius: 20px; padding: 15px; margin-bottom: 15px; background: #fafafa; text-align: center; }
     .date-row { display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 10px; }
     .date-btn { width: auto; padding: 10px 15px; background: #555; font-size: 16px; }
-    
     .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-    #categoryButtons button { min-height: 110px; font-size: 17px; line-height: 1.2; }
+    #categoryButtons button { min-height: 110px; font-size: 17px; }
     #areaButtons button { min-height: 80px; font-size: 20px; }
-
     select { width: 100%; padding: 15px; border-radius: 12px; border: 2px solid #1976d2; margin-top: 10px; font-size: 16px; }
   </style>
 </head>
@@ -33,7 +28,6 @@
 <div class="card">
   <div id="view2">
     <div class="view-tag">V2 schedule.html</div>
-    
     <div class="top-box">
       <div class="date-row">
         <button class="date-btn" onclick="adjustDate(-1)">◀</button>
@@ -42,13 +36,11 @@
       </div>
       <h2 id="empName">Hi, ---</h2>
       <h3 id="assignDisplay" style="color:#1976d2; font-weight: bold;">---</h3>
-      
-      <button id="coverBtn" style="font-size:13px; padding:10px; background:#666;" onclick="toggleCover()">COVER ANOTHER ASSIGNMENT</button>
+      <button id="coverBtn" style="font-size:13px; padding:10px; background:#666;" onclick="toggleCover()">CHANGE FLOOR / ASSIGNMENT</button>
       <div id="coverBox" class="hidden">
         <select id="assignSelect" onchange="updateAssignment(this.value)"></select>
       </div>
     </div>
-
     <div id="categoryButtons" class="grid-2"></div>
     <button class="back" onclick="logout()" style="margin-top:20px;">LOGOUT</button>
   </div>
@@ -57,7 +49,7 @@
     <div class="view-tag">V3 schedule.html</div>
     <h2 id="catTitle" style="color:#1976d2; margin-bottom: 15px;">Category</h2>
     <div id="areaButtons" class="grid-2"></div>
-    <button class="back" onclick="showV2()" style="margin-top:20px; padding: 18px;">BACK TO CATEGORIES</button>
+    <button class="back" onclick="showV2()" style="margin-top:20px; padding: 18px;">BACK</button>
   </div>
 </div>
 
@@ -87,36 +79,43 @@
   async function loadData() {
     const dayName = workDate.toLocaleDateString('en-US', { weekday: 'long' });
     const today = dayName.toLowerCase().trim();
-    const myAssign = currentAssign.toLowerCase().trim();
-
+    
     document.getElementById("dateDisplay").innerText = dayName;
     document.getElementById("empName").innerText = "Hi, " + (session.firstName || "User");
     document.getElementById("assignDisplay").innerText = currentAssign;
 
+    // 1. GET MODE (Check column: twoHousekeeperSchedule vs threeHousekeeperSchedule)
     const modeSnap = await getDoc(doc(db, "settings", "housekeepingMode"));
     const modeData = modeSnap.exists() ? modeSnap.data() : {};
     const mode = (modeData.settingValue || modeData.value || "two").toLowerCase().trim();
     const field = (mode === "three") ? "threeHousekeeperSchedule" : "twoHousekeeperSchedule";
 
+    // 2. FETCH AREAS
     const snap = await getDocs(collection(db, "areas"));
     matchedAreas = [];
-    const allAssignments = new Set();
+    const allOptions = new Set();
 
     snap.forEach(d => {
       const data = d.data();
-      const dbAssign = String(data[field] || "").toLowerCase().trim();
-      const dbDay = String(data.scheduleDay || "").toLowerCase().trim();
+      const dbAssignValue = String(data[field] || "").trim();
       
-      if(dbAssign) allAssignments.add(String(data[field]).trim());
+      // Collect Floor 1, Floor 2, etc. for the dropdown based on the mode
+      if(dbAssignValue) allOptions.add(dbAssignValue);
 
-      if(dbAssign === myAssign && (dbDay === "daily" || dbDay === today)) {
+      const dbAssignLower = dbAssignValue.toLowerCase();
+      const myAssignLower = currentAssign.toLowerCase().trim();
+      const dbDay = String(data.scheduleDay || "").toLowerCase().trim();
+
+      // 3. FILTER LOGIC
+      if(dbAssignLower === myAssignLower && (dbDay === "daily" || dbDay === today)) {
         matchedAreas.push(data);
       }
     });
 
+    // 4. POPULATE DROPDOWN (Now shows Floors if in Mode 3)
     const select = document.getElementById("assignSelect");
-    select.innerHTML = '<option value="">Select Schedule...</option>' + 
-      Array.from(allAssignments).sort().map(s => `<option value="${s}">${s}</option>`).join('');
+    select.innerHTML = '<option value="">Choose your Floor/Schedule...</option>' + 
+      Array.from(allOptions).sort().map(s => `<option value="${s}">${s}</option>`).join('');
 
     drawCategories();
   }
@@ -129,14 +128,12 @@
     cats.forEach(cat => {
       const catLower = cat.toLowerCase().trim();
       const filtered = matchedAreas.filter(a => String(a.category || "").toLowerCase().trim() === catLower);
-      
-      // FIX: Count unique area names
-      const uniqueRoomCount = [...new Set(filtered.map(a => a.areaName))].length;
+      const uniqueCount = [...new Set(filtered.map(a => a.areaName))].length;
       
       const btn = document.createElement("button");
-      btn.className = (uniqueRoomCount > 0) ? "red" : "back";
-      btn.innerText = `${cat} (${uniqueRoomCount})`;
-      btn.onclick = () => { if(uniqueRoomCount > 0) showV3(cat); };
+      btn.className = (uniqueCount > 0) ? "red" : "back";
+      btn.innerText = `${cat} (${uniqueCount})`;
+      btn.onclick = () => { if(uniqueCount > 0) showV3(cat); };
       box.appendChild(btn);
     });
   }
@@ -145,54 +142,28 @@
     document.getElementById("view2").classList.add("hidden");
     document.getElementById("view3").classList.remove("hidden");
     document.getElementById("catTitle").innerText = cat;
-
     const box = document.getElementById("areaButtons");
     box.innerHTML = "";
     const catLower = cat.toLowerCase().trim();
-    const filtered = matchedAreas.filter(a => String(a.category || "").toLowerCase().trim() === catLower);
+    const uniqueRooms = [...new Set(matchedAreas.filter(a => String(a.category || "").toLowerCase().trim() === catLower).map(a => a.areaName))];
 
-    // FIX: Show only one button per unique areaName
-    const uniqueRooms = [];
-    const seen = new Set();
-
-    filtered.forEach(item => {
-      if (!seen.has(item.areaName)) {
-        seen.add(item.areaName);
-        uniqueRooms.push(item);
-      }
-    });
-
-    uniqueRooms.forEach(area => {
+    uniqueRooms.forEach(name => {
+      const area = matchedAreas.find(a => a.areaName === name);
       const btn = document.createElement("button");
       btn.className = "red";
-      btn.innerHTML = `<div style="font-size: 22px;">${area.areaName}</div>`;
+      btn.innerHTML = `<div style="font-size: 22px;">${name}</div>`;
       btn.onclick = () => {
-        sessionStorage.setItem("selectedWork", JSON.stringify({ workId: area.workId, areaName: area.areaName }));
+        sessionStorage.setItem("selectedWork", JSON.stringify({ workId: area.workId, areaName: name }));
         window.location.href = "tasks.html";
       };
       box.appendChild(btn);
     });
   }
 
-  window.adjustDate = (n) => {
-    workDate.setDate(workDate.getDate() + n);
-    loadData();
-  };
-
+  window.adjustDate = (n) => { workDate.setDate(workDate.getDate() + n); loadData(); };
   window.toggleCover = () => document.getElementById("coverBox").classList.toggle("hidden");
-
-  window.updateAssignment = (val) => {
-    if(!val) return;
-    currentAssign = val;
-    loadData();
-    document.getElementById("coverBox").classList.add("hidden");
-  };
-
-  window.showV2 = () => {
-    document.getElementById("view2").classList.remove("hidden");
-    document.getElementById("view3").classList.add("hidden");
-  };
-
+  window.updateAssignment = (val) => { if(!val) return; currentAssign = val; loadData(); document.getElementById("coverBox").classList.add("hidden"); };
+  window.showV2 = () => { document.getElementById("view2").classList.remove("hidden"); document.getElementById("view3").classList.add("hidden"); };
   window.logout = () => { sessionStorage.clear(); window.location.href = "index.html"; };
 
   loadData();
