@@ -4,26 +4,62 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Admin Panel</title>
   <style>
-    body { font-family: Arial, sans-serif; background: #eef2f7; padding: 20px; }
-    .card { background: white; border-radius: 15px; padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
-    .btn { padding: 15px; width: 48%; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; }
-    .active { background: #1c7a32; color: white; }
-    .inactive { background: #ddd; color: #666; }
+    /* 01 - GLOBAL STYLE */
+    * { box-sizing: border-box; }
+    body { font-family: Arial, sans-serif; background: #eef2f7; padding: 20px; margin: 0; }
+    
+    .card { 
+      background: white; 
+      border-radius: 15px; 
+      padding: 20px; 
+      margin-bottom: 20px; 
+      box-shadow: 0 4px 10px rgba(0,0,0,0.05); 
+      position: relative;
+    }
+
+    /* View Number Label */
+    .view-number { 
+      position: absolute; 
+      top: 15px; 
+      right: 20px; 
+      font-weight: bold; 
+      color: #1c7a32; 
+      font-size: 14px; 
+    }
+
+    h1 { color: #1847d1; text-align: center; }
+    h2 { font-size: 18px; margin-top: 0; color: #333; }
+
+    /* 02 - BUTTONS */
+    .btn-row { display: flex; justify-content: space-between; gap: 10px; }
+    .btn { padding: 15px; width: 50%; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; transition: 0.3s; }
+    .active { background: #1c7a32; color: white; border: 2px solid #145a24; }
+    .inactive { background: #ddd; color: #666; border: 2px solid transparent; }
+
+    /* 03 - LOGS */
+    #logs p { padding: 8px 0; border-bottom: 1px solid #eee; margin: 0; font-size: 14px; }
+    #logs b { color: #1847d1; }
   </style>
 </head>
 <body>
+
   <h1>GCR Admin</h1>
+
   <div class="card">
+    <div class="view-number">V6</div>
     <h2>Housekeeping Mode</h2>
-    <div style="display: flex; justify-content: space-between;">
+    <div class="btn-row">
       <button id="m2" class="btn" onclick="upd('two')">MODE 2</button>
       <button id="m3" class="btn" onclick="upd('three')">MODE 3</button>
     </div>
   </div>
+
   <div class="card">
-    <h2>Daily Logs</h2>
+    <h2>Daily Activity (Last 10)</h2>
     <div id="logs"></div>
   </div>
+
+  <button onclick="window.location.href='index.html'" style="width:100%; padding:15px; border-radius:10px; border:none; background:#5a5a5a; color:white; font-weight:bold; cursor:pointer;">LOGOUT</button>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
@@ -41,25 +77,40 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
+    /* 04 - SYNC MODE STATE */
     async function sync() {
       const snap = await getDoc(doc(db, "settings", "housekeepingMode"));
-      const cur = snap.exists() ? snap.data().value : "two";
+      // Maps to the value field used in your loadAreas logic
+      const cur = snap.exists() ? snap.data().settingValue : "two";
       document.getElementById("m2").className = cur === "two" ? "btn active" : "btn inactive";
       document.getElementById("m3").className = cur === "three" ? "btn active" : "btn inactive";
     }
 
+    /* 05 - UPDATE GLOBAL MODE */
     window.upd = async function(v) {
-      await setDoc(doc(db, "settings", "housekeepingMode"), { value: v });
-      sync();
+      try {
+        await setDoc(doc(db, "settings", "housekeepingMode"), { settingValue: v });
+        sync();
+      } catch (e) {
+        alert("Error updating mode.");
+      }
     };
 
+    /* 06 - LOAD ADMIN LOGS */
     async function load() {
       const q = query(collection(db, "logs"), orderBy("timestamp", "desc"), limit(10));
       const snap = await getDocs(q);
       const list = document.getElementById("logs");
+      list.innerHTML = "";
+      
       snap.forEach(d => {
-        list.innerHTML += `<p><b>${d.data().employeeName}</b> finished ${d.data().area}</p>`;
+        const data = d.data();
+        list.innerHTML += `<p><b>${data.employeeName || "Unknown"}</b> finished ${data.area || "Area"}</p>`;
       });
+
+      if (snap.empty) {
+        list.innerHTML = "<p>No recent activity logs.</p>";
+      }
     }
 
     sync();
