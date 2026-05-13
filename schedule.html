@@ -2,26 +2,30 @@
 <html>
 <head>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Housekeeping Schedule</title>
+  <title>Work Schedule</title>
   <style>
     * { box-sizing: border-box; }
     body { margin: 0; padding: 20px; font-family: Arial, sans-serif; background: #eef2f7; }
-    .header { text-align: center; margin-bottom: 20px; }
-    .task-card { background: white; border-radius: 15px; padding: 20px; margin-bottom: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
-    .task-name { font-size: 20px; font-weight: bold; color: #1847d1; }
-    .status-btn { margin-top: 10px; padding: 10px; width: 100%; border-radius: 10px; border: none; background: #2e5cff; color: white; font-weight: bold; }
-    .completed { background: #1c7a32 !; }
+    .header { text-align: center; margin-bottom: 30px; }
+    h2 { color: #1847d1; margin-bottom: 5px; }
+    .tag { background: black; color: white; padding: 4px 10px; border-radius: 8px; font-size: 14px; }
+    .card { background: white; border-radius: 20px; padding: 25px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+    .area-name { font-size: 20px; font-weight: bold; color: #333; }
+    .start-btn { background: #2e5cff; color: white; border: none; border-radius: 12px; padding: 12px 25px; font-weight: bold; cursor: pointer; }
+    .logout { display: block; margin: 40px auto; color: #666; border: none; background: none; text-decoration: underline; }
   </style>
 </head>
 <body>
   <div class="header">
-    <h2 id="welcomeMsg">Loading Schedule...</h2>
+    <h2 id="nameDisplay">Loading...</h2>
+    <span id="assignDisplay" class="tag">---</span>
   </div>
-  <div id="scheduleContainer"></div>
+  <div id="list"></div>
+  <button class="logout" onclick="sessionStorage.clear(); window.location.href='index.html'">Logout</button>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getFirestore, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { getFirestore, doc, getDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
     const firebaseConfig = {
       apiKey: "AIzaSyBgq_ooBeEN4noEyIxYPLVokgM6RjCO648",
@@ -38,22 +42,47 @@
     const user = JSON.parse(sessionStorage.getItem("currentEmployee"));
     if (!user) window.location.href = "index.html";
 
-    document.getElementById("welcomeMsg").innerText = `Hi, ${user.firstName}`;
+    document.getElementById("nameDisplay").innerText = `Hi, ${user.firstName}`;
+    document.getElementById("assignDisplay").innerText = user.assignment;
 
     async function loadTasks() {
-      const q = query(collection(db, "tasks"), where("assignment", "==", user.assignment));
+      const modeSnap = await getDoc(doc(db, "settings", "housekeepingMode"));
+      const mode = modeSnap.exists() ? modeSnap.data().value : "two";
+
+      let coll = "";
+      if (user.assignment === "Laundry") coll = "Laundry";
+      else if (mode === "three") {
+        if (user.assignment === "HK1") coll = "1stfloor";
+        if (user.assignment === "HK2") coll = "2ndFloor";
+        if (user.assignment === "HK3") coll = "3rdFloor";
+      } else {
+        if (user.assignment === "HK1") coll = "HK1";
+        if (user.assignment === "HK2") coll = "HK2";
+      }
+
+      if (!coll) return;
+
+      const day = new Intl.DateTimeFormat('en-US', { weekday: 'long' }).format(new Date());
+      const q = query(collection(db, coll), where("Schedule", "in", ["Daily", day]));
       const snap = await getDocs(q);
-      const container = document.getElementById("scheduleContainer");
       
-      snap.forEach(doc => {
-        const task = doc.data();
-        container.innerHTML += `
-          <div class="task-card">
-            <div class="task-name">${task.taskName || 'Task'}</div>
-            <button class="status-btn" onclick="alert('Logged!')">MARK COMPLETE</button>
+      const areas = [...new Set(snap.docs.map(d => d.data().Area))];
+      const listDiv = document.getElementById("list");
+      
+      areas.forEach(a => {
+        listDiv.innerHTML += `
+          <div class="card">
+            <div class="area-name">${a}</div>
+            <button class="start-btn" onclick="goTo('${a}', '${coll}')">START</button>
           </div>`;
       });
     }
+
+    window.goTo = function(area, source) {
+      sessionStorage.setItem("selectedDailyTask", JSON.stringify({ assignment: area, source: source }));
+      window.location.href = "task-details.html";
+    };
+
     loadTasks();
   </script>
 </body>
