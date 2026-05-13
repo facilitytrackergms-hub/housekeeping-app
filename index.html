@@ -4,11 +4,22 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Employee Login</title>
   <style>
+    /* 01 - GLOBAL STYLE */
     * { box-sizing: border-box; }
     body { margin: 0; padding: 0; font-family: Arial, sans-serif; background: #eef2f7; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
-    .card { width: 92%; max-width: 420px; background: white; border-radius: 30px; padding: 35px 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.12); text-align: center; position: relative; }
     
-    /* UPDATED LABEL: View Number + File Name */
+    .card { 
+      width: 92%; 
+      max-width: 420px; 
+      background: white; 
+      border-radius: 30px; 
+      padding: 35px 25px; 
+      box-shadow: 0 10px 30px rgba(0,0,0,0.12); 
+      text-align: center; 
+      position: relative; 
+    }
+    
+    /* 02 - VIEW LABEL */
     .view-header-label { 
       position: absolute; 
       top: 12px; 
@@ -21,6 +32,8 @@
     
     .view-tag { display: inline-block; background: black; color: white; padding: 4px 10px; border-radius: 8px; font-size: 12px; margin-bottom: 14px; }
     h1 { margin: 0 0 35px 0; font-size: 42px; color: #1847d1; }
+    
+    /* 03 - INPUTS & BUTTONS */
     input { width: 100%; padding: 22px; font-size: 28px; border-radius: 18px; border: 2px solid #2e5cff; outline: none; margin-bottom: 22px; text-align: center; }
     button { width: 100%; padding: 22px; font-size: 28px; font-weight: bold; border: none; border-radius: 18px; background: #2e5cff; color: white; cursor: pointer; }
     #message { margin-top: 20px; padding: 15px; border-radius: 15px; font-size: 18px; display: none; }
@@ -29,7 +42,7 @@
 <body>
 
   <div class="card">
-    <div class="view-header-label">V1 (index.html)</div>
+    <div class="view-header-label">V1 index.html</div>
     
     <div class="view-tag">LOGIN</div>
     <h1>GCR Login</h1>
