@@ -17,14 +17,14 @@
       position: relative;
     }
 
-    /* View Number Label */
-    .view-number { 
+    /* THE LABEL: V# filename */
+    .view-label { 
       position: absolute; 
       top: 15px; 
       right: 20px; 
       font-weight: bold; 
       color: #1c7a32; 
-      font-size: 14px; 
+      font-size: 13px; 
     }
 
     h1 { color: #1847d1; text-align: center; }
@@ -46,7 +46,7 @@
   <h1>GCR Admin</h1>
 
   <div class="card">
-    <div class="view-number">V6</div>
+    <div class="view-label">V6 admin.html</div>
     <h2>Housekeeping Mode</h2>
     <div class="btn-row">
       <button id="m2" class="btn" onclick="upd('two')">MODE 2</button>
@@ -80,7 +80,6 @@
     /* 04 - SYNC MODE STATE */
     async function sync() {
       const snap = await getDoc(doc(db, "settings", "housekeepingMode"));
-      // Maps to the value field used in your loadAreas logic
       const cur = snap.exists() ? snap.data().settingValue : "two";
       document.getElementById("m2").className = cur === "two" ? "btn active" : "btn inactive";
       document.getElementById("m3").className = cur === "three" ? "btn active" : "btn inactive";
