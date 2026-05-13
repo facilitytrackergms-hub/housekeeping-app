@@ -16,14 +16,14 @@
       position: relative; 
     }
 
-    /* View Number Label */
-    .view-number { 
+    /* THE LABEL: V# filename */
+    .view-label { 
       position: absolute; 
-      top: 15px; 
+      top: 12px; 
       right: 20px; 
       font-weight: bold; 
       color: #1847d1; 
-      font-size: 14px; 
+      font-size: 13px; 
     }
 
     h2 { color: #1847d1; margin-top: 0; padding-right: 40px; }
@@ -62,7 +62,8 @@
 <body>
 
   <div class="card">
-    <div class="view-number">V4</div>
+    <div class="view-label">V4 tasks.html</div>
+    
     <h2 id="title">Loading...</h2>
     <div id="checklist"></div>
     <button class="finish-btn" onclick="submit()">FINISH AREA</button>
@@ -90,16 +91,14 @@
     if (!work || !user) window.location.href = "index.html";
     document.getElementById("title").innerText = work.areaName;
 
-    /* 04 - LOAD TASKS (LOCAL INTERACTION) */
+    /* 04 - LOAD TASKS */
     async function loadTasks() {
-      // Changed to 'tasks' to match your uploaded database collection
       const q = query(collection(db, "tasks"), where("workId", "==", work.workId));
       const snap = await getDocs(q);
       const list = document.getElementById("checklist");
       
       list.innerHTML = "";
       snap.forEach(doc => {
-        // These checkboxes are purely local to save Firebase data
         list.innerHTML += `
           <div class="item">
             <input type="checkbox"> 
@@ -112,7 +111,7 @@
       }
     }
 
-    /* 05 - SUBMIT (SINGLE FIREBASE WRITE) */
+    /* 05 - SUBMIT */
     window.submit = async function() {
       try {
         await addDoc(collection(db, "logs"), {
@@ -121,11 +120,9 @@
           workId: work.workId,
           timestamp: serverTimestamp()
         });
-        // Returns to V2/V3 after finishing
         window.location.href = "schedule.html";
       } catch (e) {
-        console.error("Error logging completion:", e);
-        alert("Failed to save. Check connection.");
+        alert("Failed to save.");
       }
     };
 
