@@ -7,21 +7,13 @@
     * { box-sizing: border-box; }
     body { margin: 0; padding: 20px; font-family: Arial, sans-serif; background: #eef2f7; }
     .header { text-align: center; margin-bottom: 20px; background: #1847d1; color: white; padding: 25px; border-radius: 0 0 25px 25px; margin: -20px -20px 20px -20px; position: relative; }
-    
-    /* View Labels */
     .view-label { position: absolute; top: 10px; right: 15px; font-weight: bold; color: rgba(255,255,255,0.6); font-size: 11px; }
     .tag { background: rgba(255,255,255,0.2); color: white; padding: 5px 12px; border-radius: 8px; font-size: 14px; margin-bottom: 5px; display: inline-block; }
-    
-    /* Date Strip */
     .date-strip { display: flex; justify-content: center; align-items: center; gap: 15px; margin: 10px 0; background: rgba(0,0,0,0.1); padding: 10px; border-radius: 12px; }
     .date-display { font-weight: bold; font-size: 18px; }
-    .cal-btn { background: white; color: #1847d1; border: none; border-radius: 5px; padding: 5px 10px; font-weight: bold; cursor: pointer; }
-
-    /* V2 Grid */
-    .cat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
-    .cat-btn { background: white; border-radius: 15px; padding: 30px 10px; text-align: center; font-weight: bold; color: #1847d1; box-shadow: 0 4px 10px rgba(0,0,0,0.05); cursor: pointer; }
-
-    /* V3 Cards */
+    .cal-btn { background: white; color: #1847d1; border: none; border-radius: 5px; padding: 8px 12px; font-weight: bold; cursor: pointer; }
+    .cat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 15px; }
+    .cat-btn { background: white; border-radius: 15px; padding: 30px 10px; text-align: center; font-weight: bold; color: #1847d1; box-shadow: 0 4px 10px rgba(0,0,0,0.05); cursor: pointer; min-height: 100px; display: flex; align-items: center; justify-content: center; }
     .card { background: white; border-radius: 15px; padding: 20px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; border-left: 10px solid #ccc; }
     .status-red { border-left-color: #d9534f; }
     .start-btn { background: #2e5cff; color: white; border: none; border-radius: 10px; padding: 12px 20px; font-weight: bold; }
@@ -33,7 +25,6 @@
     <div id="vNum" class="view-label">V2 schedule.html</div>
     <h2 id="nameDisplay" style="margin:0;">Hi, ---</h2>
     <span id="assignDisplay" class="tag">---</span>
-    
     <div class="date-strip">
       <button class="cal-btn" onclick="adjustDate(-1)">◀</button>
       <div id="dateDisplay" class="date-display">Today</div>
@@ -41,14 +32,14 @@
     </div>
   </div>
 
-  <div id="view-categories">
+  <div id="view2">
     <div class="cat-grid" id="catGrid"></div>
   </div>
 
-  <div id="view-areas" style="display:none;">
+  <div id="view3" style="display:none;">
     <h3 id="currentCat" style="text-align:center; color:#1847d1;">Category</h3>
     <div id="areaList"></div>
-    <button onclick="showCategories()" style="width:100%; padding:15px; margin-top:10px; border-radius:10px; border:none; background:#666; color:white;">BACK</button>
+    <button onclick="goBackV2()" style="width:100%; padding:18px; margin-top:15px; border-radius:12px; border:none; background:#666; color:white; font-weight:bold;">BACK</button>
   </div>
 
   <script type="module">
@@ -59,86 +50,4 @@
       apiKey: "AIzaSyBgq_ooBeEN4noEyIxYPLVokgM6RjCO648",
       authDomain: "gms-task-tracker.firebaseapp.com",
       projectId: "gms-task-tracker",
-      storageBucket: "gms-task-tracker.firebasestorage.app",
-      messagingSenderId: "790880979860",
-      appId: "1:790880979860:web:6faee2a6e56955af3c1d81"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-
-    let workingDate = new Date();
-    const user = JSON.parse(sessionStorage.getItem("currentEmployee"));
-
-    if (!user) window.location.href = "index.html";
-
-    function updateHeader() {
-      document.getElementById("nameDisplay").innerText = `Hi, ${user.firstName || 'User'}`;
-      document.getElementById("assignDisplay").innerText = user.assignment;
-      const options = { weekday: 'long', month: 'short', day: 'numeric' };
-      document.getElementById("dateDisplay").innerText = workingDate.toLocaleDateString('en-US', options);
-    }
-
-    window.adjustDate = function(days) {
-      workingDate.setDate(workingDate.getDate() + days);
-      updateHeader();
-      if(document.getElementById("view-areas").style.display === "block") {
-        loadAreas(document.getElementById("currentCat").innerText);
-      }
-    };
-
-    function drawCategories() {
-      const cats = ["Common Area", "Weekly Room", "Daily Room", "Dehumidifier"];
-      const grid = document.getElementById("catGrid");
-      grid.innerHTML = cats.map(c => `<div class="cat-btn" onclick="loadAreas('${c}')">${c}</div>`).join('');
-    }
-
-    /* 01 - CORRECT DAY FILTERING LOGIC */
-
-window.loadAreas = async function(catName) {
-  // Update labels for your reference
-  document.getElementById("vNum").innerText = "V3 schedule.html";
-  document.getElementById("view2").style.display = "none";
-  document.getElementById("view3").style.display = "block";
-  document.getElementById("currentCat").innerText = catName;
-  
-  const list = document.getElementById("areaList");
-  list.innerHTML = "<p style='text-align:center;'>Loading Rooms...</p>";
-
-  // CORRECTED: This gets "Monday", "Tuesday", etc. (No numbers)
-  const dayName = new Intl.DateTimeFormat('en-US', { weekday: 'long' }).format(workingDate);
-
-  try {
-    // 1. Get Mode (2 or 3)
-    const modeSnap = await getDoc(doc(db, "settings", "housekeepingMode"));
-    const mode = modeSnap.exists() ? (modeSnap.data().settingValue || modeSnap.data().value) : "two";
-    const scheduleField = (mode === "three") ? "threeHousekeeperSchedule" : "twoHousekeeperSchedule";
-
-    // 2. Query using the TEXT Day Name
-    const q = query(
-      collection(db, "areas"), 
-      where("category", "==", catName), 
-      where(scheduleField, "==", user.assignment), 
-      where("scheduleDay", "in", ["Daily", dayName]) // Matches "Monday" or "Daily"
-    );
-
-    const snap = await getDocs(q);
-    list.innerHTML = snap.empty ? `<p style='text-align:center;'>No rooms for ${dayName}.</p>` : "";
-    
-    snap.forEach(d => {
-      const data = d.data();
-      list.innerHTML += `
-        <div class="card status-red">
-          <div><strong>${data.areaName}</strong></div>
-          <button class="start-btn" onclick="openTask('${data.workId}', '${data.areaName}')">START</button>
-        </div>`;
-    });
-
-  } catch (error) {
-    console.error("Filter Error:", error);
-    list.innerHTML = "<p style='text-align:center; color:red;'>Error filtering by day.</p>";
-  }
-};
-  </script>
-</body>
-</html>
+      storageBucket: "gms-task-tracker.firebasest
