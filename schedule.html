@@ -4,7 +4,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Facility Tracker</title>
   <style>
-    /* 01 - ORIGINAL STYLE RESTORED */
     * { box-sizing: border-box; }
     body { margin: 0; font-family: Arial, sans-serif; background: #f2f2f2; padding: 6px; }
     .card { width: 100%; max-width: 430px; background: white; border-radius: 18px; padding: 12px; box-shadow: 0 4px 18px rgba(0,0,0,0.18); margin: auto; position: relative; }
@@ -27,11 +26,17 @@
     #categoryButtons button { min-height: 100px; font-size: 16px; }
     #areaButtons button { min-height: 70px; font-size: 18px; }
 
-    /* Dropdown */
+    /* Loading Spinner */
+    .loading-bg { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.7); display: flex; justify-content: center; align-items: center; z-index: 9999; }
+    .spinner { width: 50px; height: 50px; border: 5px solid #ddd; border-top: 5px solid #1976d2; border-radius: 50%; animation: spin 0.8s linear infinite; }
+    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+
     select { width: 100%; padding: 12px; border-radius: 10px; border: 2px solid #1976d2; margin-top: 5px; font-size: 16px; }
   </style>
 </head>
 <body>
+
+<div id="loadingScreen" class="loading-bg hidden"><div class="spinner"></div></div>
 
 <div class="card">
   <div id="view2">
@@ -85,109 +90,83 @@
 
   let currentAssign = session.assignment;
   let workDate = new Date();
-  let allAreas = [];
+  let currentWorkDayName = "";
+  let allAreasForDay = [];
 
-  /* 01 - CORE DATA LOAD & FILTER (FIXED) */
+  // Helper functions for UI
+  const showLoading = () => document.getElementById("loadingScreen").classList.remove("hidden");
+  const hideLoading = () => document.getElementById("loadingScreen").classList.add("hidden");
 
-async function loadAssignmentTasks() {
-  showLoading();
-  updateDateDisplay(); // Gets "Wednesday", etc.
-  
-  document.getElementById("employeeName").innerText = "Hi, " + employeeName;
-  document.getElementById("assignmentTitle").innerText = currentAssignment;
-  document.getElementById("workDateTitle").innerText = currentWorkDayName;
+  function updateDateDisplay() {
+    const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+    currentWorkDayName = days[workDate.getDay()];
+    document.getElementById("dateDisplay").innerText = currentWorkDayName + ", " + workDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  }
 
-  // A. Get the Mode (2 or 3)
-  const modeDoc = await getDoc(doc(db, "settings", "housekeepingMode"));
-  const modeData = modeDoc.exists() ? modeDoc.data() : {};
-  // Handles both 'value' and 'settingValue' field names
-  const mode = (modeData.settingValue || modeData.value || "two").toLowerCase();
-  const field = (mode === "three") ? "threeHousekeeperSchedule" : "twoHousekeeperSchedule";
-
-  // B. Fetch the Collections
-  const areaSnap = await getDocs(collection(db, "areas"));
-  
-  allAreasForDay = []; // We filter the ROOMS now, not just tasks
-
-  areaSnap.forEach(aDoc => {
-    const area = aDoc.data();
-    const areaDay = String(area.scheduleDay || "").toLowerCase();
-    const today = currentWorkDayName.toLowerCase();
-
-    // FILTER LOGIC:
-    // 1. Must match "Daily" OR the specific day name (e.g. "wednesday")
-    const isCorrectDay = (areaDay === "daily" || areaDay === today);
+  /* 01 - CORE DATA LOAD & FILTER */
+  async function loadAssignmentTasks() {
+    showLoading();
+    updateDateDisplay();
     
-    // 2. Must match your Assignment in the correct Mode column
-    const isCorrectAssign = String(area[field]).trim() === String(currentAssignment).trim();
+    document.getElementById("empName").innerText = "Hi, " + session.firstName;
+    document.getElementById("assignDisplay").innerText = currentAssign;
 
-    if (isCorrectDay && isCorrectAssign) {
-      allAreasForDay.push({
-        id: aDoc.id,
-        ...area
-      });
-    }
-  });
+    // A. Get the Mode (2 or 3) from settings
+    const modeDoc = await getDoc(doc(db, "settings", "housekeepingMode"));
+    const modeData = modeDoc.exists() ? modeDoc.data() : {};
+    const mode = (modeData.settingValue || modeData.value || "two").toLowerCase();
+    const field = (mode === "three") ? "threeHousekeeperSchedule" : "twoHousekeeperSchedule";
 
-  drawCategories();
-  hideLoading();
-}
+    // B. Fetch Areas
+    const areaSnap = await getDocs(collection(db, "areas"));
+    allAreasForDay = [];
+    const schedules = new Set();
 
-/* 02 - DRAW CATEGORIES (FIXED COUNTING) */
+    areaSnap.forEach(aDoc => {
+      const area = aDoc.data();
+      const areaDay = String(area.scheduleDay || "").toLowerCase();
+      const today = currentWorkDayName.toLowerCase();
+      
+      const sched = area[field];
+      if(sched) schedules.add(sched);
 
-function drawCategories() {
-  const box = document.getElementById("categoryButtons");
-  box.innerHTML = "";
-  
-  // Your standard categories
-  const cats = ["Common Area", "Weekly Room", "Daily Room", "Dehumidifier"];
-  
-  cats.forEach(cat => {
-    // We count the number of AREAS in this category
-    const count = allAreasForDay.filter(a => a.category === cat).length;
-    
-    const btn = document.createElement("button");
-    btn.innerText = `${cat} (${count})`;
-    
-    // If there is work, make it Red. If 0, make it Grey/Back style.
-    btn.className = (count > 0) ? "red" : "back";
-    
-    btn.onclick = () => {
-      if (count > 0) {
-        document.getElementById("view2").classList.add("hidden");
-        document.getElementById("view3").classList.remove("hidden");
-        drawAreaButtons(cat);
+      // FILTER LOGIC: Match Assignment + Day (Daily or Today)
+      const isCorrectDay = (areaDay === "daily" || areaDay === today);
+      const isCorrectAssign = String(sched).trim() === String(currentAssign).trim();
+
+      if (isCorrectDay && isCorrectAssign) {
+        allAreasForDay.push({ id: aDoc.id, ...area });
       }
-    };
-    box.appendChild(btn);
-  });
-}
+    });
 
-/* 03 - DRAW AREA BUTTONS (VIEW 3) */
+    // Populate Cover Dropdown
+    const select = document.getElementById("assignSelect");
+    select.innerHTML = '<option value="">Select Schedule...</option>' + 
+      Array.from(schedules).map(s => `<option value="${s}">${s}</option>`).join('');
 
-function drawAreaButtons(cat) {
-  document.getElementById("currentCatTitle").innerText = cat;
-  const box = document.getElementById("areaButtons");
-  box.innerHTML = "";
-  
-  const filteredAreas = allAreasForDay.filter(a => a.category === cat);
-  
-  filteredAreas.forEach(area => {
-    const btn = document.createElement("button");
-    btn.className = "red"; // Changes to Green once the room is saved in logs
-    btn.innerHTML = `<div class="room-number">${area.areaName}</div>`;
-    btn.onclick = () => {
-      // Pass the data to the checklist page
-      sessionStorage.setItem("selectedWork", JSON.stringify({ 
-        workId: area.workId, 
-        areaName: area.areaName 
-      }));
-      window.location.href = "tasks.html";
-    };
-    box.appendChild(btn);
-  });
-}
+    drawCategories();
+    hideLoading();
+  }
 
+  /* 02 - DRAW CATEGORIES */
+  function drawCategories() {
+    const box = document.getElementById("categoryButtons");
+    box.innerHTML = "";
+    const cats = ["Common Area", "Weekly Room", "Daily Room", "Dehumidifier"];
+
+    cats.forEach(cat => {
+      const count = allAreasForDay.filter(a => a.category === cat).length;
+      const btn = document.createElement("button");
+      btn.className = (count > 0) ? "red" : "back";
+      btn.innerText = `${cat} (${count})`;
+      btn.onclick = () => {
+        if(count > 0) showV3(cat);
+      };
+      box.appendChild(btn);
+    });
+  }
+
+  /* 03 - DRAW AREA BUTTONS (VIEW 3) */
   function showV3(cat) {
     document.getElementById("view2").classList.add("hidden");
     document.getElementById("view3").classList.remove("hidden");
@@ -195,25 +174,27 @@ function drawAreaButtons(cat) {
 
     const box = document.getElementById("areaButtons");
     box.innerHTML = "";
-    const filtered = allAreas.filter(a => a.category === cat);
+    const filtered = allAreasForDay.filter(a => a.category === cat);
 
     filtered.forEach(area => {
       const btn = document.createElement("button");
       btn.className = "red";
-      btn.innerText = area.areaName;
+      btn.innerHTML = `<div class="room-number">${area.areaName}</div>`;
       btn.onclick = () => {
-        sessionStorage.setItem("selectedWork", JSON.stringify({ workId: area.workId, areaName: area.areaName }));
+        sessionStorage.setItem("selectedWork", JSON.stringify({ 
+          workId: area.workId, 
+          areaName: area.areaName 
+        }));
         location.href = "tasks.html";
       };
       box.appendChild(btn);
     });
-    if(filtered.length === 0) box.innerHTML = "<h3>No rooms found for today.</h3>";
   }
 
-  // 3. UTILS
+  // UTILS
   window.adjustDate = (n) => {
     workDate.setDate(workDate.getDate() + n);
-    loadData();
+    loadAssignmentTasks();
   };
 
   window.showCover = () => document.getElementById("coverBox").classList.toggle("hidden");
@@ -221,7 +202,7 @@ function drawAreaButtons(cat) {
   window.updateAssignment = (val) => {
     if(!val) return;
     currentAssign = val;
-    loadData();
+    loadAssignmentTasks();
     document.getElementById("coverBox").classList.add("hidden");
   };
 
@@ -230,7 +211,8 @@ function drawAreaButtons(cat) {
     document.getElementById("view3").classList.add("hidden");
   };
 
-  loadData();
+  // Initial Load
+  loadAssignmentTasks();
 </script>
 </body>
 </html>
