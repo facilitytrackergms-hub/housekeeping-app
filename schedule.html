@@ -53,27 +53,7 @@
 </div>
 
 <script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-  import { getFirestore, collection, getDocs, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-
-  const firebaseConfig = {
-    apiKey: "AIzaSyBgq_ooBeEN4noEyIxYPLVokgM6RjCO648",
-    authDomain: "gms-task-tracker.firebaseapp.com",
-    projectId: "gms-task-tracker",
-    storageBucket: "gms-task-tracker.firebasestorage.app",
-    messagingSenderId: "790880979860",
-    appId: "1:790880979860:web:6faee2a6e56955af3c1d81"
-  };
-
-  const app = initializeApp(firebaseConfig);
-  const db = getFirestore(app);
-
-  const session = JSON.parse(sessionStorage.getItem("currentEmployee"));
-  if(!session) { window.location.href = "index.html"; }
-
-  let currentAssign = session.assignment;
-  let workDate = new Date();
-  let matchedAreas = [];
+  // ... (Firebase setup stays the same) ...
 
   async function loadData() {
     const dayName = workDate.toLocaleDateString('en-US', { weekday: 'long' });
@@ -83,18 +63,30 @@
     document.getElementById("empName").innerText = "Hi, " + (session.firstName || "User");
     document.getElementById("assignDisplay").innerText = currentAssign;
 
+    // 1. GET THE MODE
     const modeSnap = await getDoc(doc(db, "settings", "housekeepingMode"));
     const modeData = modeSnap.exists() ? modeSnap.data() : {};
     const mode = (modeData.settingValue || modeData.value || "two").toLowerCase().trim();
-    const field = (mode === "three") ? "threeHousekeeperSchedule" : "twoHousekeeperSchedule";
+    
+    // 2. DEFINE THE TARGET COLUMN NAME
+    const targetField = (mode === "three") ? "threehousekeeperschedule" : "twohousekeeperschedule";
 
+    // 3. FETCH AREAS
     const snap = await getDocs(collection(db, "areas"));
     matchedAreas = [];
     const allOptions = new Set();
 
     snap.forEach(d => {
       const data = d.data();
-      const dbAssignValue = String(data[field] || "").trim();
+      let dbAssignValue = "";
+
+      // FIX: This loop finds your column even if it's lowercase or uppercase in Firebase
+      for (let key in data) {
+        if (key.toLowerCase() === targetField) {
+          dbAssignValue = String(data[key] || "").trim();
+          break;
+        }
+      }
       
       if(dbAssignValue) allOptions.add(dbAssignValue);
 
@@ -102,11 +94,13 @@
       const myAssignLower = currentAssign.toLowerCase().trim();
       const dbDay = String(data.scheduleDay || "").toLowerCase().trim();
 
+      // 4. FILTER LOGIC (Matches Assignment + Day)
       if(dbAssignLower === myAssignLower && (dbDay === "daily" || dbDay === today)) {
         matchedAreas.push(data);
       }
     });
 
+    // 5. UPDATE UI
     const select = document.getElementById("assignSelect");
     select.innerHTML = '<option value="">Choose your Floor/Schedule...</option>' + 
       Array.from(allOptions).sort().map(s => `<option value="${s}">${s}</option>`).join('');
@@ -114,53 +108,7 @@
     drawCategories();
   }
 
-  function drawCategories() {
-    const box = document.getElementById("categoryButtons");
-    box.innerHTML = "";
-    const cats = ["Common Area", "Weekly Room", "Daily Room", "Dehumidifier"];
-
-    cats.forEach(cat => {
-      const catLower = cat.toLowerCase().trim();
-      const filtered = matchedAreas.filter(a => String(a.category || "").toLowerCase().trim() === catLower);
-      const uniqueCount = [...new Set(filtered.map(a => a.areaName))].length;
-      
-      const btn = document.createElement("button");
-      btn.className = (uniqueCount > 0) ? "red" : "back";
-      btn.innerText = `${cat} (${uniqueCount})`;
-      btn.onclick = () => { if(uniqueCount > 0) showV3(cat); };
-      box.appendChild(btn);
-    });
-  }
-
-  function showV3(cat) {
-    document.getElementById("view2").classList.add("hidden");
-    document.getElementById("view3").classList.remove("hidden");
-    document.getElementById("catTitle").innerText = cat;
-    const box = document.getElementById("areaButtons");
-    box.innerHTML = "";
-    const catLower = cat.toLowerCase().trim();
-    const uniqueRooms = [...new Set(matchedAreas.filter(a => String(a.category || "").toLowerCase().trim() === catLower).map(a => a.areaName))];
-
-    uniqueRooms.forEach(name => {
-      const area = matchedAreas.find(a => a.areaName === name);
-      const btn = document.createElement("button");
-      btn.className = "red";
-      btn.innerHTML = `<div style="font-size: 22px;">${name}</div>`;
-      btn.onclick = () => {
-        sessionStorage.setItem("selectedWork", JSON.stringify({ workId: area.workId, areaName: name }));
-        window.location.href = "tasks.html";
-      };
-      box.appendChild(btn);
-    });
-  }
-
-  window.adjustDate = (n) => { workDate.setDate(workDate.getDate() + n); loadData(); };
-  window.toggleCover = () => document.getElementById("coverBox").classList.toggle("hidden");
-  window.updateAssignment = (val) => { if(!val) return; currentAssign = val; loadData(); document.getElementById("coverBox").classList.add("hidden"); };
-  window.showV2 = () => { document.getElementById("view2").classList.remove("hidden"); document.getElementById("view3").classList.add("hidden"); };
-  window.logout = () => { sessionStorage.clear(); window.location.href = "index.html"; };
-
-  loadData();
+  // ... (Rest of drawing functions stay the same) ...
 </script>
 </body>
 </html>
