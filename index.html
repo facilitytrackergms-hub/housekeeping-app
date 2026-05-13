@@ -1,20 +1,67 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GCR Housekeeping</title>
-    <link rel="stylesheet" href="assets/styles.css">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Employee Login</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; padding: 0; font-family: Arial, sans-serif; background: #eef2f7; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+    .card { width: 92%; max-width: 420px; background: white; border-radius: 30px; padding: 35px 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.12); text-align: center; }
+    .view-tag { display: inline-block; background: black; color: white; padding: 4px 10px; border-radius: 8px; font-size: 12px; margin-bottom: 14px; }
+    h1 { margin: 0 0 35px 0; font-size: 42px; color: #1847d1; }
+    input { width: 100%; padding: 22px; font-size: 28px; border-radius: 18px; border: 2px solid #2e5cff; outline: none; margin-bottom: 22px; text-align: center; }
+    button { width: 100%; padding: 22px; font-size: 28px; font-weight: bold; border: none; border-radius: 18px; background: #2e5cff; color: white; cursor: pointer; }
+    #message { margin-top: 20px; padding: 22px; border-radius: 20px; font-size: 24px; font-weight: bold; display: none; }
+  </style>
 </head>
 <body>
-    <div id="app">
-        <!-- Dashboard components will inject here -->
-        <h1>Housekeeping Task Tracker</h1>
-        <div id="auth-status">Checking login...</div>
-        <div id="task-list"></div>
+  <div class="card">
+    <div class="view-tag">LOGIN</div>
+    <div id="pinView">
+      <h1>GCR Login</h1>
+      <input type="password" inputmode="numeric" id="pin" placeholder="Enter PIN">
+      <button onclick="checkPin()">NEXT</button>
     </div>
+    <div id="message"></div>
+  </div>
 
-    <!-- Firebase SDKs and App Logic -->
-    <script type="module" src="../src/scripts/app.js"></script>
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getFirestore, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBgq_ooBeEN4noEyIxYPLVokgM6RjCO648",
+      authDomain: "gms-task-tracker.firebaseapp.com",
+      projectId: "gms-task-tracker",
+      storageBucket: "gms-task-tracker.firebasestorage.app",
+      messagingSenderId: "790880979860",
+      appId: "1:790880979860:web:6faee2a6e56955af3c1d81"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    window.checkPin = async function() {
+      const pinInput = document.getElementById("pin").value.trim();
+      if (!pinInput) return;
+
+      try {
+        const q = query(collection(db, "employees"), where("pin", "==", Number(pinInput)));
+        const snap = await getDocs(q);
+
+        if (snap.empty) {
+          const msg = document.getElementById("message");
+          msg.style.display = "block";
+          msg.innerHTML = "Invalid PIN";
+          msg.style.color = "red";
+          return;
+        }
+
+        const emp = snap.docs[0].data();
+        sessionStorage.setItem("currentEmployee", JSON.stringify(emp));
+        window.location.href = emp.role === "Admin" ? "admin.html" : "schedule.html";
+      } catch (e) { console.error(e); }
+    };
+  </script>
 </body>
 </html>
