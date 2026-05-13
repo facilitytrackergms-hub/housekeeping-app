@@ -93,49 +93,52 @@
       grid.innerHTML = cats.map(c => `<div class="cat-btn" onclick="loadAreas('${c}')">${c}</div>`).join('');
     }
 
-    window.loadAreas = async function(category) {
-      document.getElementById("vNum").innerText = "V3 schedule.html";
-      document.getElementById("view-categories").style.display = "none";
-      document.getElementById("view-areas").style.display = "block";
-      document.getElementById("currentCat").innerText = category;
-      
-      const dayName = new Intl.DateTimeFormat('en-US', { weekday: 'long' }).format(workingDate);
-      const modeSnap = await getDoc(doc(db, "settings", "housekeepingMode"));
-      const mode = modeSnap.exists() ? (modeSnap.data().settingValue || modeSnap.data().value) : "two";
-      const field = (mode === "three") ? "threeHousekeeperSchedule" : "twoHousekeeperSchedule";
+    /* 01 - CORRECT DAY FILTERING LOGIC */
 
-      const q = query(
-        collection(db, "areas"), 
-        where("category", "==", category),
-        where(field, "==", user.assignment),
-        where("scheduleDay", "in", ["Daily", dayName])
-      );
+window.loadAreas = async function(catName) {
+  // Update labels for your reference
+  document.getElementById("vNum").innerText = "V3 schedule.html";
+  document.getElementById("view2").style.display = "none";
+  document.getElementById("view3").style.display = "block";
+  document.getElementById("currentCat").innerText = catName;
+  
+  const list = document.getElementById("areaList");
+  list.innerHTML = "<p style='text-align:center;'>Loading Rooms...</p>";
 
-      const snap = await getDocs(q);
-      const list = document.getElementById("areaList");
-      list.innerHTML = snap.empty ? "<p style='text-align:center;'>No work for this day.</p>" : "";
-      
-      snap.forEach(d => {
-        list.innerHTML += `<div class="card status-red">
-          <div><strong>${d.data().areaName}</strong></div>
-          <button class="start-btn" onclick="openTask('${d.data().workId}', '${d.data().areaName}')">START</button>
+  // CORRECTED: This gets "Monday", "Tuesday", etc. (No numbers)
+  const dayName = new Intl.DateTimeFormat('en-US', { weekday: 'long' }).format(workingDate);
+
+  try {
+    // 1. Get Mode (2 or 3)
+    const modeSnap = await getDoc(doc(db, "settings", "housekeepingMode"));
+    const mode = modeSnap.exists() ? (modeSnap.data().settingValue || modeSnap.data().value) : "two";
+    const scheduleField = (mode === "three") ? "threeHousekeeperSchedule" : "twoHousekeeperSchedule";
+
+    // 2. Query using the TEXT Day Name
+    const q = query(
+      collection(db, "areas"), 
+      where("category", "==", catName), 
+      where(scheduleField, "==", user.assignment), 
+      where("scheduleDay", "in", ["Daily", dayName]) // Matches "Monday" or "Daily"
+    );
+
+    const snap = await getDocs(q);
+    list.innerHTML = snap.empty ? `<p style='text-align:center;'>No rooms for ${dayName}.</p>` : "";
+    
+    snap.forEach(d => {
+      const data = d.data();
+      list.innerHTML += `
+        <div class="card status-red">
+          <div><strong>${data.areaName}</strong></div>
+          <button class="start-btn" onclick="openTask('${data.workId}', '${data.areaName}')">START</button>
         </div>`;
-      });
-    };
+    });
 
-    window.showCategories = () => {
-      document.getElementById("vNum").innerText = "V2 schedule.html";
-      document.getElementById("view-categories").style.display = "block";
-      document.getElementById("view-areas").style.display = "none";
-    };
-
-    window.openTask = (workId, areaName) => {
-      sessionStorage.setItem("selectedWork", JSON.stringify({ workId, areaName, date: workingDate.toISOString() }));
-      window.location.href = "tasks.html";
-    };
-
-    updateHeader();
-    drawCategories();
+  } catch (error) {
+    console.error("Filter Error:", error);
+    list.innerHTML = "<p style='text-align:center; color:red;'>Error filtering by day.</p>";
+  }
+};
   </script>
 </body>
 </html>
