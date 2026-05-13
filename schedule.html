@@ -2,16 +2,18 @@
 <html>
 <head>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Work Schedule</title>
+  <title>GCR Schedule</title>
   <style>
     * { box-sizing: border-box; }
     body { margin: 0; padding: 20px; font-family: Arial, sans-serif; background: #eef2f7; }
     .header { text-align: center; margin-bottom: 30px; }
-    h2 { color: #1847d1; margin-bottom: 5px; }
-    .tag { background: black; color: white; padding: 4px 10px; border-radius: 8px; font-size: 14px; }
+    h2 { color: #1847d1; margin-bottom: 5px; font-size: 28px; }
+    .tag { background: black; color: white; padding: 5px 12px; border-radius: 8px; font-size: 14px; }
     .card { background: white; border-radius: 20px; padding: 25px; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+    .info { flex-grow: 1; }
     .area-name { font-size: 20px; font-weight: bold; color: #333; }
-    .start-btn { background: #2e5cff; color: white; border: none; border-radius: 12px; padding: 12px 25px; font-weight: bold; cursor: pointer; }
+    .cat-name { font-size: 14px; color: #666; text-transform: uppercase; }
+    .start-btn { background: #2e5cff; color: white; border: none; border-radius: 12px; padding: 15px 25px; font-weight: bold; cursor: pointer; }
     .logout { display: block; margin: 40px auto; color: #666; border: none; background: none; text-decoration: underline; }
   </style>
 </head>
@@ -45,45 +47,52 @@
     document.getElementById("nameDisplay").innerText = `Hi, ${user.firstName}`;
     document.getElementById("assignDisplay").innerText = user.assignment;
 
-    async function loadTasks() {
+    async function loadSchedule() {
+      // 1. Get Global Mode
       const modeSnap = await getDoc(doc(db, "settings", "housekeepingMode"));
-      const mode = modeSnap.exists() ? modeSnap.data().value : "two";
+      const mode = modeSnap.exists() ? modeSnap.data().settingValue : "two";
 
-      let coll = "";
-      if (user.assignment === "Laundry") coll = "Laundry";
-      else if (mode === "three") {
-        if (user.assignment === "HK1") coll = "1stfloor";
-        if (user.assignment === "HK2") coll = "2ndFloor";
-        if (user.assignment === "HK3") coll = "3rdFloor";
-      } else {
-        if (user.assignment === "HK1") coll = "HK1";
-        if (user.assignment === "HK2") coll = "HK2";
+      // 2. Identify correct field to filter by (twoHousekeeperSchedule vs threeHousekeeperSchedule)
+      const scheduleField = (mode === "three") ? "threeHousekeeperSchedule" : "twoHousekeeperSchedule";
+      
+      // 3. Get Today's Day
+      const day = new Intl.DateTimeFormat('en-US', { weekday: 'long' }).format(new Date());
+
+      // 4. Query the 'areas' collection based on user assignment and mode
+      const q = query(
+        collection(db, "areas"), 
+        where(scheduleField, "==", user.assignment),
+        where("scheduleDay", "in", ["Daily", day])
+      );
+
+      const snap = await getDocs(q);
+      const listDiv = document.getElementById("list");
+      listDiv.innerHTML = "";
+
+      if (snap.empty) {
+        listDiv.innerHTML = `<p style="text-align:center;">No tasks scheduled for ${day}.</p>`;
+        return;
       }
 
-      if (!coll) return;
-
-      const day = new Intl.DateTimeFormat('en-US', { weekday: 'long' }).format(new Date());
-      const q = query(collection(db, coll), where("Schedule", "in", ["Daily", day]));
-      const snap = await getDocs(q);
-      
-      const areas = [...new Set(snap.docs.map(d => d.data().Area))];
-      const listDiv = document.getElementById("list");
-      
-      areas.forEach(a => {
+      snap.forEach(d => {
+        const data = d.data();
         listDiv.innerHTML += `
           <div class="card">
-            <div class="area-name">${a}</div>
-            <button class="start-btn" onclick="goTo('${a}', '${coll}')">START</button>
+            <div class="info">
+              <div class="cat-name">${data.category}</div>
+              <div class="area-name">${data.areaName}</div>
+            </div>
+            <button class="start-btn" onclick="openTask('${data.workId}', '${data.areaName}')">START</button>
           </div>`;
       });
     }
 
-    window.goTo = function(area, source) {
-      sessionStorage.setItem("selectedDailyTask", JSON.stringify({ assignment: area, source: source }));
+    window.openTask = function(workId, areaName) {
+      sessionStorage.setItem("selectedWork", JSON.stringify({ workId: workId, areaName: areaName }));
       window.location.href = "task-details.html";
     };
 
-    loadTasks();
+    loadSchedule();
   </script>
 </body>
 </html>
