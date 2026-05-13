@@ -1,1 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GCR Admin</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #eef2f7; padding: 20px; }
+    .card { background: white; border-radius: 15px; padding: 20px; margin-bottom: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+    h2 { color: #1847d1; }
+    input, select { width: 100%; padding: 12px; margin: 8px 0; border: 1px solid #ccc; border-radius: 8px; }
+    button { width: 100%; padding: 15px; background: #2e5cff; color: white; border: none; border-radius: 8px; font-weight: bold; cursor: pointer; }
+    .log-item { border-bottom: 1px solid #eee; padding: 10px 0; font-size: 14px; }
+  </style>
+</head>
+<body>
+  <h1>Admin Control</h1>
 
+  <div class="card">
+    <h2>Add Employee</h2>
+    <input type="text" id="empName" placeholder="Full Name">
+    <input type="number" id="empPin" placeholder="PIN">
+    <select id="empAssignment">
+      <option value="HK Schedule 1">HK Schedule 1</option>
+      <option value="HK Schedule 2">HK Schedule 2</option>
+    </select>
+    <button onclick="addEmployee()">ADD EMPLOYEE</button>
+  </div>
+
+  <div class="card">
+    <h2>Recent Activity</h2>
+    <div id="logContainer">Loading logs...</div>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getFirestore, collection, addDoc, query, orderBy, limit, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBgq_ooBeEN4noEyIxYPLVokgM6RjCO648",
+      authDomain: "gms-task-tracker.firebaseapp.com",
+      projectId: "gms-task-tracker",
+      storageBucket: "gms-task-tracker.firebasestorage.app",
+      messagingSenderId: "790880979860",
+      appId: "1:790880979860:web:6faee2a6e56955af3c1d81"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    window.addEmployee = async function() {
+      const name = document.getElementById("empName").value;
+      const pin = Number(document.getElementById("empPin").value);
+      const assignment = document.getElementById("empAssignment").value;
+      
+      await addDoc(collection(db, "employees"), {
+        employeeName: name,
+        firstName: name.split(' ')[0],
+        pin: pin,
+        assignment: assignment,
+        role: "employee",
+        active: "Yes"
+      });
+      alert("Employee Added");
+    };
+
+    async function loadLogs() {
+      const q = query(collection(db, "logs"), orderBy("timestamp", "desc"), limit(10));
+      const snap = await getDocs(q);
+      const container = document.getElementById("logContainer");
+      container.innerHTML = "";
+      snap.forEach(doc => {
+        const data = doc.data();
+        container.innerHTML += `<div class="log-item"><b>${data.employeeName}</b> finished <b>${data.assignment}</b></div>`;
+      });
+    }
+    loadLogs();
+  </script>
+</body>
+</html>
