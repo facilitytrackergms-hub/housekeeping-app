@@ -4,7 +4,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Facility Tracker</title>
   <style>
-    /* 01 - STYLE RESTORED */
     * { box-sizing: border-box; }
     body { margin: 0; font-family: Arial, sans-serif; background: #f2f2f2; padding: 10px; }
     .card { width: 100%; max-width: 430px; background: white; border-radius: 20px; padding: 15px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); margin: auto; position: relative; }
@@ -84,13 +83,11 @@
     document.getElementById("empName").innerText = "Hi, " + (session.firstName || "User");
     document.getElementById("assignDisplay").innerText = currentAssign;
 
-    // 1. GET MODE (Check column: twoHousekeeperSchedule vs threeHousekeeperSchedule)
     const modeSnap = await getDoc(doc(db, "settings", "housekeepingMode"));
     const modeData = modeSnap.exists() ? modeSnap.data() : {};
     const mode = (modeData.settingValue || modeData.value || "two").toLowerCase().trim();
     const field = (mode === "three") ? "threeHousekeeperSchedule" : "twoHousekeeperSchedule";
 
-    // 2. FETCH AREAS
     const snap = await getDocs(collection(db, "areas"));
     matchedAreas = [];
     const allOptions = new Set();
@@ -99,20 +96,17 @@
       const data = d.data();
       const dbAssignValue = String(data[field] || "").trim();
       
-      // Collect Floor 1, Floor 2, etc. for the dropdown based on the mode
       if(dbAssignValue) allOptions.add(dbAssignValue);
 
       const dbAssignLower = dbAssignValue.toLowerCase();
       const myAssignLower = currentAssign.toLowerCase().trim();
       const dbDay = String(data.scheduleDay || "").toLowerCase().trim();
 
-      // 3. FILTER LOGIC
       if(dbAssignLower === myAssignLower && (dbDay === "daily" || dbDay === today)) {
         matchedAreas.push(data);
       }
     });
 
-    // 4. POPULATE DROPDOWN (Now shows Floors if in Mode 3)
     const select = document.getElementById("assignSelect");
     select.innerHTML = '<option value="">Choose your Floor/Schedule...</option>' + 
       Array.from(allOptions).sort().map(s => `<option value="${s}">${s}</option>`).join('');
