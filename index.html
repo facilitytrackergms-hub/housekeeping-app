@@ -2,105 +2,77 @@
 <html>
 <head>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Employee Login</title>
+  <title>GCR Login</title>
   <style>
-    /* 01 - GLOBAL STYLE */
     * { box-sizing: border-box; }
-    body { margin: 0; padding: 0; font-family: Arial, sans-serif; background: #eef2f7; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
-    
-    .card { 
-      width: 92%; 
-      max-width: 420px; 
-      background: white; 
-      border-radius: 30px; 
-      padding: 35px 25px; 
-      box-shadow: 0 10px 30px rgba(0,0,0,0.12); 
-      text-align: center; 
-      position: relative; 
-    }
-    
-    /* 02 - VIEW LABEL */
-    .view-header-label { 
-      position: absolute; 
-      top: 12px; 
-      right: 20px; 
-      font-weight: bold; 
-      color: #1847d1; 
-      font-size: 13px; 
-      letter-spacing: 0.5px;
-    }
-    
-    .view-tag { display: inline-block; background: black; color: white; padding: 4px 10px; border-radius: 8px; font-size: 12px; margin-bottom: 14px; }
-    h1 { margin: 0 0 35px 0; font-size: 42px; color: #1847d1; }
-    
-    /* 03 - INPUTS & BUTTONS */
-    input { width: 100%; padding: 22px; font-size: 28px; border-radius: 18px; border: 2px solid #2e5cff; outline: none; margin-bottom: 22px; text-align: center; }
-    button { width: 100%; padding: 22px; font-size: 28px; font-weight: bold; border: none; border-radius: 18px; background: #2e5cff; color: white; cursor: pointer; }
-    #message { margin-top: 20px; padding: 15px; border-radius: 15px; font-size: 18px; display: none; }
+    body { margin: 0; font-family: Arial, sans-serif; background: #f2f2f2; display: flex; justify-content: center; align-items: center; height: 100vh; }
+    .login-card { background: white; padding: 30px; border-radius: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); width: 90%; max-width: 350px; text-align: center; }
+    input { width: 100%; padding: 15px; margin: 15px 0; border: 2px solid #ddd; border-radius: 12px; font-size: 20px; text-align: center; }
+    button { width: 100%; padding: 15px; background: #1976d2; color: white; border: none; border-radius: 12px; font-size: 18px; font-weight: bold; cursor: pointer; }
+    .error { color: #c62828; font-size: 14px; margin-top: 10px; display: none; }
   </style>
 </head>
 <body>
 
-  <div class="card">
-    <div class="view-header-label">V1 index.html</div>
+<div class="login-card">
+  <h2>Enter PIN</h2>
+  <input type="password" id="pinInput" placeholder="0000" maxlength="4" inputmode="numeric">
+  <button onclick="handleLogin()">LOGIN</button>
+  <div id="errorMsg" class="error">Invalid PIN for current mode.</div>
+</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+  import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyBgq_ooBeEN4noEyIxYPLVokgM6RjCO648",
+    authDomain: "gms-task-tracker.firebaseapp.com",
+    projectId: "gms-task-tracker",
+    storageBucket: "gms-task-tracker.firebasestorage.app",
+    messagingSenderId: "790880979860",
+    appId: "1:790880979860:web:6faee2a6e56955af3c1d81"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  window.handleLogin = async function() {
+    const pin = document.getElementById("pinInput").value;
+    const error = document.getElementById("errorMsg");
     
-    <div class="view-tag">LOGIN</div>
-    <h1>GCR Login</h1>
-    <input type="password" inputmode="numeric" id="pin" placeholder="Enter PIN">
-    <button onclick="checkPin()">NEXT</button>
-    <div id="message"></div>
-  </div>
+    // 1. GET CURRENT MODE
+    const modeSnap = await getDoc(doc(db, "settings", "housekeepingMode"));
+    const modeData = modeSnap.exists() ? modeSnap.data() : {};
+    const mode = (modeData.settingValue || modeData.value || "two").toLowerCase().trim();
 
-  <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getFirestore, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    // 2. DEFINE PIN MAPPING
+    let assignment = "";
+    let displayName = "";
 
-    const firebaseConfig = {
-      apiKey: "AIzaSyBgq_ooBeEN4noEyIxYPLVokgM6RjCO648",
-      authDomain: "gms-task-tracker.firebaseapp.com",
-      projectId: "gms-task-tracker",
-      storageBucket: "gms-task-tracker.firebasestorage.app",
-      messagingSenderId: "790880979860",
-      appId: "1:790880979860:web:6faee2a6e56955af3c1d81"
-    };
+    if (mode === "three") {
+      if (pin === "1234") { assignment = "Floor 1"; displayName = "Floor 1 Staff"; }
+      else if (pin === "1235") { assignment = "Floor 2"; displayName = "Floor 2 Staff"; }
+      else if (pin === "1236") { assignment = "Floor 3"; displayName = "Floor 3 Staff"; }
+    } else {
+      // MODE 2 (Default)
+      if (pin === "1234") { assignment = "HK Schedule 1"; displayName = "HK 1 Staff"; }
+      else if (pin === "1235") { assignment = "HK Schedule 2"; displayName = "HK 2 Staff"; }
+    }
 
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
-
-    window.checkPin = async function() {
-      const pinVal = document.getElementById("pin").value.trim();
-      const msg = document.getElementById("message");
-      if (!pinVal) return;
-
-      try {
-        const q = query(collection(db, "employees"), where("pin", "==", Number(pinVal)));
-        const snap = await getDocs(q);
-
-        if (snap.empty) {
-          msg.style.display = "block";
-          msg.innerText = "Invalid PIN";
-          msg.style.color = "red";
-          return;
-        }
-
-        const empDoc = snap.docs[0].data();
-        sessionStorage.setItem("currentEmployee", JSON.stringify({
-          firstName: empDoc.firstName || "User",
-          assignment: empDoc.assignment || "HK Schedule 1",
-          role: empDoc.role || "Employee"
-        }));
-
-        if (empDoc.role === "Admin") {
-          window.location.href = "admin.html";
-        } else {
-          window.location.href = "schedule.html";
-        }
-
-      } catch (e) {
-        msg.style.display = "block";
-        msg.innerText = "Error";
-      }
-    };
-  </script>
+    // 3. EXECUTE LOGIN
+    if (assignment) {
+      const userData = {
+        firstName: displayName,
+        assignment: assignment,
+        loginMode: mode
+      };
+      sessionStorage.setItem("currentEmployee", JSON.stringify(userData));
+      window.location.href = "schedule.html";
+    } else {
+      error.style.display = "block";
+    }
+  };
+</script>
 </body>
 </html>
