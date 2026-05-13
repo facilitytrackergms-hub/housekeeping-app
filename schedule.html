@@ -6,82 +6,67 @@
   <style>
     /* 01 - ORIGINAL STYLE RESTORED */
     * { box-sizing: border-box; }
-    body { margin: 0; font-family: Arial, sans-serif; background: #f2f2f2; min-height: 100vh; display: flex; justify-content: center; align-items: flex-start; padding: 6px; }
-    .card { width: 100%; max-width: 430px; background: white; border-radius: 18px; padding: 12px; box-shadow: 0 4px 18px rgba(0,0,0,0.18); position: relative; }
+    body { margin: 0; font-family: Arial, sans-serif; background: #f2f2f2; padding: 6px; }
+    .card { width: 100%; max-width: 430px; background: white; border-radius: 18px; padding: 12px; box-shadow: 0 4px 18px rgba(0,0,0,0.18); margin: auto; position: relative; }
     
     .view-tag { display: inline-block; background: black; color: white; padding: 4px 10px; border-radius: 8px; font-size: 12px; margin-bottom: 6px; }
-    .view-center { text-align: center; }
-    h2, h3 { text-align: center; margin-top: 0; }
-    h2 { font-size: 22px; margin-bottom: 8px; }
-    h3 { font-size: 18px; margin-bottom: 8px; }
-
-    button { width: 100%; border: none; border-radius: 12px; background: #1976d2; color: white; font-size: 17px; font-weight: bold; padding: 11px; margin: 4px 0; cursor: pointer; }
-    .green { background: #2e7d32 !important; }
-    .yellow { background: #f9a825 !important; color: black !important; }
+    h2, h3 { text-align: center; margin: 5px 0; }
+    
+    button { width: 100%; border: none; border-radius: 12px; background: #1976d2; color: white; font-size: 17px; font-weight: bold; padding: 14px; margin: 6px 0; cursor: pointer; }
     .red { background: #c62828 !important; }
     .back { background: #555 !important; }
     .hidden { display: none !important; }
 
-    /* Top Info & Date Picker */
-    .top-info-box { border: 2px solid #e0e0e0; border-radius: 18px; padding: 10px; margin: 4px 0 10px; background: #fafafa; }
-    .date-section-box { border: 2px solid #e0e0e0; border-radius: 18px; padding: 10px; margin: 0 0 14px; background: #fafafa; }
-    .date-row { display: flex; align-items: center; justify-content: center; gap: 10px; }
-    .date-change-btn { width: auto; font-size: 14px; padding: 10px 14px; background: #555; }
-    .hidden-date { position: absolute; opacity: 0; pointer-events: none; }
+    /* Header UI */
+    .top-box { border: 2px solid #e0e0e0; border-radius: 18px; padding: 12px; margin-bottom: 10px; background: #fafafa; text-align: center; }
+    .date-row { display: flex; align-items: center; justify-content: center; gap: 10px; margin-bottom: 10px; }
+    .date-btn { width: auto; padding: 8px 12px; background: #555; font-size: 14px; }
+    
+    /* Category & Area Grids */
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    #categoryButtons button { min-height: 100px; font-size: 16px; }
+    #areaButtons button { min-height: 70px; font-size: 18px; }
 
-    /* Grids */
-    .category-section-box { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-top: 8px; }
-    #categoryButtons button { min-height: 92px; font-size: 18px; border-radius: 18px; padding: 14px 8px; line-height: 1.15; }
-    .rooms-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
-    .rooms-grid button { min-height: 62px; font-size: 13px; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: 12px; }
-    .room-number { font-size: 18px; font-weight: bold; }
-
-    /* Spinner */
-    .loading-bg { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(255,255,255,0.7); display: flex; justify-content: center; align-items: center; z-index: 9999; }
-    .spinner { width: 60px; height: 60px; border: 6px solid #ddd; border-top: 6px solid #1976d2; border-radius: 50%; animation: spin 0.8s linear infinite; }
-    @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
+    /* Dropdown */
+    select { width: 100%; padding: 12px; border-radius: 10px; border: 2px solid #1976d2; margin-top: 5px; font-size: 16px; }
   </style>
 </head>
 <body>
 
 <div class="card">
-  <div id="loadingScreen" class="loading-bg hidden"><div class="spinner"></div></div>
-
   <div id="view2">
     <div class="view-tag">V2 schedule.html</div>
     
-    <div class="date-section-box">
+    <div class="top-box">
       <div class="date-row">
-        <button class="date-change-btn" onclick="adjustDate(-1)">◀</button>
-        <h3 id="workDateTitle">Today</h3>
-        <button class="date-change-btn" onclick="adjustDate(1)">▶</button>
-        <button class="date-change-btn" onclick="openCalendar()">📅</button>
-        <input type="date" id="quickDatePicker" class="hidden-date" onchange="changeWorkDateFromCalendar()">
+        <button class="date-btn" onclick="adjustDate(-1)">◀</button>
+        <h3 id="dateDisplay">Today</h3>
+        <button class="date-btn" onclick="adjustDate(1)">▶</button>
+      </div>
+      <h2 id="empName">Hi, ---</h2>
+      <h3 id="assignDisplay" style="color:#1976d2;">---</h3>
+      
+      <button id="coverBtn" style="font-size:12px; padding:8px; background:#666;" onclick="showCover()">COVER ANOTHER ASSIGNMENT</button>
+      <div id="coverBox" class="hidden">
+        <select id="assignSelect" onchange="updateAssignment(this.value)"></select>
       </div>
     </div>
 
-    <div class="top-info-box">
-      <h2 id="employeeNameDisplay">Welcome</h2>
-      <h2 id="assignmentTitle" style="color: #1976d2;">Schedule</h2>
-      <button id="coverScheduleButton" class="cover-btn" onclick="showCoverDropdown()">COVER ANOTHER ASSIGNMENT</button>
-      <select id="coverScheduleSelect" class="hidden" onchange="changeCoverSchedule()"></select>
-    </div>
-
-    <div id="categoryButtons" class="category-section-box"></div>
-    <button class="back" onclick="logout()" style="margin-top: 20px;">LOGOUT</button>
+    <div id="categoryButtons" class="grid-2"></div>
+    <button class="back" onclick="location.href='index.html'" style="margin-top:20px;">LOGOUT</button>
   </div>
 
   <div id="view3" class="hidden">
     <div class="view-tag">V3 schedule.html</div>
-    <h3 id="currentCatTitle" style="color: #1976d2; font-size: 24px;">Category</h3>
-    <div id="areaButtons" class="rooms-grid"></div>
-    <button class="back" onclick="backToCategories()" style="margin-top: 20px;">BACK</button>
+    <h2 id="catTitle" style="color:#1976d2;">Category</h2>
+    <div id="areaButtons" class="grid-2"></div>
+    <button class="back" onclick="showV2()" style="margin-top:20px;">BACK</button>
   </div>
 </div>
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-  import { getFirestore, collection, query, where, getDocs, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+  import { getFirestore, collection, getDocs, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyBgq_ooBeEN4noEyIxYPLVokgM6RjCO648",
@@ -95,156 +80,108 @@
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
 
-  const sessionData = JSON.parse(sessionStorage.getItem("currentEmployee"));
-  if (!sessionData) { window.location.href = "index.html"; }
+  const session = JSON.parse(sessionStorage.getItem("currentEmployee"));
+  if(!session) location.href = "index.html";
 
-  let currentAssignment = sessionData.assignment;
-  let currentWorkDateISO = new Date().toISOString().split('T')[0];
-  let currentWorkDayName = "";
-  let selectedCategory = "";
-  let allTasksForDay = [];
+  let currentAssign = session.assignment;
+  let workDate = new Date();
+  let allAreas = [];
 
-  // 02 - INITIALIZE
-  async function startApp() {
-    await loadAssignmentTasks();
-  }
+  // 1. DATA LOAD
+  async function loadData() {
+    const dayName = workDate.toLocaleDateString('en-US', { weekday: 'long' });
+    document.getElementById("dateDisplay").innerText = dayName + ", " + workDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    document.getElementById("empName").innerText = "Hi, " + session.firstName;
+    document.getElementById("assignDisplay").innerText = currentAssign;
 
-  // 03 - LOAD DATA & FILTER (DAY NAME + MODE 2/3)
-  async function loadAssignmentTasks() {
-    showLoading();
-    updateDateStrings();
-    
-    document.getElementById("employeeNameDisplay").innerText = "Hi, " + (sessionData.firstName || "User");
-    document.getElementById("assignmentTitle").innerText = currentAssignment;
-    document.getElementById("workDateTitle").innerText = currentWorkDayName;
-
-    // A. Get Mode
+    // A. Get Mode from settings
     const modeSnap = await getDoc(doc(db, "settings", "housekeepingMode"));
-    const mode = modeSnap.exists() ? (modeSnap.data().settingValue || modeSnap.data().value) : "two";
-    const scheduleField = (mode === "three") ? "threeHousekeeperSchedule" : "twoHousekeeperSchedule";
+    const mode = modeSnap.exists() ? (modeSnap.data().settingValue || "two") : "two";
+    const field = (mode === "three") ? "threeHousekeeperSchedule" : "twoHousekeeperSchedule";
 
-    // B. Fetch Areas & Tasks
-    const areaSnap = await getDocs(collection(db, "areas"));
-    const taskSnap = await getDocs(collection(db, "tasks")); // Pointed to 'tasks' per instructions
-    
-    const tasksByWorkId = {};
-    taskSnap.forEach(t => {
-      const d = t.data();
-      if (!tasksByWorkId[d.workId]) tasksByWorkId[d.workId] = [];
-      tasksByWorkId[d.workId].push(d);
-    });
+    // B. Get Areas
+    const snap = await getDocs(collection(db, "areas"));
+    allAreas = [];
+    const schedules = new Set();
 
-    allTasksForDay = [];
-    areaSnap.forEach(aDoc => {
-      const area = aDoc.data();
-      const areaDay = String(area.scheduleDay || "").toLowerCase();
-      
-      // Filtering logic
-      const isCorrectDay = areaDay === "daily" || areaDay === currentWorkDayName.toLowerCase();
-      const isCorrectAssign = String(area[scheduleField]).trim() === String(currentAssignment).trim();
+    snap.forEach(d => {
+      const data = d.data();
+      const sched = data[field];
+      if(sched) schedules.add(sched);
 
-      if (isCorrectDay && isCorrectAssign) {
-        const subTasks = tasksByWorkId[area.workId] || [];
-        subTasks.forEach(st => {
-          allTasksForDay.push({ ...st, areaName: area.areaName, category: area.category, workId: area.workId });
-        });
+      // FILTER: Match Assignment + Day (Daily or Today)
+      if(sched === currentAssign && (data.scheduleDay === "Daily" || data.scheduleDay === dayName)) {
+        allAreas.push(data);
       }
     });
 
-    loadCoverDropdown(areaSnap.docs, mode);
+    // Populate Cover Dropdown
+    const select = document.getElementById("assignSelect");
+    select.innerHTML = '<option value="">Select Schedule...</option>' + 
+      Array.from(schedules).map(s => `<option value="${s}">${s}</option>`).join('');
+
     drawCategories();
-    hideLoading();
   }
 
-  // 04 - DRAW VIEWS
+  // 2. VIEW DRAWING
   function drawCategories() {
     const box = document.getElementById("categoryButtons");
     box.innerHTML = "";
-    const cats = currentAssignment === "Laundry" ? ["Weekly Laundry", "Daily Laundry Check"] : ["Common Area", "Weekly Room", "Daily Room", "Dehumidifier"];
-    
-    cats.forEach(cat => {
-      const catTasks = allTasksForDay.filter(t => t.category === cat);
-      if (catTasks.length === 0) return;
-      
-      const btn = document.createElement("button");
-      btn.innerText = cat + " (" + catTasks.length + ")";
-      btn.className = "red"; // Default color, can be updated with progress logic
-      btn.onclick = () => {
-        selectedCategory = cat;
-        drawAreaButtons(cat);
-        document.getElementById("view2").classList.add("hidden");
-        document.getElementById("view3").classList.remove("hidden");
-      };
-      box.appendChild(btn);
-    });
-  }
+    const cats = ["Common Area", "Weekly Room", "Daily Room", "Dehumidifier"];
 
-  function drawAreaButtons(cat) {
-    document.getElementById("currentCatTitle").innerText = cat;
-    const box = document.getElementById("areaButtons");
-    box.innerHTML = "";
-    
-    const uniqueAreas = [...new Set(allTasksForDay.filter(t => t.category === cat).map(t => t.areaName))];
-    uniqueAreas.forEach(area => {
+    cats.forEach(cat => {
+      const count = allAreas.filter(a => a.category === cat).length;
       const btn = document.createElement("button");
       btn.className = "red";
-      btn.innerHTML = `<div class="room-number">${area}</div>`;
-      btn.onclick = () => {
-        const workId = allTasksForDay.find(t => t.areaName === area).workId;
-        sessionStorage.setItem("selectedWork", JSON.stringify({ workId, areaName: area }));
-        window.location.href = "tasks.html";
-      };
+      btn.innerText = `${cat} (${count})`;
+      btn.onclick = () => showV3(cat);
       box.appendChild(btn);
     });
   }
 
-  // 05 - UTILS & WINDOW FUNCTIONS
-  function updateDateStrings() {
-    const date = new Date(currentWorkDateISO + "T00:00:00");
-    const days = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
-    currentWorkDayName = days[date.getDay()];
+  function showV3(cat) {
+    document.getElementById("view2").classList.add("hidden");
+    document.getElementById("view3").classList.remove("hidden");
+    document.getElementById("catTitle").innerText = cat;
+
+    const box = document.getElementById("areaButtons");
+    box.innerHTML = "";
+    const filtered = allAreas.filter(a => a.category === cat);
+
+    filtered.forEach(area => {
+      const btn = document.createElement("button");
+      btn.className = "red";
+      btn.innerText = area.areaName;
+      btn.onclick = () => {
+        sessionStorage.setItem("selectedWork", JSON.stringify({ workId: area.workId, areaName: area.areaName }));
+        location.href = "tasks.html";
+      };
+      box.appendChild(btn);
+    });
+    if(filtered.length === 0) box.innerHTML = "<h3>No rooms found for today.</h3>";
   }
 
+  // 3. UTILS
   window.adjustDate = (n) => {
-    const d = new Date(currentWorkDateISO + "T00:00:00");
-    d.setDate(d.getDate() + n);
-    currentWorkDateISO = d.toISOString().split('T')[0];
-    loadAssignmentTasks();
+    workDate.setDate(workDate.getDate() + n);
+    loadData();
   };
 
-  window.openCalendar = () => document.getElementById("quickDatePicker").showPicker();
-  window.changeWorkDateFromCalendar = () => {
-    currentWorkDateISO = document.getElementById("quickDatePicker").value;
-    loadAssignmentTasks();
+  window.showCover = () => document.getElementById("coverBox").classList.toggle("hidden");
+
+  window.updateAssignment = (val) => {
+    if(!val) return;
+    currentAssign = val;
+    loadData();
+    document.getElementById("coverBox").classList.add("hidden");
   };
 
-  window.showCoverDropdown = () => {
-    document.getElementById("coverScheduleSelect").classList.remove("hidden");
-    document.getElementById("coverScheduleButton").classList.add("hidden");
-  };
-
-  function loadCoverDropdown(docs, mode) {
-    const sel = document.getElementById("coverScheduleSelect");
-    const schedules = [...new Set(docs.map(d => mode === "three" ? d.data().threeHousekeeperSchedule : d.data().twoHousekeeperSchedule))].filter(Boolean);
-    sel.innerHTML = schedules.map(s => `<option value="${s}" ${s === currentAssignment ? 'selected' : ''}>${s}</option>`).join('');
-  }
-
-  window.changeCoverSchedule = () => {
-    currentAssignment = document.getElementById("coverScheduleSelect").value;
-    loadAssignmentTasks();
-  };
-
-  window.backToCategories = () => {
+  window.showV2 = () => {
     document.getElementById("view2").classList.remove("hidden");
     document.getElementById("view3").classList.add("hidden");
-    document.getElementById("vNum").innerText = "V2 schedule.html";
   };
 
-  window.logout = () => { sessionStorage.clear(); window.location.href = "index.html"; };
-  function showLoading() { document.getElementById("loadingScreen").classList.remove("hidden"); }
-  function hideLoading() { document.getElementById("loadingScreen").classList.add("hidden"); }
-
-  startApp();
+  loadData();
 </script>
 </body>
 </html>
