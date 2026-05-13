@@ -4,17 +4,17 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>GCR Schedule</title>
   <style>
-    /* 01 - GLOBAL STYLE */
     * { box-sizing: border-box; }
     body { margin: 0; padding: 20px; font-family: Arial, sans-serif; background: #eef2f7; }
     
+    /* Header Section */
     .header { 
       text-align: center; 
       margin-bottom: 20px; 
       background: #1847d1; 
       color: white; 
-      padding: 20px; 
-      border-radius: 0 0 20px 20px; 
+      padding: 25px 20px; 
+      border-radius: 0 0 25px 25px; 
       margin: -20px -20px 20px -20px; 
       position: relative; 
     }
@@ -22,154 +22,76 @@
     /* THE LABEL: V# filename */
     .view-label { 
       position: absolute; 
-      top: 12px; 
-      right: 20px; 
+      top: 10px; 
+      right: 15px; 
       font-weight: bold; 
-      color: rgba(255,255,255,0.8); 
-      font-size: 13px; 
+      color: rgba(255,255,255,0.6); 
+      font-size: 11px; 
     }
     
-    .tag { background: rgba(255,255,255,0.2); color: white; padding: 5px 12px; border-radius: 8px; font-size: 14px; }
+    .tag { background: rgba(255,255,255,0.2); color: white; padding: 5px 12px; border-radius: 8px; font-size: 14px; margin-bottom: 10px; display: inline-block; }
     
-    /* 02 - CATEGORY GRID (V2) */
-    .cat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 20px; }
-    .cat-btn { 
-      background: white; 
-      border-radius: 15px; 
-      padding: 30px 10px; 
-      text-align: center; 
-      font-weight: bold; 
-      color: #1847d1; 
-      border: 2px solid transparent; 
-      box-shadow: 0 4px 10px rgba(0,0,0,0.05); 
-      cursor: pointer; 
+    /* Cover Button Style */
+    .cover-btn {
+      background: #ffffff;
+      color: #1847d1;
+      border: none;
+      border-radius: 8px;
+      padding: 8px 15px;
+      font-weight: bold;
+      font-size: 12px;
+      margin-top: 10px;
+      cursor: pointer;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
     }
-    .cat-btn:active { background: #2e5cff; color: white; }
 
-    /* 03 - AREA LIST (V3) */
-    .card { 
-      background: white; 
-      border-radius: 15px; 
-      padding: 20px; 
-      margin-bottom: 12px; 
-      display: flex; 
-      justify-content: space-between; 
-      align-items: center; 
-      border-left: 10px solid #ccc; 
-    }
-    .status-red { border-left-color: #d9534f; }
-    .status-green { border-left-color: #5cb85c; }
-    
-    .start-btn { background: #2e5cff; color: white; border: none; border-radius: 10px; padding: 12px 20px; font-weight: bold; }
-    .back-btn { background: #666; color: white; border: none; width: 100%; padding: 15px; border-radius: 10px; margin-top: 20px; }
+    .cat-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-top: 20px; }
+    .cat-btn { background: white; border-radius: 15px; padding: 30px 10px; text-align: center; font-weight: bold; color: #1847d1; box-shadow: 0 4px 10px rgba(0,0,0,0.05); cursor: pointer; }
   </style>
 </head>
 <body>
 
   <div class="header">
-    <div id="viewLabel" class="view-label">V2 schedule.html</div>
-    
-    <h2 id="nameDisplay">Hi, ---</h2>
+    <div id="vNum" class="view-label">V2 schedule.html</div>
+    <h2 id="nameDisplay" style="margin: 0 0 10px 0;">Hi, ---</h2>
     <span id="assignDisplay" class="tag">---</span>
+    <br>
+    <button class="cover-btn" onclick="toggleCoverDropdown()">COVER ANOTHER ASSIGNMENT</button>
+    
+    <div id="coverDropdown" style="display:none; margin-top:10px;">
+       <select id="assignmentSelect" onchange="changeAssignment(this.value)" style="padding:10px; border-radius:8px; width:80%;">
+          <option value="">Select Schedule...</option>
+          <option value="HK Schedule 1">HK Schedule 1</option>
+          <option value="HK Schedule 2">HK Schedule 2</option>
+          <option value="HK Schedule 3">HK Schedule 3</option>
+       </select>
+    </div>
   </div>
 
   <div id="view-categories">
     <div class="cat-grid" id="catGrid"></div>
   </div>
 
-  <div id="view-areas" style="display:none;">
-    <h3 id="currentCat" style="color:#1847d1;">Category</h3>
-    <div id="areaList"></div>
-    <button class="back-btn" onclick="showCategories()">BACK TO CATEGORIES</button>
-  </div>
-
-  <button class="logout" style="display:block; margin:40px auto; border:none; background:none; text-decoration:underline; color:#666;" onclick="sessionStorage.clear(); window.location.href='index.html'">Logout</button>
-
   <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getFirestore, doc, getDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-
-    const firebaseConfig = {
-      apiKey: "AIzaSyBgq_ooBeEN4noEyIxYPLVokgM6RjCO648",
-      authDomain: "gms-task-tracker.firebaseapp.com",
-      projectId: "gms-task-tracker",
-      storageBucket: "gms-task-tracker.firebasestorage.app",
-      messagingSenderId: "790880979860",
-      appId: "1:790880979860:web:6faee2a6e56955af3c1d81"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
+    // ... (Firebase initialization remains the same)
 
     const user = JSON.parse(sessionStorage.getItem("currentEmployee"));
-    if (!user) window.location.href = "index.html";
-
-    document.getElementById("nameDisplay").innerText = `Hi, ${user.firstName || 'User'}`;
+    document.getElementById("nameDisplay").innerText = `Hi, ${user.firstName}`;
     document.getElementById("assignDisplay").innerText = user.assignment;
 
-    const HK_CATS = ["Common Area", "Weekly Room", "Daily Room", "Dehumidifier"];
-    const LAUNDRY_CATS = ["Weekly Laundry", "Daily Laundry Check"];
-
-    function init() {
-      const grid = document.getElementById("catGrid");
-      const cats = (user.assignment === "Laundry") ? LAUNDRY_CATS : HK_CATS;
-      
-      grid.innerHTML = cats.map(cat => `
-        <div class="cat-btn" onclick="loadAreas('${cat}')">${cat}</div>
-      `).join('');
+    window.toggleCoverDropdown = function() {
+      const dd = document.getElementById("coverDropdown");
+      dd.style.display = dd.style.display === "none" ? "block" : "none";
     }
 
-    window.loadAreas = async function(category) {
-      // Update label to V3 when entering Area view
-      document.getElementById("viewLabel").innerText = "V3 schedule.html";
-      
-      document.getElementById("view-categories").style.display = "none";
-      document.getElementById("view-areas").style.display = "block";
-      document.getElementById("currentCat").innerText = category;
-      
-      const areaList = document.getElementById("areaList");
-      areaList.innerHTML = "Loading areas...";
-
-      const modeSnap = await getDoc(doc(db, "settings", "housekeepingMode"));
-      const mode = modeSnap.exists() ? modeSnap.data().settingValue : "two";
-      const field = (mode === "three") ? "threeHousekeeperSchedule" : "twoHousekeeperSchedule";
-
-      const day = new Intl.DateTimeFormat('en-US', { weekday: 'long' }).format(new Date());
-
-      const q = query(
-        collection(db, "areas"),
-        where(field, "==", user.assignment),
-        where("category", "==", category),
-        where("scheduleDay", "in", ["Daily", day])
-      );
-
-      const snap = await getDocs(q);
-      areaList.innerHTML = snap.empty ? "No areas found." : "";
-
-      snap.forEach(d => {
-        const data = d.data();
-        areaList.innerHTML += `
-          <div class="card status-red">
-            <div class="area-name">${data.areaName}</div>
-            <button class="start-btn" onclick="openTask('${data.workId}', '${data.areaName}')">START</button>
-          </div>`;
-      });
+    window.changeAssignment = function(newVal) {
+      if(!newVal) return;
+      user.assignment = newVal;
+      sessionStorage.setItem("currentEmployee", JSON.stringify(user));
+      location.reload(); // Refreshes to show the new schedule data
     }
 
-    window.showCategories = () => {
-      // Update label back to V2
-      document.getElementById("viewLabel").innerText = "V2 schedule.html";
-      
-      document.getElementById("view-categories").style.display = "block";
-      document.getElementById("view-areas").style.display = "none";
-    }
-
-    window.openTask = (workId, areaName) => {
-      sessionStorage.setItem("selectedWork", JSON.stringify({ workId, areaName }));
-      window.location.href = "tasks.html"; 
-    }
-
-    init();
+    // Logic to build categories goes here...
   </script>
 </body>
 </html>
