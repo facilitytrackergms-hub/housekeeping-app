@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Work History</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; padding: 20px; font-family: Arial, sans-serif; background: #eef2f7; }
+    .card { background: white; border-radius: 20px; padding: 25px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
+    .log-item { padding: 15px; border-bottom: 1px solid #eee; }
+    .log-item:last-child { border-bottom: none; }
+    .time { color: #666; font-size: 14px; }
+    .emp-name { font-weight: bold; color: #1847d1; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h2>Recent Activity</h2>
+    <div id="logContainer">Loading logs...</div>
+    <button onclick="window.location.href='schedule.html'" style="margin-top:20px; width:100%; padding:15px; border-radius:10px; border:none; background:#5a5a5a; color:white; font-weight:bold;">BACK</button>
+  </div>
+
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+    import { getFirestore, collection, query, orderBy, limit, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+    const firebaseConfig = {
+      apiKey: "AIzaSyBgq_ooBeEN4noEyIxYPLVokgM6RjCO648",
+      authDomain: "gms-task-tracker.firebaseapp.com",
+      projectId: "gms-task-tracker",
+      storageBucket: "gms-task-tracker.firebasestorage.app",
+      messagingSenderId: "790880979860",
+      appId: "1:790880979860:web:6faee2a6e56955af3c1d81"
+    };
+
+    const app = initializeApp(firebaseConfig);
+    const db = getFirestore(app);
+
+    async function loadLogs() {
+      const q = query(collection(db, "logs"), orderBy("timestamp", "desc"), limit(20));
+      const snap = await getDocs(q);
+      const container = document.getElementById("logContainer");
+      container.innerHTML = "";
+      
+      snap.forEach(doc => {
+        const data = doc.data();
+        const date = data.timestamp ? data.timestamp.toDate().toLocaleString() : "N/A";
+        container.innerHTML += `
+          <div class="log-item">
+            <div class="emp-name">${data.employee}</div>
+            <div>Completed: ${data.area}</div>
+            <div class="time">${date}</div>
+          </div>`;
+      });
+    }
+    loadLogs();
+  </script>
+</body>
+</html>
