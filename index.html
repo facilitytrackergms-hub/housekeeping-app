@@ -1,3 +1,4 @@
+<!-- Purpose: Login Page Logic | Location: index.html -->
 <!DOCTYPE html>
 <html>
 <head>
@@ -37,25 +38,21 @@
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
 
-  // --- THIS IS THE LOGIN FUNCTION ---
   window.handleLogin = async function() {
     const pinValue = document.getElementById("pinInput").value;
     const error = document.getElementById("errorMsg");
     error.style.display = "none";
 
     try {
-      // 1. Get Building Mode
       const modeSnap = await getDoc(doc(db, "settings", "housekeepingMode"));
       const mode = (modeSnap.exists() ? (modeSnap.data().settingValue || modeSnap.data().value) : "two").toLowerCase().trim();
 
-      // 2. Search Employees for the PIN (Fixes the "Blue Number" issue)
       const q = query(collection(db, "employees"), where("pin", "in", [pinValue, Number(pinValue)]));
       const empSnap = await getDocs(q);
 
       if (!empSnap.empty) {
         const empData = empSnap.docs[0].data();
         
-        // 3. Assignment Fallback (Fixes the "undefined" error)
         let finalAssign = "";
         if (mode === "three") {
             finalAssign = empData.mode3_assign || empData.assignment || "Floor Not Set";
@@ -63,7 +60,6 @@
             finalAssign = empData.mode2_assign || empData.assignment || "Schedule Not Set";
         }
         
-        // 4. Role Check
         const role = String(empData.role || "").toLowerCase();
         if (role === "admin") {
           sessionStorage.setItem("currentEmployee", JSON.stringify({ firstName: empData.firstName || empData.name, role: "admin" }));
@@ -76,7 +72,6 @@
           window.location.href = "schedule.html";
         }
       } else {
-        // 5. Master Pass Fallback
         const adminSnap = await getDoc(doc(db, "settings", "admin"));
         const masterPass = adminSnap.exists() ? (adminSnap.data().Password || adminSnap.data().password) : null;
         
@@ -91,7 +86,6 @@
       alert("System Error. Check connection.");
     }
   };
-</script>
 </script>
 </body>
 </html>
