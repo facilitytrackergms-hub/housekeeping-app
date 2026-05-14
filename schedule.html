@@ -6,23 +6,29 @@
   <style>
     * { box-sizing: border-box; }
     body { margin: 0; font-family: Arial, sans-serif; background: #f2f2f2; padding: 10px; }
-    .card { width: 100%; max-width: 430px; background: white; border-radius: 20px; padding: 15px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); margin: auto; min-height: 450px; }
+    .card { width: 100%; max-width: 430px; background: white; border-radius: 20px; padding: 15px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); margin: auto; min-height: 500px; }
     .view-tag { display: inline-block; background: black; color: white; padding: 4px 10px; border-radius: 8px; font-size: 12px; margin-bottom: 10px; }
     h2, h3 { text-align: center; margin: 5px 0; }
+    
     button { width: 100%; border: none; border-radius: 15px; background: #1976d2; color: white; font-size: 18px; font-weight: bold; padding: 16px; margin: 8px 0; cursor: pointer; transition: 0.2s; }
     .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    
     .room-btn { min-height: 75px; font-size: 16px; padding: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; margin: 0; line-height: 1.2; }
     .count-tag { font-size: 13px; margin-top: 4px; opacity: 0.9; font-weight: normal; }
+
+    /* STATUS COLORS */
     .status-red { background: #c62828 !important; }
     .status-yellow { background: #fbc02d !important; color: black !important; }
     .status-green { background: #2e7d32 !important; }
+
     .back { background: #555 !important; }
     .hidden { display: none !important; }
-    .top-box { border: 2px solid #e0e0e0; border-radius: 20px; padding: 15px; margin-bottom: 15px; background: #fafafa; text-align: center; }
     
-    /* Dropdown Styling */
-    select { width: 100%; padding: 15px; border-radius: 12px; border: 2px solid #1976d2; margin-top: 10px; font-size: 16px; background: white; }
-    .change-btn { font-size:13px; padding:10px; background:#666; margin-top:10px; }
+    .top-box { border: 2px solid #e0e0e0; border-radius: 20px; padding: 15px; margin-bottom: 15px; background: #fafafa; }
+    
+    /* DROPDOWN STYLING */
+    select { width: 100%; padding: 15px; border-radius: 12px; border: 2px solid #1976d2; margin-top: 10px; font-size: 16px; background: white; font-weight: bold; }
+    .label-text { font-size: 12px; color: #666; text-transform: uppercase; font-weight: bold; margin-top: 10px; display: block; text-align: center; }
   </style>
 </head>
 <body>
@@ -33,12 +39,12 @@
     <div class="top-box">
       <h3 id="dateDisplay">---</h3>
       <h2 id="empName">Hi, ---</h2>
-      <h3 id="assignDisplay" style="color:#1976d2; font-weight: bold;">---</h3>
       
-      <button class="change-btn" onclick="document.getElementById('coverBox').classList.toggle('hidden')">CHANGE ASSIGNMENT</button>
-      <div id="coverBox" class="hidden">
-        <select id="assignSelect" onchange="updateAssignment(this.value)"></select>
-      </div>
+      <span class="label-text">Current Assignment</span>
+      <h3 id="assignDisplay" style="color:#1976d2; font-weight: bold; margin-bottom: 10px;">---</h3>
+      
+      <span class="label-text">Switch Schedule</span>
+      <select id="assignSelect" onchange="updateAssignment(this.value)"></select>
     </div>
     
     <div id="categoryButtons" class="grid-2"></div>
@@ -81,21 +87,23 @@
     document.getElementById("empName").innerText = "Hi, " + session.firstName;
     document.getElementById("assignDisplay").innerText = currentAssign;
 
-    // 1. Get Mode (2HK vs 3HK)
+    // 1. Get Mode and Build Dropdown
     const modeSnap = await getDoc(doc(db, "settings", "housekeepingMode"));
     const mode = (modeSnap.exists() ? (modeSnap.data().settingValue || "two") : "two").toLowerCase().trim();
     
-    // 2. Setup Dropdown Options
     const select = document.getElementById("assignSelect");
     let fullList = (mode === "three") ? ["1stFloor", "2ndFloor", "3rdFloor", "Laundry"] : ["HK1", "HK2", "Laundry"];
-    select.innerHTML = '<option value="" disabled selected>Switch Schedule...</option>';
+    
+    select.innerHTML = `<option value="${currentAssign}" selected>${currentAssign} (Current)</option>`;
     fullList.forEach(s => {
-        const opt = document.createElement("option");
-        opt.value = s; opt.textContent = s;
-        select.appendChild(opt);
+        if(s !== currentAssign) {
+            const opt = document.createElement("option");
+            opt.value = s; opt.textContent = s;
+            select.appendChild(opt);
+        }
     });
 
-    // 3. Fetch Rooms
+    // 2. Fetch Rooms
     const targetField = (mode === "three") ? "Floor" : "Mode";
     const areaSnap = await getDocs(query(collection(db, "areas"), where(targetField, "==", currentAssign)));
     
@@ -106,7 +114,7 @@
         if(dbDay === "daily" || dbDay === today) { matchedAreas.push(data); }
     });
 
-    // 4. Fetch All Tasks & History
+    // 3. Fetch All Tasks & History (No Limits)
     const [taskSnap, historySnap] = await Promise.all([
         getDocs(collection(db, "tasks")),
         getDocs(collection(db, "task_history"))
@@ -128,7 +136,6 @@
 
   window.updateAssignment = (newVal) => {
     currentAssign = newVal;
-    document.getElementById('coverBox').classList.add('hidden');
     loadData();
   };
 
