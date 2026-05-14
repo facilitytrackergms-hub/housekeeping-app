@@ -57,7 +57,7 @@
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-  import { getFirestore, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+  import { getFirestore, collection, query, where, getDocs, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyBgq_ooBeEN4noEyIxYPLVokgM6RjCO648",
@@ -91,18 +91,22 @@
         return;
       }
 
-      snap.forEach(doc => {
-        const data = doc.data();
+      snap.forEach(d => {
+        const data = d.data();
+        const docId = d.id;
         const taskText = data.Task;  
+        const isDone = data.isDone === true || String(data.isDone).toLowerCase() === "true";
         
         if (taskText && taskText.trim() !== "" && taskText !== "0") {
           const btn = document.createElement("button");
-          btn.className = "task-btn"; // Starts Red
+          btn.className = "task-btn"; 
+          if (isDone) btn.classList.add('done');
           btn.innerText = taskText;
           
-          // Click to toggle Green
-          btn.onclick = function() {
-            this.classList.toggle('done');
+          btn.onclick = async function() {
+            const newState = !this.classList.contains('done');
+            this.classList.toggle('done'); 
+            await updateDoc(doc(db, "tasks", docId), { isDone: newState });
           };
           
           list.appendChild(btn);
@@ -117,10 +121,14 @@
 
   loadTasks();
 
-  // Master Button Logic
-  window.completeAll = function() {
-    const buttons = document.querySelectorAll('.task-btn');
-    buttons.forEach(btn => btn.classList.add('done')); // Turns them all Green
+  window.completeAll = async function() {
+    document.querySelectorAll('.task-btn').forEach(btn => btn.classList.add('done'));
+    
+    const q = query(collection(db, "tasks"), where("workId", "==", selectedWork.workId));
+    const snap = await getDocs(q);
+    snap.forEach(d => {
+      updateDoc(doc(db, "tasks", d.id), { isDone: true });
+    });
   };
 </script>
 </body>
