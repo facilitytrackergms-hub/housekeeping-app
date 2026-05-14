@@ -6,40 +6,19 @@
   <style>
     * { box-sizing: border-box; }
     body { margin: 0; font-family: Arial, sans-serif; background: #f2f2f2; padding: 10px; }
-    .card { width: 100%; max-width: 430px; background: white; border-radius: 20px; padding: 15px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); margin: auto; position: relative; min-height: 400px; }
+    .card { width: 100%; max-width: 430px; background: white; border-radius: 20px; padding: 15px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); margin: auto; min-height: 400px; }
     .view-tag { display: inline-block; background: black; color: white; padding: 4px 10px; border-radius: 8px; font-size: 12px; margin-bottom: 10px; }
     h2, h3 { text-align: center; margin: 5px 0; }
-    
     button { width: 100%; border: none; border-radius: 15px; background: #1976d2; color: white; font-size: 18px; font-weight: bold; padding: 16px; margin: 8px 0; cursor: pointer; transition: 0.2s; }
-    button:active { transform: scale(0.98); }
-    
     .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-    
-    .room-btn { 
-        min-height: 75px !important; 
-        font-size: 16px !important; 
-        padding: 8px !important;
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        margin: 0 !important; 
-        line-height: 1.2;
-    }
-    
-    /* PROGRESS COLORS */
+    .room-btn { min-height: 75px; font-size: 16px; padding: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; margin: 0; line-height: 1.2; }
+    .count-tag { font-size: 13px; margin-top: 4px; opacity: 0.9; font-weight: normal; }
     .status-red { background: #c62828 !important; }
     .status-yellow { background: #fbc02d !important; color: black !important; }
     .status-green { background: #2e7d32 !important; }
-
     .back { background: #555 !important; }
     .hidden { display: none !important; }
     .top-box { border: 2px solid #e0e0e0; border-radius: 20px; padding: 15px; margin-bottom: 15px; background: #fafafa; text-align: center; }
-    .date-row { display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 10px; }
-    .date-btn { width: auto; padding: 10px 15px; background: #555; font-size: 16px; }
-    
-    #categoryButtons button { min-height: 100px; font-size: 17px; }
-    select { width: 100%; padding: 15px; border-radius: 12px; border: 2px solid #1976d2; margin-top: 10px; font-size: 16px; }
   </style>
 </head>
 <body>
@@ -48,11 +27,7 @@
   <div id="view2">
     <div class="view-tag">Schedule Dashboard</div>
     <div class="top-box">
-      <div class="date-row">
-        <button class="date-btn" onclick="adjustDate(-1)">◀</button>
-        <h3 id="dateDisplay">Today</h3>
-        <button class="date-btn" onclick="adjustDate(1)">▶</button>
-      </div>
+      <h3 id="dateDisplay">Today</h3>
       <h2 id="empName">Hi, ---</h2>
       <h3 id="assignDisplay" style="color:#1976d2; font-weight: bold;">---</h3>
     </div>
@@ -88,43 +63,33 @@
   if(!session) { window.location.href = "index.html"; }
 
   let currentAssign = session.assignment; 
-  let workDate = new Date();
   let matchedAreas = [];
 
-  /* --- 01. OPTIMIZED DATA LOADER --- */
   async function loadData() {
-    const dayName = workDate.toLocaleDateString('en-US', { weekday: 'long' });
-    const today = dayName.toLowerCase().trim();
-    
-    document.getElementById("dateDisplay").innerText = dayName;
-    document.getElementById("empName").innerText = "Hi, " + (session.firstName || "User");
+    const today = new Date().toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
+    document.getElementById("dateDisplay").innerText = today.toUpperCase();
+    document.getElementById("empName").innerText = "Hi, " + session.firstName;
     document.getElementById("assignDisplay").innerText = currentAssign;
 
-    document.getElementById("categoryButtons").innerHTML = "<p style='grid-column:1/-1; text-align:center;'>Syncing Cloud Data...</p>";
-
-    // 1. Get Mode and Rooms
+    // 1. Get Room Assignment Mode
     const modeSnap = await getDoc(doc(db, "settings", "housekeepingMode"));
     const mode = (modeSnap.exists() ? (modeSnap.data().settingValue || "two") : "two").toLowerCase().trim();
     
+    // 2. Fetch all Rooms for this person
     const targetField = (mode === "three") ? "Floor" : "Mode";
-    const q = query(collection(db, "areas"), where(targetField, "==", currentAssign));
-    const snap = await getDocs(q);
+    const areaSnap = await getDocs(query(collection(db, "areas"), where(targetField, "==", currentAssign)));
     
     matchedAreas = [];
-    const workIds = [];
-    snap.forEach(d => {
+    areaSnap.forEach(d => {
         const data = d.data();
-        const dbDay = String(data["Schedule"] || "").toLowerCase().trim();
-        if(dbDay === "daily" || dbDay === today) {
-            matchedAreas.push(data);
-            workIds.push(data.workId);
-        }
+        const dbDay = String(data.Schedule || "").toLowerCase().trim();
+        if(dbDay === "daily" || dbDay === today) { matchedAreas.push(data); }
     });
 
-    // 2. Fetch History & Tasks in one shot
-    const [historySnap, taskSnap] = await Promise.all([
-        getDocs(collection(db, "task_history")),
-        getDocs(query(collection(db, "tasks"), where("workId", "in", workIds.slice(0, 10))))
+    // 3. FETCH ALL TASKS & HISTORY (NO LIMITS)
+    const [taskSnap, historySnap] = await Promise.all([
+        getDocs(collection(db, "tasks")),
+        getDocs(collection(db, "task_history"))
     ]);
 
     window.historySet = new Set();
@@ -133,39 +98,39 @@
     window.taskRegistry = {}; 
     taskSnap.forEach(doc => {
         const t = doc.data();
-        if(!window.taskRegistry[t.workId]) window.taskRegistry[t.workId] = [];
-        window.taskRegistry[t.workId].push(doc.id);
+        const wid = String(t.workId).toLowerCase().trim();
+        if(!window.taskRegistry[wid]) window.taskRegistry[wid] = [];
+        window.taskRegistry[wid].push(doc.id);
     });
 
     drawCategories();
   }
 
-  /* --- 02. CATEGORY DRAW --- */
   window.drawCategories = function() {
     const box = document.getElementById("categoryButtons");
     const cats = ["Common Area", "Weekly Room", "Daily Room", "Dehumidifier"];
     box.innerHTML = "";
 
     cats.forEach(cat => {
-        const filtered = matchedAreas.filter(a => String(a.Category || "").toLowerCase() === cat.toLowerCase());
-        if (filtered.length === 0) return;
+        const rooms = matchedAreas.filter(a => String(a.Category || "").toLowerCase().trim() === cat.toLowerCase().trim());
+        if (rooms.length === 0) return;
 
-        let completedRooms = 0;
-        filtered.forEach(area => {
-            const roomTasks = window.taskRegistry[area.workId] || [];
-            const doneTasks = roomTasks.filter(id => window.historySet.has(`${area.workId}_${id}`));
-            if (roomTasks.length > 0 && doneTasks.length === roomTasks.length) completedRooms++;
+        let doneRooms = 0;
+        rooms.forEach(area => {
+            const wid = String(area.workId).toLowerCase().trim();
+            const tasks = window.taskRegistry[wid] || [];
+            const done = tasks.filter(id => window.historySet.has(`${wid}_${id}`));
+            if (tasks.length > 0 && done.length === tasks.length) doneRooms++;
         });
 
         const btn = document.createElement("button");
-        btn.className = completedRooms === 0 ? "status-red" : (completedRooms < filtered.length ? "status-yellow" : "status-green");
-        btn.innerText = `${cat} (${completedRooms}/${filtered.length})`;
+        btn.className = doneRooms === 0 ? "status-red" : (doneRooms < rooms.length ? "status-yellow" : "status-green");
+        btn.innerText = `${cat} (${doneRooms}/${rooms.length})`;
         btn.onclick = () => showV3(cat);
         box.appendChild(btn);
     });
   }
 
-  /* --- 03. ROOM SELECTION --- */
   window.showV3 = function(cat) {
     document.getElementById("view2").classList.add("hidden");
     document.getElementById("view3").classList.remove("hidden");
@@ -173,35 +138,25 @@
     const box = document.getElementById("areaButtons");
     box.innerHTML = "";
 
-    const filtered = matchedAreas.filter(a => String(a.Category || "").toLowerCase() === cat.toLowerCase());
+    const rooms = matchedAreas.filter(a => String(a.Category || "").toLowerCase().trim() === cat.toLowerCase().trim());
     
-    filtered.forEach(area => {
-        const roomTasks = window.taskRegistry[area.workId] || [];
-        const doneTasks = roomTasks.filter(id => window.historySet.has(`${area.workId}_${id}`));
-        const total = roomTasks.length;
-        const completed = doneTasks.length;
-
+    rooms.forEach(area => {
+        const wid = String(area.workId).toLowerCase().trim();
+        const tasks = window.taskRegistry[wid] || [];
+        const done = tasks.filter(id => window.historySet.has(`${wid}_${id}`));
+        
         const btn = document.createElement("button");
-        btn.className = "room-btn " + (total === 0 ? "back" : (completed === 0 ? "status-red" : (completed < total ? "status-yellow" : "status-green")));
-        btn.innerHTML = `<div>${area.Area}</div><div class="count-tag">${completed}/${total} Tasks</div>`;
+        btn.className = "room-btn " + (tasks.length === 0 ? "back" : (done.length === 0 ? "status-red" : (done.length < tasks.length ? "status-yellow" : "status-green")));
+        btn.innerHTML = `<div>${area.Area}</div><div class="count-tag">${done.length}/${tasks.length} Tasks</div>`;
         btn.onclick = () => {
-            sessionStorage.setItem("selectedWork", JSON.stringify({ workId: area.workId, areaName: area.Area }));
+            sessionStorage.setItem("selectedWork", JSON.stringify({ workId: wid, areaName: area.Area }));
             location.href = "tasks.html";
         };
         box.appendChild(btn);
     });
   }
 
-  window.showV2 = () => {
-    document.getElementById("view3").classList.add("hidden");
-    document.getElementById("view2").classList.remove("hidden");
-  };
-
-  window.adjustDate = (days) => {
-    workDate.setDate(workDate.getDate() + days);
-    loadData();
-  };
-
+  window.showV2 = () => { document.getElementById("view3").classList.add("hidden"); document.getElementById("view2").classList.remove("hidden"); };
   loadData();
 </script>
 </body>
