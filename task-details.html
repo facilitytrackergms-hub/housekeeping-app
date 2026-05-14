@@ -6,15 +6,40 @@
   <style>
     * { box-sizing: border-box; }
     body { margin: 0; font-family: Arial, sans-serif; background: #f2f2f2; padding: 10px; }
-    .card { width: 100%; max-width: 430px; background: white; border-radius: 20px; padding: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); margin: auto; }
-    .view-tag { display: inline-block; background: black; color: white; padding: 4px 10px; border-radius: 8px; font-size: 12px; margin-bottom: 15px; }
-    h2 { text-align: center; color: #1976d2; margin-bottom: 20px; }
-    .task-row { display: flex; align-items: center; justify-content: space-between; background: #fff; border: 2px solid #eee; padding: 15px; border-radius: 15px; margin-bottom: 10px; }
-    .task-name { font-size: 18px; font-weight: bold; }
-    .check-btn { width: 40px; height: 40px; border-radius: 10px; border: 3px solid #1976d2; cursor: pointer; display: flex; align-items: center; justify-content: center; }
-    .done { background: #4caf50 !important; border-color: #4caf50 !important; color: white; }
-    .done::after { content: '✔'; font-size: 20px; }
-    .back-btn { width: 100%; padding: 15px; background: #555; color: white; border: none; border-radius: 15px; font-size: 16px; margin-top: 20px; cursor: pointer; }
+    .card { width: 100%; max-width: 430px; background: white; border-radius: 20px; padding: 15px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); margin: auto; }
+    .view-tag { display: inline-block; background: black; color: white; padding: 4px 10px; border-radius: 8px; font-size: 12px; margin-bottom: 10px; }
+    h2 { text-align: center; color: #1976d2; margin-bottom: 15px; }
+    
+    /* 2-Column Grid for Phone */
+    #taskList { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+    
+    /* Task Button - Default RED */
+    .task-btn { 
+      background: #c62828; 
+      color: white; 
+      border: none; 
+      border-radius: 15px; 
+      padding: 10px; 
+      font-size: 15px; 
+      font-weight: bold; 
+      min-height: 80px; 
+      cursor: pointer; 
+      transition: 0.2s; 
+      display: flex; 
+      align-items: center; 
+      justify-content: center; 
+      text-align: center;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+    }
+    
+    /* Task Button - Clicked GREEN */
+    .task-btn.done { background: #2e7d32 !important; }
+    .task-btn:active { transform: scale(0.95); }
+
+    /* Action Buttons */
+    .complete-all-btn { width: 100%; padding: 15px; background: #1976d2; color: white; border: none; border-radius: 15px; font-size: 16px; font-weight: bold; margin-bottom: 15px; cursor: pointer; }
+    .complete-all-btn:active { transform: scale(0.98); }
+    .back-btn { width: 100%; padding: 15px; background: #555; color: white; border: none; border-radius: 15px; font-size: 16px; font-weight: bold; cursor: pointer; }
   </style>
 </head>
 <body>
@@ -22,7 +47,11 @@
 <div class="card">
   <div class="view-tag">Task Checklist</div>
   <h2 id="areaTitle">Loading...</h2>
+  
+  <button class="complete-all-btn" onclick="completeAll()">✔ COMPLETE ALL</button>
+  
   <div id="taskList"></div>
+  
   <button class="back-btn" onclick="window.location.href='schedule.html'">BACK TO ROOMS</button>
 </div>
 
@@ -49,7 +78,7 @@
 
   async function loadTasks() {
     const list = document.getElementById("taskList");
-    list.innerHTML = "<p>Finding tasks for this room...</p>";
+    list.innerHTML = "<p style='grid-column: 1 / -1; text-align: center;'>Finding tasks...</p>";
 
     try {
       const q = query(collection(db, "tasks"), where("workId", "==", selectedWork.workId));
@@ -58,7 +87,7 @@
       list.innerHTML = ""; 
 
       if (snap.empty) {
-        list.innerHTML = `<div class="empty-msg">No tasks found for ${selectedWork.areaName}</div>`;
+        list.innerHTML = `<div style='grid-column: 1 / -1; text-align: center; color: #666;'>No tasks found for ${selectedWork.areaName}</div>`;
         return;
       }
 
@@ -67,24 +96,32 @@
         const taskText = data.Task;  
         
         if (taskText && taskText.trim() !== "" && taskText !== "0") {
-          const row = document.createElement("div");
-          row.className = "task-row";
-          row.innerHTML = `
-            <span class="task-name">${taskText}</span>
-            <div class="check-btn" onclick="this.classList.toggle('done')"></div>
-          `;
-          list.appendChild(row);
+          const btn = document.createElement("button");
+          btn.className = "task-btn"; // Starts Red
+          btn.innerText = taskText;
+          
+          // Click to toggle Green
+          btn.onclick = function() {
+            this.classList.toggle('done');
+          };
+          
+          list.appendChild(btn);
         }
       });
 
     } catch (err) {
       console.error("Fetch Error:", err);
-      // This will immediately print the bug to the screen if it crashes again
-      list.innerHTML = `<p style="color:red; font-weight:bold;">Error: ${err.message}</p>`;
+      list.innerHTML = `<p style="grid-column: 1 / -1; color:red; font-weight:bold; text-align:center;">Error: ${err.message}</p>`;
     }
   }
 
   loadTasks();
+
+  // Master Button Logic
+  window.completeAll = function() {
+    const buttons = document.querySelectorAll('.task-btn');
+    buttons.forEach(btn => btn.classList.add('done')); // Turns them all Green
+  };
 </script>
 </body>
 </html>
