@@ -56,7 +56,7 @@
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-  import { getFirestore, collection, getDocs, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+  import { getFirestore, collection, getDocs, doc, getDoc, query, where } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyBgq_ooBeEN4noEyIxYPLVokgM6RjCO648",
@@ -77,7 +77,6 @@
   let workDate = new Date();
   let matchedAreas = [];
 
-  // 1. DATA LOAD
   async function loadData() {
     const dayName = workDate.toLocaleDateString('en-US', { weekday: 'long' });
     const today = dayName.toLowerCase().trim();
@@ -86,11 +85,11 @@
     document.getElementById("empName").innerText = "Hi, " + (session.firstName || "User");
     document.getElementById("assignDisplay").innerText = currentAssign;
 
-    // A. Get Building Mode
+    // 1. Get Mode
     const modeSnap = await getDoc(doc(db, "settings", "housekeepingMode"));
     const mode = (modeSnap.exists() ? (modeSnap.data().settingValue || modeSnap.data().value) : "two").toLowerCase().trim();
     
-    // B. Build the Dropdown List
+    // 2. Setup Dropdown based on Mode
     const select = document.getElementById("assignSelect");
     const myAssignLower = currentAssign.toLowerCase().trim();
     let fullList = (mode === "three") ? ["1stfloor", "2ndFloor", "3rdFloor", "Laundry"] : ["HK1", "HK2", "Laundry"];
@@ -104,17 +103,19 @@
       select.appendChild(option);
     });
 
-    // C. Fetch matching Rooms
+    // 3. Fetch Rooms with Query Filter (Faster & Accurate)
     const targetField = (mode === "three") ? "Floor" : "Mode";
-    const snap = await getDocs(collection(db, "areas"));
+    
+    // We filter by the worker's current assignment (e.g., HK1 or 1stfloor)
+    const q = query(collection(db, "areas"), where(targetField, "==", currentAssign));
+    const snap = await getDocs(q);
+    
     matchedAreas = [];
-
     snap.forEach(d => {
       const data = d.data();
-      const dbAssignValue = String(data[targetField] || "").trim().toLowerCase();
       const dbDay = String(data["Schedule"] || "").toLowerCase().trim();
-
-      if(dbAssignValue === myAssignLower && (dbDay === "daily" || dbDay === today)) {
+      // Only include if it's "daily" or the current weekday
+      if(dbDay === "daily" || dbDay === today) {
         matchedAreas.push(data);
       }
     });
@@ -122,7 +123,6 @@
     drawCategories();
   }
 
-  // 2. CATEGORY DRAWING
   window.drawCategories = function() {
     const box = document.getElementById("categoryButtons");
     box.innerHTML = "";
@@ -147,7 +147,6 @@
     }
   }
 
-  // 3. AREA DRAWING
   window.showV3 = function(cat) {
     document.getElementById("view2").classList.add("hidden");
     document.getElementById("view3").classList.remove("hidden");
@@ -173,10 +172,19 @@
     });
   }
 
-  // 4. NAVIGATION & UTILS
   window.adjustDate = (n) => { workDate.setDate(workDate.getDate() + n); loadData(); };
   window.toggleCover = () => document.getElementById("coverBox").classList.toggle("hidden");
-  window.updateAssignment = (val) => { if(!val) return; currentAssign = val; loadData(); document.getElementById("coverBox").classList.add("hidden"); };
+  
+  window.updateAssignment = (val) => { 
+    if(!val) return; 
+    currentAssign = val; 
+    // Update session so it persists if they refresh
+    session.assignment = val;
+    sessionStorage.setItem("currentEmployee", JSON.stringify(session));
+    loadData(); 
+    document.getElementById("coverBox").classList.add("hidden"); 
+  };
+
   window.showV2 = () => { document.getElementById("view2").classList.remove("hidden"); document.getElementById("view3").classList.add("hidden"); };
   window.logout = () => { sessionStorage.clear(); window.location.href = "index.html"; };
 
