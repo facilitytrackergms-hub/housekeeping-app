@@ -1,78 +1,30 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>GCR Login</title>
-  <style>
-    * { box-sizing: border-box; }
-    body { margin: 0; font-family: Arial, sans-serif; background: #f2f2f2; display: flex; justify-content: center; align-items: center; height: 100vh; }
-    .login-card { background: white; padding: 30px; border-radius: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); width: 90%; max-width: 350px; text-align: center; }
-    input { width: 100%; padding: 15px; margin: 15px 0; border: 2px solid #ddd; border-radius: 12px; font-size: 20px; text-align: center; }
-    button { width: 100%; padding: 15px; background: #1976d2; color: white; border: none; border-radius: 12px; font-size: 18px; font-weight: bold; cursor: pointer; }
-    .error { color: #c62828; font-size: 14px; margin-top: 10px; display: none; }
-  </style>
-</head>
-<body>
-
-<div class="login-card">
-  <h2>Enter PIN</h2>
-  <input type="password" id="pinInput" placeholder="0000" maxlength="4" inputmode="numeric">
-  <button onclick="handleLogin()">LOGIN</button>
-  <div id="errorMsg" class="error">Invalid PIN for current mode.</div>
-</div>
-
 <script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-  import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
-
-  const firebaseConfig = {
-    apiKey: "AIzaSyBgq_ooBeEN4noEyIxYPLVokgM6RjCO648",
-    authDomain: "gms-task-tracker.firebaseapp.com",
-    projectId: "gms-task-tracker",
-    storageBucket: "gms-task-tracker.firebasestorage.app",
-    messagingSenderId: "790880979860",
-    appId: "1:790880979860:web:6faee2a6e56955af3c1d81"
-  };
-
-  const app = initializeApp(firebaseConfig);
-  const db = getFirestore(app);
+  // ... (Firebase InitializeApp & db Setup) ...
 
   window.handleLogin = async function() {
     const pin = document.getElementById("pinInput").value;
     const error = document.getElementById("errorMsg");
     
-    // 1. GET CURRENT MODE FROM DATABASE
     const modeSnap = await getDoc(doc(db, "settings", "housekeepingMode"));
-    const modeData = modeSnap.exists() ? modeSnap.data() : {};
-    const mode = (modeData.settingValue || modeData.value || "two").toLowerCase().trim();
+    const mode = (modeSnap.exists() ? (modeSnap.data().settingValue || modeSnap.data().value) : "two").toLowerCase().trim();
 
     let assignment = "";
     let displayName = "";
 
-    // 2. DYNAMIC MAPPING BASED ON MODE
     if (mode === "three") {
-      if (pin === "1234") { assignment = "Floor 1"; displayName = "Floor 1 Staff"; }
-      else if (pin === "1235") { assignment = "Floor 2"; displayName = "Floor 2 Staff"; }
-      else if (pin === "1236") { assignment = "Floor 3"; displayName = "Floor 3 Staff"; }
+      if (pin === "1234") { assignment = "Floor 1"; displayName = "1st Floor Staff"; }
+      else if (pin === "1235") { assignment = "Floor 2"; displayName = "2nd Floor Staff"; }
+      else if (pin === "1236") { assignment = "Floor 3"; displayName = "3rd Floor Staff"; }
     } else {
-      // MODE 2
       if (pin === "1234") { assignment = "HK Schedule 1"; displayName = "HK 1 Staff"; }
       else if (pin === "1235") { assignment = "HK Schedule 2"; displayName = "HK 2 Staff"; }
     }
 
-    // 3. EXECUTE LOGIN
     if (assignment) {
-      const userData = {
-        firstName: displayName,
-        assignment: assignment,
-        loginMode: mode
-      };
-      sessionStorage.setItem("currentEmployee", JSON.stringify(userData));
+      sessionStorage.setItem("currentEmployee", JSON.stringify({ firstName: displayName, assignment: assignment }));
       window.location.href = "schedule.html";
     } else {
       error.style.display = "block";
     }
   };
 </script>
-</body>
-</html>
