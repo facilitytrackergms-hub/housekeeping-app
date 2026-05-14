@@ -73,12 +73,12 @@
   const session = JSON.parse(sessionStorage.getItem("currentEmployee"));
   if(!session) { window.location.href = "index.html"; }
 
-  let currentAssign = session.assignment;
+  let currentAssign = session.assignment; // e.g., "1stfloor" or "HK2"
   let workDate = new Date();
   let matchedAreas = [];
 
-  // 1. DATA LOAD
   async function loadData() {
+    // 1. Get Day Name (Strict Day Filter)
     const dayName = workDate.toLocaleDateString('en-US', { weekday: 'long' });
     const today = dayName.toLowerCase().trim();
     
@@ -86,12 +86,13 @@
     document.getElementById("empName").innerText = "Hi, " + (session.firstName || "User");
     document.getElementById("assignDisplay").innerText = currentAssign;
 
+    // 2. Determine Mode & Abbreviated Column
     const modeSnap = await getDoc(doc(db, "settings", "housekeepingMode"));
     const modeData = modeSnap.exists() ? modeSnap.data() : {};
     const mode = (modeData.settingValue || modeData.value || "two").toLowerCase().trim();
     
-    // Choose column based on Mode
-    const targetField = (mode === "three") ? "threehousekeeperschedule" : "twohousekeeperschedule";
+    // Switch between 3hk (Floor mode) and 2hk (Schedule mode)
+    const targetField = (mode === "three") ? "3hk" : "2hk";
 
     const snap = await getDocs(collection(db, "areas"));
     matchedAreas = [];
@@ -101,7 +102,7 @@
       const data = d.data();
       let dbAssignValue = "";
 
-      // Case-Blind field search
+      // Find the correct column (3hk or 2hk)
       for (let key in data) {
         if (key.toLowerCase() === targetField) {
           dbAssignValue = String(data[key] || "").trim();
@@ -115,19 +116,20 @@
       const myAssignLower = currentAssign.toLowerCase().trim();
       const dbDay = String(data.scheduleDay || "").toLowerCase().trim();
 
+      // 3. THE HANDSHAKE FILTER
+      // Match Position (1stfloor) AND Match Day (Monday/Daily)
       if(dbAssignLower === myAssignLower && (dbDay === "daily" || dbDay === today)) {
         matchedAreas.push(data);
       }
     });
 
     const select = document.getElementById("assignSelect");
-    select.innerHTML = '<option value="">Choose your Floor/Schedule...</option>' + 
+    select.innerHTML = '<option value="">Choose Position...</option>' + 
       Array.from(allOptions).sort().map(s => `<option value="${s}">${s}</option>`).join('');
 
     drawCategories();
   }
 
-  // 2. CATEGORY DRAWING
   window.drawCategories = function() {
     const box = document.getElementById("categoryButtons");
     box.innerHTML = "";
@@ -148,37 +150,34 @@
     });
 
     if(totalFound === 0) {
-      box.innerHTML = `<div class="empty-msg">No rooms found for ${currentAssign} on this day.</div>`;
+      box.innerHTML = `<div class="empty-msg">No rooms scheduled for ${currentAssign} on ${document.getElementById("dateDisplay").innerText}.</div>`;
     }
   }
 
-  // 3. AREA DRAWING (V3)
   window.showV3 = function(cat) {
     document.getElementById("view2").classList.add("hidden");
     document.getElementById("view3").classList.remove("hidden");
     document.getElementById("catTitle").innerText = cat;
     const box = document.getElementById("areaButtons");
     box.innerHTML = "";
-    const catLower = cat.toLowerCase().trim();
-    const filtered = matchedAreas.filter(a => String(a.category || "").toLowerCase().trim() === catLower);
+    const filtered = matchedAreas.filter(a => String(a.category || "").toLowerCase().trim() === cat.toLowerCase().trim());
     
-    const uniqueRooms = [];
     const seen = new Set();
-    filtered.forEach(item => { if (!seen.has(item.areaName)) { seen.add(item.areaName); uniqueRooms.push(item); } });
-
-    uniqueRooms.forEach(area => {
-      const btn = document.createElement("button");
-      btn.className = "red";
-      btn.innerHTML = `<div style="font-size: 22px;">${area.areaName}</div>`;
-      btn.onclick = () => {
-        sessionStorage.setItem("selectedWork", JSON.stringify({ workId: area.workId, areaName: area.areaName }));
-        window.location.href = "tasks.html";
-      };
-      box.appendChild(btn);
+    filtered.forEach(area => {
+      if (!seen.has(area.areaName)) {
+        seen.add(area.areaName);
+        const btn = document.createElement("button");
+        btn.className = "red";
+        btn.innerHTML = `<div style="font-size: 22px;">${area.areaName}</div>`;
+        btn.onclick = () => {
+          sessionStorage.setItem("selectedWork", JSON.stringify({ workId: area.workId, areaName: area.areaName }));
+          window.location.href = "tasks.html";
+        };
+        box.appendChild(btn);
+      }
     });
   }
 
-  // 4. NAVIGATION & UTILS
   window.adjustDate = (n) => { workDate.setDate(workDate.getDate() + n); loadData(); };
   window.toggleCover = () => document.getElementById("coverBox").classList.toggle("hidden");
   window.updateAssignment = (val) => { if(!val) return; currentAssign = val; loadData(); document.getElementById("coverBox").classList.add("hidden"); };
