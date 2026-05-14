@@ -77,7 +77,7 @@
   let workDate = new Date();
   let matchedAreas = [];
 
-  // 1. DATA LOAD
+  // 1. MAIN DATA LOAD
   async function loadData() {
     const dayName = workDate.toLocaleDateString('en-US', { weekday: 'long' });
     const today = dayName.toLowerCase().trim();
@@ -86,13 +86,18 @@
     document.getElementById("empName").innerText = "Hi, " + (session.firstName || "User");
     document.getElementById("assignDisplay").innerText = currentAssign;
 
+    // Get Building Mode
     const modeSnap = await getDoc(doc(db, "settings", "housekeepingMode"));
     const mode = (modeSnap.exists() ? (modeSnap.data().settingValue || modeSnap.data().value) : "two").toLowerCase().trim();
     
+    // Build the Dropdown List based on Mode
+    populateAssignmentDropdown(mode);
+
+    // Fetch matching rooms
     const targetField = (mode === "three") ? "Floor" : "Mode";
     const snap = await getDocs(collection(db, "areas"));
-    
     matchedAreas = [];
+
     snap.forEach(d => {
       const data = d.data();
       const dbAssignValue = String(data[targetField] || "").trim().toLowerCase();
@@ -104,15 +109,13 @@
       }
     });
 
-    // Run the dropdown builder now that we know the mode
-    populateAssignmentDropdown(mode);
     drawCategories();
   }
 
-  // 2. THE DYNAMIC DROPDOWN (FIXED IDs)
-  async function populateAssignmentDropdown(mode) {
-    const dropdown = document.getElementById("assignSelect"); // FIXED ID
-    const currentAssignLower = currentAssign.toLowerCase();
+  // 2. THE DYNAMIC DROPDOWN
+  function populateAssignmentDropdown(mode) {
+    const select = document.getElementById("assignSelect"); // Fixed ID match
+    const myAssignLower = currentAssign.toLowerCase().trim();
 
     let fullList = [];
     if (mode === "two" || mode === "2") {
@@ -121,19 +124,19 @@
       fullList = ["1stfloor", "2ndFloor", "3rdFloor", "Laundry"];
     }
 
-    // Filter out what they are currently looking at
-    const otherSchedules = fullList.filter(item => item.toLowerCase() !== currentAssignLower);
+    // Filter out the current assignment
+    const filtered = fullList.filter(item => item.toLowerCase() !== myAssignLower);
 
-    dropdown.innerHTML = `<option value="" disabled selected>Switch Schedule...</option>`;
-    otherSchedules.forEach(sched => {
+    select.innerHTML = '<option value="" disabled selected>Switch Schedule...</option>';
+    filtered.forEach(sched => {
       const option = document.createElement("option");
       option.value = sched;
       option.textContent = sched;
-      dropdown.appendChild(option);
+      select.appendChild(option);
     });
   }
 
-  // 3. CATEGORY & AREA DRAWING
+  // 3. DRAWING CATEGORIES (V2)
   window.drawCategories = function() {
     const box = document.getElementById("categoryButtons");
     box.innerHTML = "";
@@ -154,21 +157,24 @@
     });
 
     if(totalFound === 0) {
-      box.innerHTML = `<div class="empty-msg">No rooms found for ${currentAssign} on this day.</div>`;
+      box.innerHTML = `<div class="empty-msg">No rooms found for ${currentAssign} on ${document.getElementById("dateDisplay").innerText}.</div>`;
     }
   }
 
+  // 4. DRAWING AREAS (V3)
   window.showV3 = function(cat) {
     document.getElementById("view2").classList.add("hidden");
     document.getElementById("view3").classList.remove("hidden");
     document.getElementById("catTitle").innerText = cat;
     const box = document.getElementById("areaButtons");
     box.innerHTML = "";
-    const filtered = matchedAreas.filter(a => String(a["Category"] || "").toLowerCase().trim() === cat.toLowerCase());
+    const catLower = cat.toLowerCase().trim();
     
+    const filtered = matchedAreas.filter(a => String(a["Category"] || "").toLowerCase().trim() === catLower);
     const seen = new Set();
+    
     filtered.forEach(area => { 
-      if (!seen.has(area["Area"])) {
+      if (!seen.has(area["Area"])) { 
         seen.add(area["Area"]);
         const btn = document.createElement("button");
         btn.className = "red";
@@ -182,7 +188,7 @@
     });
   }
 
-  // 4. NAVIGATION
+  // 5. NAVIGATION & UTILS
   window.adjustDate = (n) => { workDate.setDate(workDate.getDate() + n); loadData(); };
   window.toggleCover = () => document.getElementById("coverBox").classList.toggle("hidden");
   window.updateAssignment = (val) => { if(!val) return; currentAssign = val; loadData(); document.getElementById("coverBox").classList.add("hidden"); };
