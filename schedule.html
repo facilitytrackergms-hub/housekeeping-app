@@ -139,26 +139,48 @@
     drawCategories();
   }
 
-  window.drawCategories = function() {
+window.drawCategories = async function() {
     const box = document.getElementById("categoryButtons");
-    box.innerHTML = "";
+    box.innerHTML = "<p style='text-align:center;'>Calculating progress...</p>";
     const cats = ["Common Area", "Weekly Room", "Daily Room", "Dehumidifier"];
 
     let totalFound = 0;
-    cats.forEach(cat => {
+    box.innerHTML = ""; 
+
+    for (const cat of cats) {
       const catLower = cat.toLowerCase().trim();
       const filtered = matchedAreas.filter(a => String(a["Category"] || "").toLowerCase().trim() === catLower);
-      const uniqueCount = [...new Set(filtered.map(a => a["Area"]))].length;
-      totalFound += uniqueCount;
       
-      const btn = document.createElement("button");
-      btn.className = (uniqueCount > 0) ? "red" : "back";
-      btn.innerText = `${cat} (${uniqueCount})`;
-      btn.onclick = () => { if(uniqueCount > 0) showV3(cat); };
-      box.appendChild(btn);
-    });
+      // Get the unique rooms in this specific category
+      const uniqueRooms = [...new Set(filtered.map(a => a["Area"]))];
+      const totalRooms = uniqueRooms.length;
+      totalFound += totalRooms;
+      
+      if (totalRooms > 0) {
+        // NOTE: This checks how many rooms are done. 
+        // You will link this to your Firebase completion data.
+        const completedRooms = 0; 
+        
+        const btn = document.createElement("button");
+        
+        // COLOR LOGIC: Red (0), Yellow (Some), Green (All)
+        if (completedRooms === 0) {
+          btn.className = "status-red";
+        } else if (completedRooms < totalRooms) {
+          btn.className = "status-yellow";
+        } else {
+          btn.className = "status-green";
+        }
 
-    if(totalFound === 0) {
+        // ADD THE COUNTER TO THE BUTTON TEXT
+        btn.innerText = `${cat} (${completedRooms}/${totalRooms})`;
+        
+        btn.onclick = () => showV3(cat);
+        box.appendChild(btn);
+      }
+    }
+
+    if (totalFound === 0) {
       box.innerHTML = `<div class="empty-msg">No rooms found for ${currentAssign} on ${document.getElementById("dateDisplay").innerText}.</div>`;
     }
   }
