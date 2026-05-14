@@ -1,165 +1,90 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GCR Tasks</title>
-    <style>
-        /* 01 - MOBILE OPTIMIZED STYLES */
-        * { box-sizing: border-box; }
-        body { margin: 0; font-family: Arial, sans-serif; background: #eef2f7; padding: 10px; }
-        .card { width: 100%; max-width: 460px; background: white; border-radius: 28px; padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.12); margin: auto; }
-        .view-tag { display: inline-block; background: black; color: white; padding: 4px 10px; border-radius: 8px; font-size: 12px; margin-bottom: 10px; }
-        h2 { text-align: center; color: #1847d1; margin-bottom: 5px; font-size: 24px; }
-        
-        .counter-box { text-align: center; font-size: 20px; font-weight: bold; color: #1847d1; margin-bottom: 15px; background: #f0f4ff; padding: 10px; border-radius: 15px; }
-        
-        /* COMPACT 3-IN-A-ROW GRID FOR PHONE SCREENS */
-        .task-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-top: 10px; }
-        
-        .task-btn { 
-            aspect-ratio: 1 / 1; 
-            border-radius: 18px; 
-            color: white; 
-            background: #d93025; /* Red Default */
-            display: flex; 
-            flex-direction: column;
-            align-items: center; 
-            justify-content: center; 
-            cursor: pointer;
-            transition: 0.2s cubic-bezier(0.4, 0, 0.2, 1);
-            border: 4px solid rgba(255,255,255,0.2);
-            box-shadow: 0 4px 10px rgba(217, 48, 37, 0.3);
-            -webkit-tap-highlight-color: transparent;
-            padding: 5px;
-            text-align: center;
-        }
-        .task-btn .big-letter { font-size: 32px; font-weight: bold; line-height: 1; }
-        .task-btn .small-label { font-size: 11px; margin-top: 4px; font-weight: normal; opacity: 0.9; line-height: 1.1; }
-
-        .task-btn.done { 
-            background: #22aa44 !important; /* Green Complete */
-            box-shadow: 0 4px 10px rgba(34, 170, 68, 0.3);
-            transform: scale(0.95);
-        }
-
-        .all-btn { width: 100%; padding: 18px; background: #1847d1; color: white; border: none; border-radius: 15px; font-size: 18px; font-weight: bold; margin-bottom: 10px; cursor: pointer; }
-        .back-btn { width: 100%; padding: 15px; background: #333; color: white; border: none; border-radius: 15px; font-size: 18px; margin-top: 20px; cursor: pointer; }
-        
-        .loader { text-align: center; color: #666; font-style: italic; padding: 20px; grid-column: 1 / -1; }
-    </style>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GCR Tasks</title>
+  <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: Arial, sans-serif; background: #f2f2f2; padding: 10px; }
+    .card { width: 100%; max-width: 430px; background: white; border-radius: 20px; padding: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); margin: auto; }
+    .view-tag { display: inline-block; background: black; color: white; padding: 4px 10px; border-radius: 8px; font-size: 12px; margin-bottom: 15px; }
+    h2 { text-align: center; color: #1976d2; margin-bottom: 20px; }
+    .task-row { display: flex; align-items: center; justify-content: space-between; background: #fff; border: 2px solid #eee; padding: 15px; border-radius: 15px; margin-bottom: 10px; }
+    .task-name { font-size: 18px; font-weight: bold; }
+    .check-btn { width: 40px; height: 40px; border-radius: 10px; border: 3px solid #1976d2; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+    .done { background: #4caf50 !important; border-color: #4caf50 !important; color: white; }
+    .done::after { content: '✔'; font-size: 20px; }
+    .back-btn { width: 100%; padding: 15px; background: #555; color: white; border: none; border-radius: 15px; font-size: 16px; margin-top: 20px; cursor: pointer; }
+  </style>
 </head>
 <body>
 
 <div class="card">
-    <div class="view-tag">Task Checklist</div>
-    <h2 id="areaTitle">Loading Area...</h2>
-    
-    <div class="counter-box">
-        Progress: <span id="completedCount">0</span> / <span id="totalCount">0</span>
-    </div>
-    
-    <button class="all-btn" onclick="completeAll()">COMPLETE ALL TASKS</button>
-    
-    <div id="taskGrid" class="task-grid">
-        <div class="loader">Loading your tasks...</div>
-    </div>
-
-    <button class="back-btn" onclick="window.location.href='schedule.html'">BACK TO ROOMS</button>
+  <div class="view-tag">Task Checklist</div>
+  <h2 id="areaTitle">Loading...</h2>
+  <div id="taskList"></div>
+  <button class="back-btn" onclick="window.location.href='schedule.html'">BACK TO ROOMS</button>
 </div>
 
 <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getFirestore, collection, query, where, getDocs, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+  import { getFirestore, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
-    const firebaseConfig = {
-        apiKey: "AIzaSyBgq_ooBeEN4noEyIxYPLVokgM6RjCO648",
-        authDomain: "gms-task-tracker.firebaseapp.com",
-        projectId: "gms-task-tracker",
-        storageBucket: "gms-task-tracker.firebasestorage.app",
-        messagingSenderId: "790880979860",
-        appId: "1:790880979860:web:6faee2a6e56955af3c1d81"
-    };
+  const firebaseConfig = {
+    apiKey: "AIzaSyBgq_ooBeEN4noEyIxYPLVokgM6RjCO648",
+    authDomain: "gms-task-tracker.firebaseapp.com",
+    projectId: "gms-task-tracker",
+    storageBucket: "gms-task-tracker.firebasestorage.app",
+    messagingSenderId: "790880979860",
+    appId: "1:790880979860:web:6faee2a6e56955af3c1d81"
+  };
 
-    const app = initializeApp(firebaseConfig);
-    const db = getFirestore(app);
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
 
-    const selectedWork = JSON.parse(sessionStorage.getItem("selectedWork"));
-    if (!selectedWork) { window.location.href = "schedule.html"; }
+  const selectedWork = JSON.parse(sessionStorage.getItem("selectedWork"));
+  if (!selectedWork) { window.location.href = "schedule.html"; }
 
-    document.getElementById("areaTitle").innerText = selectedWork.areaName;
-
-    let currentTasks = []; // Store loaded tasks for the "Complete All" button
+  document.getElementById("areaTitle").innerText = selectedWork.areaName;
 
   async function loadTasks() {
-  const list = document.getElementById("taskList");
-  const selectedWork = JSON.parse(sessionStorage.getItem("selectedWork"));
-  list.innerHTML = ""; 
+    const list = document.getElementById("taskList");
+    list.innerHTML = "<p>Finding tasks for this room...</p>";
 
-  try {
-    const q = query(collection(db, "tasks"), where("workId", "==", selectedWork.workId));
-    const snap = await getDocs(q);
+    try {
+      const q = query(collection(db, "tasks"), where("workId", "==", selectedWork.workId));
+      const snap = await getDocs(q);
 
-    snap.forEach(doc => {
-      const data = doc.data();
-      
-      // Forces the text to display regardless of what the column is named in the database
-      const possibleFields = [data.Task, data.task, data.H, data.S, data.T, data.M, data.V];
-      
-      possibleFields.forEach(text => {
-        if (text && String(text).trim() !== "" && String(text).trim() !== "0" && String(text) !== "undefined") {
+      list.innerHTML = ""; 
+
+      if (snap.empty) {
+        list.innerHTML = `<div class="empty-msg">No tasks found for ${selectedWork.areaName}</div>`;
+        return;
+      }
+
+      snap.forEach(doc => {
+        const data = doc.data();
+        const taskText = data.Task;  
+        
+        if (taskText && taskText.trim() !== "" && taskText !== "0") {
           const row = document.createElement("div");
           row.className = "task-row";
           row.innerHTML = `
-            <span class="task-name" style="font-size: 18px; font-weight: bold; color: black;">${text}</span>
+            <span class="task-name">${taskText}</span>
             <div class="check-btn" onclick="this.classList.toggle('done')"></div>
           `;
           list.appendChild(row);
         }
       });
-    });
-  } catch (err) {
-    console.error(err);
-    list.innerHTML = "<p>Error loading tasks.</p>";
+
+    } catch (err) {
+      console.error("Fetch Error:", err);
+      // This will immediately print the bug to the screen if it crashes again
+      list.innerHTML = `<p style="color:red; font-weight:bold;">Error: ${err.message}</p>`;
+    }
   }
-}
-    // TOGGLE SINGLE TASK DOC
-    window.toggleTask = async function(docId, newStatus) {
-        try {
-            const taskRef = doc(db, "tasks", docId);
-            await updateDoc(taskRef, { isDone: newStatus });
-            loadTaskGrid(); // Refresh UI
-        } catch (err) {
-            console.error("Update failed:", err);
-            alert("Connection lost. Try again.");
-        }
-    }
 
-    // BULK COMPLETE
-    window.completeAll = async function() {
-        if (currentTasks.length === 0) return;
-        
-        const btn = document.querySelector(".all-btn");
-        btn.innerText = "SAVING...";
-        btn.style.opacity = "0.7";
-
-        try {
-            // Create an array of update promises for all tasks that aren't done yet
-            const updatePromises = currentTasks
-                .filter(t => !t.isDone)
-                .map(t => updateDoc(doc(db, "tasks", t.id), { isDone: true }));
-            
-            await Promise.all(updatePromises);
-            
-            btn.innerText = "COMPLETE ALL TASKS";
-            btn.style.opacity = "1";
-            loadTaskGrid();
-        } catch (err) {
-            console.error("Bulk update failed:", err);
-            btn.innerText = "ERROR - TRY AGAIN";
-        }
-    }
-
-    loadTaskGrid();
+  loadTasks();
 </script>
 </body>
 </html>
