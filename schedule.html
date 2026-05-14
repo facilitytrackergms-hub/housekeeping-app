@@ -1,4 +1,3 @@
-<!-- Purpose: Schedule Dashboard and Task Counting | Location: schedule.html -->
 <!DOCTYPE html>
 <html>
 <head>
@@ -14,11 +13,10 @@
     button { width: 100%; border: none; border-radius: 15px; background: #1976d2; color: white; font-size: 18px; font-weight: bold; padding: 16px; margin: 8px 0; cursor: pointer; transition: 0.2s; }
     button:active { transform: scale(0.98); }
     
-    /* SMALLER ROOM BUTTONS GRID */
     .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
     
     .room-btn { 
-        min-height: 70px !important; 
+        min-height: 75px !important; 
         font-size: 16px !important; 
         padding: 8px !important;
         display: flex;
@@ -29,12 +27,10 @@
         line-height: 1.2;
     }
     
-    .count-tag { font-size: 12px; margin-top: 4px; opacity: 0.9; font-weight: normal; }
-
-    /* LOGIC COLORS */
-    .status-red { background: #c62828 !important; }    /* Not Started */
-    .status-yellow { background: #fbc02d !important; color: black !important; } /* In Progress */
-    .status-green { background: #2e7d32 !important; }  /* Finished */
+    /* PROGRESS COLORS */
+    .status-red { background: #c62828 !important; }
+    .status-yellow { background: #fbc02d !important; color: black !important; }
+    .status-green { background: #2e7d32 !important; }
 
     .back { background: #555 !important; }
     .hidden { display: none !important; }
@@ -44,7 +40,6 @@
     
     #categoryButtons button { min-height: 100px; font-size: 17px; }
     select { width: 100%; padding: 15px; border-radius: 12px; border: 2px solid #1976d2; margin-top: 10px; font-size: 16px; }
-    .empty-msg { text-align: center; color: #666; padding: 20px; font-style: italic; grid-column: 1 / -1; }
   </style>
 </head>
 <body>
@@ -55,25 +50,21 @@
     <div class="top-box">
       <div class="date-row">
         <button class="date-btn" onclick="adjustDate(-1)">◀</button>
-        <h3 id="dateDisplay" style="min-width: 140px;">Today</h3>
+        <h3 id="dateDisplay">Today</h3>
         <button class="date-btn" onclick="adjustDate(1)">▶</button>
       </div>
       <h2 id="empName">Hi, ---</h2>
       <h3 id="assignDisplay" style="color:#1976d2; font-weight: bold;">---</h3>
-      <button id="coverBtn" style="font-size:13px; padding:10px; background:#666;" onclick="toggleCover()">CHANGE ASSIGNMENT</button>
-      <div id="coverBox" class="hidden">
-        <select id="assignSelect" onchange="updateAssignment(this.value)"></select>
-      </div>
     </div>
     <div id="categoryButtons" class="grid-2"></div>
-    <button class="back" onclick="logout()" style="margin-top:20px;">LOGOUT</button>
+    <button class="back" onclick="location.href='index.html'" style="margin-top:20px;">LOGOUT</button>
   </div>
 
   <div id="view3" class="hidden">
     <div class="view-tag">Area Selection</div>
     <h2 id="catTitle" style="color:#1976d2; margin-bottom: 15px;">Category</h2>
     <div id="areaButtons" class="grid-2"></div>
-    <button class="back" onclick="showV2()" style="margin-top:20px; padding: 18px;">BACK</button>
+    <button class="back" onclick="showV2()" style="margin-top:20px;">BACK</button>
   </div>
 </div>
 
@@ -100,6 +91,7 @@
   let workDate = new Date();
   let matchedAreas = [];
 
+  /* --- 01. OPTIMIZED DATA LOADER --- */
   async function loadData() {
     const dayName = workDate.toLocaleDateString('en-US', { weekday: 'long' });
     const today = dayName.toLowerCase().trim();
@@ -108,178 +100,109 @@
     document.getElementById("empName").innerText = "Hi, " + (session.firstName || "User");
     document.getElementById("assignDisplay").innerText = currentAssign;
 
-    const modeSnap = await getDoc(doc(db, "settings", "housekeepingMode"));
-    const mode = (modeSnap.exists() ? (modeSnap.data().settingValue || modeSnap.data().value) : "two").toLowerCase().trim();
-    
-    const select = document.getElementById("assignSelect");
-    const myAssignLower = currentAssign.toLowerCase().trim();
-    let fullList = (mode === "three") ? ["1stfloor", "2ndFloor", "3rdFloor", "Laundry"] : ["HK1", "HK2", "Laundry"];
-    const filtered = fullList.filter(item => item.toLowerCase() !== myAssignLower);
-    
-    select.innerHTML = '<option value="" disabled selected>Switch Schedule...</option>';
-    filtered.forEach(sched => {
-      const option = document.createElement("option");
-      option.value = sched;
-      option.textContent = sched;
-      select.appendChild(option);
-    });
+    document.getElementById("categoryButtons").innerHTML = "<p style='grid-column:1/-1; text-align:center;'>Syncing Cloud Data...</p>";
 
+    // 1. Get Mode and Rooms
+    const modeSnap = await getDoc(doc(db, "settings", "housekeepingMode"));
+    const mode = (modeSnap.exists() ? (modeSnap.data().settingValue || "two") : "two").toLowerCase().trim();
+    
     const targetField = (mode === "three") ? "Floor" : "Mode";
     const q = query(collection(db, "areas"), where(targetField, "==", currentAssign));
     const snap = await getDocs(q);
     
     matchedAreas = [];
+    const workIds = [];
     snap.forEach(d => {
-      const data = d.data();
-      const dbDay = String(data["Schedule"] || "").toLowerCase().trim();
-      if(dbDay === "daily" || dbDay === today) {
-        matchedAreas.push(data);
-      }
-    });
-
-    // ⚡ SPEED OPTIMIZATION: Chunked Firestore Queries
-    document.getElementById("categoryButtons").innerHTML = "<p style='text-align:center; font-weight:bold; color:#1976d2; grid-column: 1/-1;'>Loading Tasks...</p>";
-
-    const workIds = matchedAreas.map(a => String(a.workId).toLowerCase().trim()).filter(id => id !== "undefined" && id !== "");
-    const uniqueWorkIds = [...new Set(workIds)];
-    
-    let taskMap = {};
-    uniqueWorkIds.forEach(id => taskMap[id] = { total: 0, completed: 0 });
-
-    const chunks = [];
-    for (let i = 0; i < uniqueWorkIds.length; i += 10) {
-      chunks.push(uniqueWorkIds.slice(i, i + 10));
-    }
-
-    const taskPromises = chunks.map(async (chunk) => {
-      const tQuery = query(collection(db, "tasks"), where("workId", "in", chunk));
-      const tSnap = await getDocs(tQuery);
-      tSnap.forEach(doc => {
-        const data = doc.data();
-        const wid = String(data.workId).toLowerCase().trim();
-        if (taskMap[wid]) {
-          taskMap[wid].total++;
-          if (data.isDone === true || String(data.isDone).toLowerCase() === "true") {
-            taskMap[wid].completed++;
-          }
+        const data = d.data();
+        const dbDay = String(data["Schedule"] || "").toLowerCase().trim();
+        if(dbDay === "daily" || dbDay === today) {
+            matchedAreas.push(data);
+            workIds.push(data.workId);
         }
-      });
     });
 
-    await Promise.all(taskPromises);
+    // 2. Fetch History & Tasks in one shot
+    const [historySnap, taskSnap] = await Promise.all([
+        getDocs(collection(db, "task_history")),
+        getDocs(query(collection(db, "tasks"), where("workId", "in", workIds.slice(0, 10))))
+    ]);
 
-    // Reattach memory mapping back to the areas
-    matchedAreas.forEach(area => {
-      const wid = String(area.workId).toLowerCase().trim();
-      area.taskTotal = taskMap[wid] ? taskMap[wid].total : 0;
-      area.taskCompleted = taskMap[wid] ? taskMap[wid].completed : 0;
+    window.historySet = new Set();
+    historySnap.forEach(doc => window.historySet.add(doc.id));
+
+    window.taskRegistry = {}; 
+    taskSnap.forEach(doc => {
+        const t = doc.data();
+        if(!window.taskRegistry[t.workId]) window.taskRegistry[t.workId] = [];
+        window.taskRegistry[t.workId].push(doc.id);
     });
 
     drawCategories();
   }
 
+  /* --- 02. CATEGORY DRAW --- */
   window.drawCategories = function() {
     const box = document.getElementById("categoryButtons");
     const cats = ["Common Area", "Weekly Room", "Daily Room", "Dehumidifier"];
+    box.innerHTML = "";
 
-    let totalFound = 0;
-    const tempContainer = document.createElement("div");
+    cats.forEach(cat => {
+        const filtered = matchedAreas.filter(a => String(a.Category || "").toLowerCase() === cat.toLowerCase());
+        if (filtered.length === 0) return;
 
-    for (const cat of cats) {
-      const catLower = cat.toLowerCase().trim();
-      const filtered = matchedAreas.filter(a => String(a["Category"] || "").toLowerCase().trim() === catLower);
-      
-      const uniqueRooms = [...new Set(filtered.map(a => a["Area"]))];
-      const totalRooms = uniqueRooms.length;
-      totalFound += totalRooms;
-      
-      if (totalRooms > 0) {
         let completedRooms = 0;
-        
-        for (const areaName of uniqueRooms) {
-          const areaObj = filtered.find(a => a["Area"] === areaName);
-          
-          if (areaObj.taskTotal > 0 && areaObj.taskCompleted === areaObj.taskTotal) {
-            completedRooms++;
-          }
-        }
+        filtered.forEach(area => {
+            const roomTasks = window.taskRegistry[area.workId] || [];
+            const doneTasks = roomTasks.filter(id => window.historySet.has(`${area.workId}_${id}`));
+            if (roomTasks.length > 0 && doneTasks.length === roomTasks.length) completedRooms++;
+        });
 
         const btn = document.createElement("button");
-        if (completedRooms === 0) btn.className = "status-red";
-        else if (completedRooms < totalRooms) btn.className = "status-yellow";
-        else btn.className = "status-green";
-
-        btn.innerText = `${cat} (${completedRooms}/${totalRooms})`;
+        btn.className = completedRooms === 0 ? "status-red" : (completedRooms < filtered.length ? "status-yellow" : "status-green");
+        btn.innerText = `${cat} (${completedRooms}/${filtered.length})`;
         btn.onclick = () => showV3(cat);
-        tempContainer.appendChild(btn);
-      }
-    }
-
-    box.innerHTML = "";
-    if (totalFound === 0) {
-      box.innerHTML = `<div class="empty-msg">No rooms found for ${currentAssign}.</div>`;
-    } else {
-      while(tempContainer.firstChild) { box.appendChild(tempContainer.firstChild); }
-    }
+        box.appendChild(btn);
+    });
   }
 
+  /* --- 03. ROOM SELECTION --- */
   window.showV3 = function(cat) {
     document.getElementById("view2").classList.add("hidden");
     document.getElementById("view3").classList.remove("hidden");
     document.getElementById("catTitle").innerText = cat;
     const box = document.getElementById("areaButtons");
     box.innerHTML = "";
-    
-    const filtered = matchedAreas.filter(a => String(a["Category"] || "").toLowerCase().trim() === cat.toLowerCase());
-    const seen = new Set();
 
-    for (const area of filtered) {
-      if (!seen.has(area["Area"])) {
-        seen.add(area["Area"]);
-        
-        const total = area.taskTotal || 0;
-        const completed = area.taskCompleted || 0;
+    const filtered = matchedAreas.filter(a => String(a.Category || "").toLowerCase() === cat.toLowerCase());
+    
+    filtered.forEach(area => {
+        const roomTasks = window.taskRegistry[area.workId] || [];
+        const doneTasks = roomTasks.filter(id => window.historySet.has(`${area.workId}_${id}`));
+        const total = roomTasks.length;
+        const completed = doneTasks.length;
 
         const btn = document.createElement("button");
-        
-        if (total === 0) btn.className = "room-btn back"; 
-        else if (completed === 0) btn.className = "room-btn status-red";
-        else if (completed < total) btn.className = "room-btn status-yellow";
-        else btn.className = "room-btn status-green";
-
-        btn.innerHTML = `
-          <div style="font-weight:bold;">${area["Area"]}</div>
-          <div class="count-tag">${completed} / ${total} DONE</div>
-        `;
-        
+        btn.className = "room-btn " + (total === 0 ? "back" : (completed === 0 ? "status-red" : (completed < total ? "status-yellow" : "status-green")));
+        btn.innerHTML = `<div>${area.Area}</div><div class="count-tag">${completed}/${total} Tasks</div>`;
         btn.onclick = () => {
-          const cleanId = String(area.workId).toLowerCase().trim();
-          sessionStorage.setItem("selectedWork", JSON.stringify({ 
-              workId: cleanId, 
-              areaName: area["Area"] 
-          }));
-          window.location.href = "tasks.html"; 
+            sessionStorage.setItem("selectedWork", JSON.stringify({ workId: area.workId, areaName: area.Area }));
+            location.href = "tasks.html";
         };
         box.appendChild(btn);
-      }
-    }
+    });
   }
 
-  window.adjustDate = (n) => { workDate.setDate(workDate.getDate() + n); loadData(); };
-  window.toggleCover = () => document.getElementById("coverBox").classList.toggle("hidden");
-  window.updateAssignment = (val) => { 
-    if(!val) return; 
-    currentAssign = val; 
-    session.assignment = val;
-    sessionStorage.setItem("currentEmployee", JSON.stringify(session));
-    loadData(); 
-    document.getElementById("coverBox").classList.add("hidden"); 
+  window.showV2 = () => {
+    document.getElementById("view3").classList.add("hidden");
+    document.getElementById("view2").classList.remove("hidden");
   };
-  window.showV2 = () => { document.getElementById("view2").classList.remove("hidden"); document.getElementById("view3").classList.add("hidden"); };
-  window.logout = () => { sessionStorage.clear(); window.location.href = "index.html"; };
+
+  window.adjustDate = (days) => {
+    workDate.setDate(workDate.getDate() + days);
+    loadData();
+  };
 
   loadData();
 </script>
 </body>
 </html>
-<!-- End Schedule Dashboard and Task Counting -->
