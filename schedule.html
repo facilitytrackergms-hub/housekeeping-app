@@ -2,7 +2,7 @@
 <html>
 <head>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Facility Tracker</title>
+  <title>GCR Schedule</title>
   <style>
     * { box-sizing: border-box; }
     body { margin: 0; font-family: Arial, sans-serif; background: #f2f2f2; padding: 10px; }
@@ -28,7 +28,7 @@
 
 <div class="card">
   <div id="view2">
-    <div class="view-tag">V2 schedule.html</div>
+    <div class="view-tag">Schedule Dashboard</div>
     <div class="top-box">
       <div class="date-row">
         <button class="date-btn" onclick="adjustDate(-1)">◀</button>
@@ -37,7 +37,7 @@
       </div>
       <h2 id="empName">Hi, ---</h2>
       <h3 id="assignDisplay" style="color:#1976d2; font-weight: bold;">---</h3>
-      <button id="coverBtn" style="font-size:13px; padding:10px; background:#666;" onclick="toggleCover()">CHANGE FLOOR / ASSIGNMENT</button>
+      <button id="coverBtn" style="font-size:13px; padding:10px; background:#666;" onclick="toggleCover()">CHANGE ASSIGNMENT</button>
       <div id="coverBox" class="hidden">
         <select id="assignSelect" onchange="updateAssignment(this.value)"></select>
       </div>
@@ -47,7 +47,7 @@
   </div>
 
   <div id="view3" class="hidden">
-    <div class="view-tag">V3 schedule.html</div>
+    <div class="view-tag">Area Selection</div>
     <h2 id="catTitle" style="color:#1976d2; margin-bottom: 15px;">Category</h2>
     <div id="areaButtons" class="grid-2"></div>
     <button class="back" onclick="showV2()" style="margin-top:20px; padding: 18px;">BACK</button>
@@ -77,7 +77,7 @@
   let workDate = new Date();
   let matchedAreas = [];
 
-  // 1. MAIN DATA LOAD
+  // 1. DATA LOAD
   async function loadData() {
     const dayName = workDate.toLocaleDateString('en-US', { weekday: 'long' });
     const today = dayName.toLowerCase().trim();
@@ -86,14 +86,25 @@
     document.getElementById("empName").innerText = "Hi, " + (session.firstName || "User");
     document.getElementById("assignDisplay").innerText = currentAssign;
 
-    // Get Building Mode
+    // A. Get Building Mode
     const modeSnap = await getDoc(doc(db, "settings", "housekeepingMode"));
     const mode = (modeSnap.exists() ? (modeSnap.data().settingValue || modeSnap.data().value) : "two").toLowerCase().trim();
     
-    // Build the Dropdown List based on Mode
-    populateAssignmentDropdown(mode);
+    // B. Build the Dropdown List
+    const select = document.getElementById("assignSelect");
+    const myAssignLower = currentAssign.toLowerCase().trim();
+    let fullList = (mode === "three") ? ["1stfloor", "2ndFloor", "3rdFloor", "Laundry"] : ["HK1", "HK2", "Laundry"];
+    const filtered = fullList.filter(item => item.toLowerCase() !== myAssignLower);
+    
+    select.innerHTML = '<option value="" disabled selected>Switch Schedule...</option>';
+    filtered.forEach(sched => {
+      const option = document.createElement("option");
+      option.value = sched;
+      option.textContent = sched;
+      select.appendChild(option);
+    });
 
-    // Fetch matching rooms
+    // C. Fetch matching Rooms
     const targetField = (mode === "three") ? "Floor" : "Mode";
     const snap = await getDocs(collection(db, "areas"));
     matchedAreas = [];
@@ -101,7 +112,6 @@
     snap.forEach(d => {
       const data = d.data();
       const dbAssignValue = String(data[targetField] || "").trim().toLowerCase();
-      const myAssignLower = currentAssign.toLowerCase().trim();
       const dbDay = String(data["Schedule"] || "").toLowerCase().trim();
 
       if(dbAssignValue === myAssignLower && (dbDay === "daily" || dbDay === today)) {
@@ -112,31 +122,7 @@
     drawCategories();
   }
 
-  // 2. THE DYNAMIC DROPDOWN
-  function populateAssignmentDropdown(mode) {
-    const select = document.getElementById("assignSelect"); // Fixed ID match
-    const myAssignLower = currentAssign.toLowerCase().trim();
-
-    let fullList = [];
-    if (mode === "two" || mode === "2") {
-      fullList = ["HK1", "HK2", "Laundry"];
-    } else {
-      fullList = ["1stfloor", "2ndFloor", "3rdFloor", "Laundry"];
-    }
-
-    // Filter out the current assignment
-    const filtered = fullList.filter(item => item.toLowerCase() !== myAssignLower);
-
-    select.innerHTML = '<option value="" disabled selected>Switch Schedule...</option>';
-    filtered.forEach(sched => {
-      const option = document.createElement("option");
-      option.value = sched;
-      option.textContent = sched;
-      select.appendChild(option);
-    });
-  }
-
-  // 3. DRAWING CATEGORIES (V2)
+  // 2. CATEGORY DRAWING
   window.drawCategories = function() {
     const box = document.getElementById("categoryButtons");
     box.innerHTML = "";
@@ -161,16 +147,15 @@
     }
   }
 
-  // 4. DRAWING AREAS (V3)
+  // 3. AREA DRAWING
   window.showV3 = function(cat) {
     document.getElementById("view2").classList.add("hidden");
     document.getElementById("view3").classList.remove("hidden");
     document.getElementById("catTitle").innerText = cat;
     const box = document.getElementById("areaButtons");
     box.innerHTML = "";
-    const catLower = cat.toLowerCase().trim();
     
-    const filtered = matchedAreas.filter(a => String(a["Category"] || "").toLowerCase().trim() === catLower);
+    const filtered = matchedAreas.filter(a => String(a["Category"] || "").toLowerCase().trim() === cat.toLowerCase());
     const seen = new Set();
     
     filtered.forEach(area => { 
@@ -188,7 +173,7 @@
     });
   }
 
-  // 5. NAVIGATION & UTILS
+  // 4. NAVIGATION & UTILS
   window.adjustDate = (n) => { workDate.setDate(workDate.getDate() + n); loadData(); };
   window.toggleCover = () => document.getElementById("coverBox").classList.toggle("hidden");
   window.updateAssignment = (val) => { if(!val) return; currentAssign = val; loadData(); document.getElementById("coverBox").classList.add("hidden"); };
