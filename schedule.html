@@ -43,7 +43,7 @@
     
     #categoryButtons button { min-height: 100px; font-size: 17px; }
     select { width: 100%; padding: 15px; border-radius: 12px; border: 2px solid #1976d2; margin-top: 10px; font-size: 16px; }
-    .empty-msg { text-align: center; color: #666; padding: 20px; font-style: italic; }
+    .empty-msg { text-align: center; color: #666; padding: 20px; font-style: italic; grid-column: 1 / -1; }
   </style>
 </head>
 <body>
@@ -136,17 +136,41 @@
       }
     });
 
+    // ⚡ SPEED OPTIMIZATION: Fetch all tasks concurrently before drawing buttons
+    document.getElementById("categoryButtons").innerHTML = "<p style='text-align:center; font-weight:bold; color:#1976d2; grid-column: 1/-1;'>Loading Tasks...</p>";
+
+    const taskPromises = matchedAreas.map(async (area) => {
+      const cleanId = String(area.workId).toLowerCase().trim();
+      const tQuery = query(collection(db, "tasks"), where("workId", "==", cleanId));
+      const tSnap = await getDocs(tQuery);
+      
+      let total = tSnap.size;
+      let completed = 0;
+      
+      tSnap.forEach(doc => {
+        if (doc.data().isDone === true) {
+          completed++;
+        }
+      });
+
+      // Save counts into memory for instant access later
+      area.taskTotal = total;
+      area.taskCompleted = completed;
+      return area;
+    });
+
+    // Wait for all task counts to finish loading
+    await Promise.all(taskPromises);
+
+    // Draw UI instantly from memory
     drawCategories();
   }
 
-window.drawCategories = async function() {
+  window.drawCategories = function() {
     const box = document.getElementById("categoryButtons");
-    box.innerHTML = "<p style='text-align:center; font-weight:bold; color:#1976d2;'>Calculating Progress...</p>";
     const cats = ["Common Area", "Weekly Room", "Daily Room", "Dehumidifier"];
 
     let totalFound = 0;
-    
-    // We create a temporary holding area to avoid flickering
     const tempContainer = document.createElement("div");
 
     for (const cat of cats) {
@@ -160,21 +184,11 @@ window.drawCategories = async function() {
       if (totalRooms > 0) {
         let completedRooms = 0;
         
-        // Check memory for every room in this category to get accurate counts
+        // Check memory for every room in this category
         for (const areaName of uniqueRooms) {
           const areaObj = filtered.find(a => a["Area"] === areaName);
-          const tQuery = query(collection(db, "tasks"), where("workId", "==", areaObj.workId));
-          const tSnap = await getDocs(tQuery);
           
-          let tTotal = 0;
-          let tComp = 0;
-          
-          tSnap.forEach(t => {
-            tTotal++;
-            if (localStorage.getItem("gcr_task_" + t.id) === "true") tComp++;
-          });
-          
-          if (tTotal > 0 && tComp === tTotal) {
+          if (areaObj.taskTotal > 0 && areaObj.taskCompleted === areaObj.taskTotal) {
             completedRooms++;
           }
         }
@@ -198,100 +212,30 @@ window.drawCategories = async function() {
     }
   }
 
-  window.showV3 = async function(cat) {
+  window.showV3 = function(cat) {
     document.getElementById("view2").classList.add("hidden");
     document.getElementById("view3").classList.remove("hidden");
     document.getElementById("catTitle").innerText = cat;
     const box = document.getElementById("areaButtons");
-    box.innerHTML = "<p style='text-align:center; grid-column: 1/-1;'>Counting tasks...</p>";
+    box.innerHTML = "";
     
     const filtered = matchedAreas.filter(a => String(a["Category"] || "").toLowerCase().trim() === cat.toLowerCase());
     const seen = new Set();
-    const tempContainer = document.createElement("div");
 
     for (const area of filtered) {
       if (!seen.has(area["Area"])) {
         seen.add(area["Area"]);
         
-        // 1. Get total tasks for this specific room
-        const taskQuery = query(collection(db, "tasks"), where("workId", "==", area.workId));
-        const taskSnap = await getDocs(taskQuery);
-        const total = taskSnap.size;
-        
-        // 2. Read the memory to see how many are completed
-        let completed = 0; 
-        taskSnap.forEach(t => {
-           if (localStorage.getItem("gcr_task_" + t.id) === "true") completed++;
-        });
+        // Grab pre-calculated counts from memory
+        const total = area.taskTotal || 0;
+        const completed = area.taskCompleted || 0;
 
         const btn = document.createElement("button");
+        
         if (total === 0) btn.className = "room-btn back"; 
         else if (completed === 0) btn.className = "room-btn status-red";
         else if (completed < total) btn.className = "room-btn status-yellow";
         else btn.className = "room-btn status-green";
-
-        btn.innerHTML = `
-          <div style="font-size: 16px; font-weight: bold;">${area["Area"]}</div>
-          <div style="font-size: 13px; margin-top: 4px;">Tasks: ${completed}/${total}</div>
-        `;
-        
-        btn.onclick = () => {
-          sessionStorage.setItem("selectedWork", JSON.stringify({ workId: area.workId, areaName: area["Area"] }));
-          window.location.href = "tasks.html";
-        };
-        tempContainer.appendChild(btn);
-      }
-    }
-    
-    box.innerHTML = "";
-    while(tempContainer.firstChild) { box.appendChild(tempContainer.firstChild); }
-  }
-
-  window.showV3 = async function(cat) {
-    document.getElementById("view2").classList.add("hidden");
-    document.getElementById("view3").classList.remove("hidden");
-    document.getElementById("catTitle").innerText = cat;
-    const box = document.getElementById("areaButtons");
-    box.innerHTML = "<p style='text-align:center;'>Calculating status...</p>";
-    
-    const filtered = matchedAreas.filter(a => String(a["Category"] || "").toLowerCase().trim() === cat.toLowerCase());
-    const seen = new Set();
-    box.innerHTML = "";
-
-    for (const area of filtered) {
-      if (!seen.has(area["Area"])) {
-        seen.add(area["Area"]);
-        
-        // FETCH REAL-TIME TASK STATUS FROM NEW DB STRUCTURE
-        const cleanId = String(area.workId).toLowerCase().trim();
-        const taskQuery = query(collection(db, "tasks"), where("workId", "==", cleanId));
-        const taskSnap = await getDocs(taskQuery);
-        
-        // Total is just the number of matching task documents
-        let total = taskSnap.size;
-        let completed = 0;
-
-        if (!taskSnap.empty) {
-          taskSnap.forEach(doc => {
-            const data = doc.data();
-            if (data.isDone === true) {
-              completed++;
-            }
-          });
-        }
-
-        const btn = document.createElement("button");
-        
-        // PROGRESS COLOR LOGIC
-        if (total === 0) {
-          btn.className = "room-btn back"; 
-        } else if (completed === 0) {
-          btn.className = "room-btn status-red";
-        } else if (completed < total) {
-          btn.className = "room-btn status-yellow";
-        } else {
-          btn.className = "room-btn status-green";
-        }
 
         btn.innerHTML = `
           <div style="font-weight:bold;">${area["Area"]}</div>
@@ -299,11 +243,12 @@ window.drawCategories = async function() {
         `;
         
         btn.onclick = () => {
+          const cleanId = String(area.workId).toLowerCase().trim();
           sessionStorage.setItem("selectedWork", JSON.stringify({ 
               workId: cleanId, 
               areaName: area["Area"] 
           }));
-          window.location.href = "task-details.html";
+          window.location.href = "tasks.html"; 
         };
         box.appendChild(btn);
       }
