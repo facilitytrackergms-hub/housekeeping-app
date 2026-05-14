@@ -15,14 +15,14 @@
         
         /* COMPACT 3-IN-A-ROW GRID FOR PHONE SCREENS */
         .task-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; margin-top: 10px; }
+        
         .task-btn { 
             aspect-ratio: 1 / 1; 
             border-radius: 18px; 
-            font-size: 28px; 
-            font-weight: bold; 
             color: white; 
             background: #d93025; /* Red Default */
             display: flex; 
+            flex-direction: column;
             align-items: center; 
             justify-content: center; 
             cursor: pointer;
@@ -30,7 +30,12 @@
             border: 4px solid rgba(255,255,255,0.2);
             box-shadow: 0 4px 10px rgba(217, 48, 37, 0.3);
             -webkit-tap-highlight-color: transparent;
+            padding: 5px;
+            text-align: center;
         }
+        .task-btn .big-letter { font-size: 32px; font-weight: bold; line-height: 1; }
+        .task-btn .small-label { font-size: 11px; margin-top: 4px; font-weight: normal; opacity: 0.9; line-height: 1.1; }
+
         .task-btn.done { 
             background: #22aa44 !important; /* Green Complete */
             box-shadow: 0 4px 10px rgba(34, 170, 68, 0.3);
@@ -40,7 +45,7 @@
         .all-btn { width: 100%; padding: 18px; background: #1847d1; color: white; border: none; border-radius: 15px; font-size: 18px; font-weight: bold; margin-bottom: 10px; cursor: pointer; }
         .back-btn { width: 100%; padding: 15px; background: #333; color: white; border: none; border-radius: 15px; font-size: 18px; margin-top: 20px; cursor: pointer; }
         
-        .loader { text-align: center; color: #666; font-style: italic; padding: 20px; }
+        .loader { text-align: center; color: #666; font-style: italic; padding: 20px; grid-column: 1 / -1; }
     </style>
 </head>
 <body>
@@ -83,45 +88,49 @@
 
     document.getElementById("areaTitle").innerText = selectedWork.areaName;
 
-    let currentTaskDocId = null;
-    let activeKeys = [];
+    let currentTasks = []; // Store loaded tasks for the "Complete All" button
 
     async function loadTaskGrid() {
         const grid = document.getElementById("taskGrid");
 
         try {
+            // Because our uploader made separate docs for H, S, T, M, V, we query them all here
             const q = query(collection(db, "tasks"), where("workId", "==", selectedWork.workId));
             const snap = await getDocs(q);
 
             if (snap.empty) {
-                grid.innerHTML = "<p style='grid-column: 1/4; text-align:center;'>No tasks found for this area.</p>";
+                grid.innerHTML = "<p class='loader'>No tasks found for this area.</p>";
+                document.getElementById("totalCount").innerText = "0";
+                document.getElementById("completedCount").innerText = "0";
                 return;
             }
 
-            const taskDoc = snap.docs[0];
-            currentTaskDocId = taskDoc.id;
-            const data = taskDoc.data();
-
             let total = 0;
             let done = 0;
-            activeKeys = [];
+            currentTasks = [];
             grid.innerHTML = "";
 
-            // MATCHING H-S-T-M-V LABELS FROM YOUR SPREADSHEET
-            ['H', 'S', 'T', 'M', 'V'].forEach(key => {
-                // If cell has data (even just a "1"), create the button
-                if (data[key] && data[key] !== "" && data[key] !== "0") {
-                    total++;
-                    activeKeys.push(key);
-                    const isDone = data[key + "_done"] === true;
-                    if (isDone) done++;
+            // Loop through the individual task documents
+            snap.forEach(docSnap => {
+                const data = docSnap.data();
+                const isDone = (data.isDone === true || data.isDone === "true");
+                
+                total++;
+                if (isDone) done++;
 
-                    const btn = document.createElement("button");
-                    btn.className = `task-btn ${isDone ? 'done' : ''}`;
-                    btn.innerText = key;
-                    btn.onclick = () => toggleTask(key, !isDone);
-                    grid.appendChild(btn);
-                }
+                currentTasks.push({ id: docSnap.id, isDone: isDone });
+
+                const btn = document.createElement("button");
+                btn.className = `task-btn ${isDone ? 'done' : ''}`;
+                
+                // Show the big letter (H, S, T) and the label below it
+                btn.innerHTML = `
+                    <div class="big-letter">${data.Header || "?"}</div>
+                    <div class="small-label">${data.Type || "Task"}</div>
+                `;
+                
+                btn.onclick = () => toggleTask(docSnap.id, !isDone);
+                grid.appendChild(btn);
             });
 
             // UPDATE PROGRESS BAR
@@ -130,19 +139,15 @@
 
         } catch (err) {
             console.error("Error loading grid:", err);
-            grid.innerHTML = "<p style='text-align:center; color:red;'>Sync Error. Check Connection.</p>";
+            grid.innerHTML = "<p class='loader' style='color:red;'>Sync Error. Check Connection.</p>";
         }
     }
 
-    // TOGGLE SINGLE KEY (Saves to [KEY]_done in Firestore)
-    window.toggleTask = async function(key, newStatus) {
-        if (!currentTaskDocId) return;
+    // TOGGLE SINGLE TASK DOC
+    window.toggleTask = async function(docId, newStatus) {
         try {
-            const taskRef = doc(db, "tasks", currentTaskDocId);
-            const updateData = {};
-            updateData[key + "_done"] = newStatus;
-            
-            await updateDoc(taskRef, updateData);
+            const taskRef = doc(db, "tasks", docId);
+            await updateDoc(taskRef, { isDone: newStatus });
             loadTaskGrid(); // Refresh UI
         } catch (err) {
             console.error("Update failed:", err);
@@ -152,18 +157,26 @@
 
     // BULK COMPLETE
     window.completeAll = async function() {
-        if (!currentTaskDocId || activeKeys.length === 0) return;
+        if (currentTasks.length === 0) return;
+        
+        const btn = document.querySelector(".all-btn");
+        btn.innerText = "SAVING...";
+        btn.style.opacity = "0.7";
+
         try {
-            const taskRef = doc(db, "tasks", currentTaskDocId);
-            const updateData = {};
-            activeKeys.forEach(key => {
-                updateData[key + "_done"] = true;
-            });
+            // Create an array of update promises for all tasks that aren't done yet
+            const updatePromises = currentTasks
+                .filter(t => !t.isDone)
+                .map(t => updateDoc(doc(db, "tasks", t.id), { isDone: true }));
             
-            await updateDoc(taskRef, updateData);
+            await Promise.all(updatePromises);
+            
+            btn.innerText = "COMPLETE ALL TASKS";
+            btn.style.opacity = "1";
             loadTaskGrid();
         } catch (err) {
             console.error("Bulk update failed:", err);
+            btn.innerText = "ERROR - TRY AGAIN";
         }
     }
 
