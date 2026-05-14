@@ -50,7 +50,7 @@
       ]);
 
       const mode = (modeSnap.exists() ? (modeSnap.data().settingValue || modeSnap.data().value) : "two").toLowerCase().trim();
-      const adminPass = adminSnap.exists() ? adminSnap.data().password : null;
+      const adminPass = adminSnap.exists() ? adminSnap.data().Password : null;
 
       // 2. Admin Login Check
       if (adminPass && pin === String(adminPass)) {
