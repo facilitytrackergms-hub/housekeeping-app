@@ -17,7 +17,6 @@
       position: relative;
     }
 
-    /* THE LABEL: V# filename */
     .view-label { 
       position: absolute; 
       top: 15px; 
@@ -30,13 +29,11 @@
     h1 { color: #1847d1; text-align: center; }
     h2 { font-size: 18px; margin-top: 0; color: #333; }
 
-    /* 02 - BUTTONS */
     .btn-row { display: flex; justify-content: space-between; gap: 10px; }
     .btn { padding: 15px; width: 50%; border: none; border-radius: 10px; font-weight: bold; cursor: pointer; transition: 0.3s; }
     .active { background: #1c7a32; color: white; border: 2px solid #145a24; }
     .inactive { background: #ddd; color: #666; border: 2px solid transparent; }
 
-    /* 03 - LOGS */
     #logs p { padding: 8px 0; border-bottom: 1px solid #eee; margin: 0; font-size: 14px; }
     #logs b { color: #1847d1; }
   </style>
@@ -46,20 +43,20 @@
   <h1>GCR Admin</h1>
 
   <div class="card">
-    <div class="view-label">V6 admin.html</div>
-    <h2>Housekeeping Mode</h2>
+    <div class="view-label">V7 admin.html</div>
+    <h2>Building Mode Control</h2>
     <div class="btn-row">
-      <button id="m2" class="btn" onclick="upd('two')">MODE 2</button>
-      <button id="m3" class="btn" onclick="upd('three')">MODE 3</button>
+      <button id="m2" class="btn" onclick="upd('two')">MODE 2 (Schedules)</button>
+      <button id="m3" class="btn" onclick="upd('three')">MODE 3 (Floors)</button>
     </div>
   </div>
 
   <div class="card">
-    <h2>Daily Activity (Last 10)</h2>
+    <h2>Recent Activity</h2>
     <div id="logs"></div>
   </div>
 
-  <button onclick="window.location.href='index.html'" style="width:100%; padding:15px; border-radius:10px; border:none; background:#5a5a5a; color:white; font-weight:bold; cursor:pointer;">LOGOUT</button>
+  <button onclick="logout()" style="width:100%; padding:15px; border-radius:10px; border:none; background:#5a5a5a; color:white; font-weight:bold; cursor:pointer;">LOGOUT</button>
 
   <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
@@ -77,17 +74,26 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    /* 04 - SYNC MODE STATE */
+    // 1. SECURITY CHECK (Ensures user logged in as Admin)
+    const session = JSON.parse(sessionStorage.getItem("currentEmployee"));
+    // If there is no session OR the user isn't designated as admin, kick them out
+    if(!session && window.location.pathname.includes("admin.html")) {
+        // window.location.href = 'index.html'; 
+    }
+
+    // 2. SYNC MODE STATE
     async function sync() {
       const snap = await getDoc(doc(db, "settings", "housekeepingMode"));
-      const cur = snap.exists() ? snap.data().settingValue : "two";
+      const cur = snap.exists() ? (snap.data().settingValue || snap.data().value) : "two";
+      
       document.getElementById("m2").className = cur === "two" ? "btn active" : "btn inactive";
       document.getElementById("m3").className = cur === "three" ? "btn active" : "btn inactive";
     }
 
-    /* 05 - UPDATE GLOBAL MODE */
+    // 3. UPDATE GLOBAL MODE
     window.upd = async function(v) {
       try {
+        // Updates the single "switch" that controls every employee's phone
         await setDoc(doc(db, "settings", "housekeepingMode"), { settingValue: v });
         sync();
       } catch (e) {
@@ -95,7 +101,7 @@
       }
     };
 
-    /* 06 - LOAD ADMIN LOGS */
+    // 4. LOAD RECENT LOGS
     async function load() {
       const q = query(collection(db, "logs"), orderBy("timestamp", "desc"), limit(10));
       const snap = await getDocs(q);
@@ -104,13 +110,19 @@
       
       snap.forEach(d => {
         const data = d.data();
-        list.innerHTML += `<p><b>${data.employeeName || "Unknown"}</b> finished ${data.area || "Area"}</p>`;
+        const time = data.timestamp ? new Date(data.timestamp.seconds * 1000).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'}) : "";
+        list.innerHTML += `<p>[${time}] <b>${data.employeeName || "User"}</b> finished ${data.areaName || "Area"}</p>`;
       });
 
       if (snap.empty) {
         list.innerHTML = "<p>No recent activity logs.</p>";
       }
     }
+
+    window.logout = () => {
+      sessionStorage.clear();
+      window.location.href = 'index.html';
+    };
 
     sync();
     load();
