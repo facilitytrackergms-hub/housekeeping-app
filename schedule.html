@@ -89,38 +89,51 @@
     const modeSnap = await getDoc(doc(db, "settings", "housekeepingMode"));
     const mode = (modeSnap.exists() ? (modeSnap.data().settingValue || modeSnap.data().value) : "two").toLowerCase().trim();
     
-    // Choose column based on Mode: matches your headers
     const targetField = (mode === "three") ? "Floor" : "Mode";
-
     const snap = await getDocs(collection(db, "areas"));
+    
     matchedAreas = [];
-    const allOptions = new Set();
-
     snap.forEach(d => {
       const data = d.data();
-      
-      // Pull value from "Floor" or "Mode" columns
       const dbAssignValue = String(data[targetField] || "").trim().toLowerCase();
       const myAssignLower = currentAssign.toLowerCase().trim();
-      
-      // Pull value from "Schedule" column
       const dbDay = String(data["Schedule"] || "").toLowerCase().trim();
-
-      if(dbAssignValue) allOptions.add(data[targetField]);
 
       if(dbAssignValue === myAssignLower && (dbDay === "daily" || dbDay === today)) {
         matchedAreas.push(data);
       }
     });
 
-    const select = document.getElementById("assignSelect");
-    select.innerHTML = '<option value="">Change Assignment...</option>' + 
-      Array.from(allOptions).sort().map(s => `<option value="${s}">${s}</option>`).join('');
-
+    // Run the dropdown builder now that we know the mode
+    populateAssignmentDropdown(mode);
     drawCategories();
   }
 
-  // 2. CATEGORY DRAWING
+  // 2. THE DYNAMIC DROPDOWN (FIXED IDs)
+  async function populateAssignmentDropdown(mode) {
+    const dropdown = document.getElementById("assignSelect"); // FIXED ID
+    const currentAssignLower = currentAssign.toLowerCase();
+
+    let fullList = [];
+    if (mode === "two" || mode === "2") {
+      fullList = ["HK1", "HK2", "Laundry"];
+    } else {
+      fullList = ["1stfloor", "2ndFloor", "3rdFloor", "Laundry"];
+    }
+
+    // Filter out what they are currently looking at
+    const otherSchedules = fullList.filter(item => item.toLowerCase() !== currentAssignLower);
+
+    dropdown.innerHTML = `<option value="" disabled selected>Switch Schedule...</option>`;
+    otherSchedules.forEach(sched => {
+      const option = document.createElement("option");
+      option.value = sched;
+      option.textContent = sched;
+      dropdown.appendChild(option);
+    });
+  }
+
+  // 3. CATEGORY & AREA DRAWING
   window.drawCategories = function() {
     const box = document.getElementById("categoryButtons");
     box.innerHTML = "";
@@ -129,9 +142,7 @@
     let totalFound = 0;
     cats.forEach(cat => {
       const catLower = cat.toLowerCase().trim();
-      // Uses "Category" header
       const filtered = matchedAreas.filter(a => String(a["Category"] || "").toLowerCase().trim() === catLower);
-      // Uses "Area" header
       const uniqueCount = [...new Set(filtered.map(a => a["Area"]))].length;
       totalFound += uniqueCount;
       
@@ -147,36 +158,31 @@
     }
   }
 
-  // 3. AREA DRAWING (V3)
   window.showV3 = function(cat) {
     document.getElementById("view2").classList.add("hidden");
     document.getElementById("view3").classList.remove("hidden");
     document.getElementById("catTitle").innerText = cat;
     const box = document.getElementById("areaButtons");
     box.innerHTML = "";
-    const catLower = cat.toLowerCase().trim();
+    const filtered = matchedAreas.filter(a => String(a["Category"] || "").toLowerCase().trim() === cat.toLowerCase());
     
-    // Uses "Category" header
-    const filtered = matchedAreas.filter(a => String(a["Category"] || "").toLowerCase().trim() === catLower);
-    
-    const uniqueRooms = [];
     const seen = new Set();
-    // Uses "Area" header
-    filtered.forEach(item => { if (!seen.has(item["Area"])) { seen.add(item["Area"]); uniqueRooms.push(item); } });
-
-    uniqueRooms.forEach(area => {
-      const btn = document.createElement("button");
-      btn.className = "red";
-      btn.innerHTML = `<div style="font-size: 22px;">${area["Area"]}</div>`;
-      btn.onclick = () => {
-        sessionStorage.setItem("selectedWork", JSON.stringify({ workId: area.workId, areaName: area["Area"] }));
-        window.location.href = "tasks.html";
-      };
-      box.appendChild(btn);
+    filtered.forEach(area => { 
+      if (!seen.has(area["Area"])) {
+        seen.add(area["Area"]);
+        const btn = document.createElement("button");
+        btn.className = "red";
+        btn.innerHTML = `<div style="font-size: 22px;">${area["Area"]}</div>`;
+        btn.onclick = () => {
+          sessionStorage.setItem("selectedWork", JSON.stringify({ workId: area.workId, areaName: area["Area"] }));
+          window.location.href = "tasks.html";
+        };
+        box.appendChild(btn);
+      }
     });
   }
 
-  // 4. NAVIGATION & UTILS
+  // 4. NAVIGATION
   window.adjustDate = (n) => { workDate.setDate(workDate.getDate() + n); loadData(); };
   window.toggleCover = () => document.getElementById("coverBox").classList.toggle("hidden");
   window.updateAssignment = (val) => { if(!val) return; currentAssign = val; loadData(); document.getElementById("coverBox").classList.add("hidden"); };
@@ -184,44 +190,6 @@
   window.logout = () => { sessionStorage.clear(); window.location.href = "index.html"; };
 
   loadData();
-
-  async function populateAssignmentDropdown() {
-  const dropdown = document.getElementById("assignmentDropdown"); // Your <select> ID
-  const currentUser = JSON.parse(sessionStorage.getItem("currentEmployee"));
-  const currentAssign = currentUser.assignment;
-
-  try {
-    // 1. Get the Building Mode from Settings
-    const modeSnap = await getDoc(doc(db, "settings", "housekeepingMode"));
-    const mode = (modeSnap.exists() ? (modeSnap.data().settingValue || modeSnap.data().value) : "two").toLowerCase().trim();
-
-    // 2. Define the lists based on the Mode
-    let fullList = [];
-    if (mode === "two" || mode === "2") {
-      fullList = ["HK1", "HK2", "Laundry"];
-    } else {
-      fullList = ["1stfloor", "2ndFloor", "3rdFloor", "Laundry"];
-    }
-
-    // 3. Filter out the schedule the user is ALREADY assigned to
-    const otherSchedules = fullList.filter(item => item.toLowerCase() !== currentAssign.toLowerCase());
-
-    // 4. Fill the Dropdown
-    dropdown.innerHTML = `<option value="" disabled selected>Switch Schedule...</option>`;
-    otherSchedules.forEach(sched => {
-      const option = document.createElement("option");
-      option.value = sched;
-      option.textContent = sched;
-      dropdown.appendChild(option);
-    });
-
-  } catch (err) {
-    console.error("Error building dropdown:", err);
-  }
-}
-
-// Run this when the page loads
-populateAssignmentDropdown();
 </script>
 </body>
 </html>
