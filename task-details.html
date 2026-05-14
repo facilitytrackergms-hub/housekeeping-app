@@ -90,59 +90,38 @@
 
     let currentTasks = []; // Store loaded tasks for the "Complete All" button
 
-    async function loadTaskGrid() {
-        const grid = document.getElementById("taskGrid");
+  async function loadTasks() {
+  const list = document.getElementById("taskList");
+  const selectedWork = JSON.parse(sessionStorage.getItem("selectedWork"));
+  list.innerHTML = ""; 
 
-        try {
-            // Because our uploader made separate docs for H, S, T, M, V, we query them all here
-            const q = query(collection(db, "tasks"), where("workId", "==", selectedWork.workId));
-            const snap = await getDocs(q);
+  try {
+    const q = query(collection(db, "tasks"), where("workId", "==", selectedWork.workId));
+    const snap = await getDocs(q);
 
-            if (snap.empty) {
-                grid.innerHTML = "<p class='loader'>No tasks found for this area.</p>";
-                document.getElementById("totalCount").innerText = "0";
-                document.getElementById("completedCount").innerText = "0";
-                return;
-            }
-
-            let total = 0;
-            let done = 0;
-            currentTasks = [];
-            grid.innerHTML = "";
-
-            // Loop through the individual task documents
-            snap.forEach(docSnap => {
-                const data = docSnap.data();
-                const isDone = (data.isDone === true || data.isDone === "true");
-                
-                total++;
-                if (isDone) done++;
-
-                currentTasks.push({ id: docSnap.id, isDone: isDone });
-
-                const btn = document.createElement("button");
-                btn.className = `task-btn ${isDone ? 'done' : ''}`;
-                
-                // Show the big letter (H, S, T) and the label below it
-                btn.innerHTML = `
-                    <div class="big-letter">${data.Header || "?"}</div>
-                    <div class="small-label">${data.Type || "Task"}</div>
-                `;
-                
-                btn.onclick = () => toggleTask(docSnap.id, !isDone);
-                grid.appendChild(btn);
-            });
-
-            // UPDATE PROGRESS BAR
-            document.getElementById("totalCount").innerText = total;
-            document.getElementById("completedCount").innerText = done;
-
-        } catch (err) {
-            console.error("Error loading grid:", err);
-            grid.innerHTML = "<p class='loader' style='color:red;'>Sync Error. Check Connection.</p>";
+    snap.forEach(doc => {
+      const data = doc.data();
+      
+      // Forces the text to display regardless of what the column is named in the database
+      const possibleFields = [data.Task, data.task, data.H, data.S, data.T, data.M, data.V];
+      
+      possibleFields.forEach(text => {
+        if (text && String(text).trim() !== "" && String(text).trim() !== "0" && String(text) !== "undefined") {
+          const row = document.createElement("div");
+          row.className = "task-row";
+          row.innerHTML = `
+            <span class="task-name" style="font-size: 18px; font-weight: bold; color: black;">${text}</span>
+            <div class="check-btn" onclick="this.classList.toggle('done')"></div>
+          `;
+          list.appendChild(row);
         }
-    }
-
+      });
+    });
+  } catch (err) {
+    console.error(err);
+    list.innerHTML = "<p>Error loading tasks.</p>";
+  }
+}
     // TOGGLE SINGLE TASK DOC
     window.toggleTask = async function(docId, newStatus) {
         try {
