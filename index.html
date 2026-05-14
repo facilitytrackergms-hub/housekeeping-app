@@ -37,52 +37,53 @@
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
 
-  window.handleLogin = async function() {
-    const pin = document.getElementById("pinInput").value;
-    const error = document.getElementById("errorMsg");
-    error.style.display = "none";
+window.handleLogin = async function() {
+  const pinValue = document.getElementById("pinInput").value;
+  const error = document.getElementById("errorMsg");
+  error.style.display = "none";
 
-    try {
-      // 1. Fetch Mode and Admin settings simultaneously
-      const [modeSnap, adminSnap] = await Promise.all([
-        getDoc(doc(db, "settings", "housekeepingMode")),
-        getDoc(doc(db, "settings", "admin"))
-      ]);
+  try {
+    // 1. Get Building Mode
+    const modeSnap = await getDoc(doc(db, "settings", "housekeepingMode"));
+    const mode = (modeSnap.exists() ? (modeSnap.data().settingValue || modeSnap.data().value) : "two").toLowerCase().trim();
 
-      const mode = (modeSnap.exists() ? (modeSnap.data().settingValue || modeSnap.data().value) : "two").toLowerCase().trim();
-      const adminPass = adminSnap.exists() ? adminSnap.data().Password : null;
+    // 2. Search Employees for the PIN (Checking both String and Number versions)
+    const q = query(collection(db, "employees"), where("pin", "in", [pinValue, Number(pinValue)]));
+    const empSnap = await getDocs(q);
 
-      // 2. Admin Login Check
-      if (adminPass && pin === String(adminPass)) {
+    if (!empSnap.empty) {
+      const empData = empSnap.docs[0].data();
+      
+      // 3. Check if they are an Admin or Employee
+      if (empData.role && empData.role.toLowerCase() === "admin") {
+        // If Role is Admin, go to Admin Panel
+        sessionStorage.setItem("currentEmployee", JSON.stringify({ firstName: empData.firstName || empData.name, role: "admin" }));
         window.location.href = "admin.html";
-        return;
-      }
-
-      // 3. Search Employees Collection for the PIN
-      const q = query(collection(db, "employees"), where("pin", "==", pin));
-      const empSnap = await getDocs(q);
-
-      if (!empSnap.empty) {
-        const empData = empSnap.docs[0].data();
-        
-        // Pick assignment based on building mode
+      } else {
+        // If Role is Employee, go to Schedule
         const assignment = (mode === "three") ? empData.mode3_assign : empData.mode2_assign;
-
-        // Save to session for schedule.html to use
         sessionStorage.setItem("currentEmployee", JSON.stringify({
-          firstName: empData.name,
+          firstName: empData.firstName || empData.name,
           assignment: assignment
         }));
-        
         window.location.href = "schedule.html";
+      }
+    } else {
+      // 4. Final fallback: Check the Master Admin password in Settings
+      const adminSnap = await getDoc(doc(db, "settings", "admin"));
+      const masterPass = adminSnap.exists() ? (adminSnap.data().Password || adminSnap.data().password) : null;
+      
+      if (masterPass && pinValue === String(masterPass)) {
+        window.location.href = "admin.html";
       } else {
         error.style.display = "block";
       }
-    } catch (err) {
-      console.error("Login Error:", err);
-      alert("System Error: Check your internet or database connection.");
     }
-  };
+  } catch (err) {
+    console.error("Login Error:", err);
+    alert("System Error. Check connection.");
+  }
+};
 </script>
 </body>
 </html>
