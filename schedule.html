@@ -184,6 +184,44 @@
   window.logout = () => { sessionStorage.clear(); window.location.href = "index.html"; };
 
   loadData();
+
+  async function populateAssignmentDropdown() {
+  const dropdown = document.getElementById("assignmentDropdown"); // Your <select> ID
+  const currentUser = JSON.parse(sessionStorage.getItem("currentEmployee"));
+  const currentAssign = currentUser.assignment;
+
+  try {
+    // 1. Get the Building Mode from Settings
+    const modeSnap = await getDoc(doc(db, "settings", "housekeepingMode"));
+    const mode = (modeSnap.exists() ? (modeSnap.data().settingValue || modeSnap.data().value) : "two").toLowerCase().trim();
+
+    // 2. Define the lists based on the Mode
+    let fullList = [];
+    if (mode === "two" || mode === "2") {
+      fullList = ["HK1", "HK2", "Laundry"];
+    } else {
+      fullList = ["1stfloor", "2ndFloor", "3rdFloor", "Laundry"];
+    }
+
+    // 3. Filter out the schedule the user is ALREADY assigned to
+    const otherSchedules = fullList.filter(item => item.toLowerCase() !== currentAssign.toLowerCase());
+
+    // 4. Fill the Dropdown
+    dropdown.innerHTML = `<option value="" disabled selected>Switch Schedule...</option>`;
+    otherSchedules.forEach(sched => {
+      const option = document.createElement("option");
+      option.value = sched;
+      option.textContent = sched;
+      dropdown.appendChild(option);
+    });
+
+  } catch (err) {
+    console.error("Error building dropdown:", err);
+  }
+}
+
+// Run this when the page loads
+populateAssignmentDropdown();
 </script>
 </body>
 </html>
