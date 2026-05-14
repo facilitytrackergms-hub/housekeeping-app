@@ -365,11 +365,15 @@
     <select id="adminAssignmentSelect" onchange="changeAdminAssignment()">
       <option>HK1</option>
       <option>HK2</option>
-      <option>1stfloor</option>
-      <option>2ndFloor</option>
-      <option>3rdFloor</option>
       <option>Laundry</option>
     </select>
+
+    <div class="task-card">
+      <h3 id="adminModeTitle">Mode 2</h3>
+      <button id="adminModeButton" class="yellow" onclick="toggleHousekeepingMode()">
+        SWITCH TO MODE 3
+      </button>
+    </div>
 
     <div id="adminCategoryButtons" class="rooms-grid"></div>
 
@@ -753,6 +757,7 @@
     getDocs,
     doc,
     addDoc,
+    setDoc,
     updateDoc,
     deleteDoc,
     serverTimestamp,
@@ -819,6 +824,111 @@
   const REAL_ASSIGNMENTS = ["HK1", "HK2", "1stfloor", "2ndFloor", "3rdFloor", "Laundry"];
 
   currentAssignment = REAL_ASSIGNMENTS.includes(currentAssignment) ? currentAssignment : "HK1";
+
+  function getActiveAssignments() {
+    if (housekeepingMode === "three") {
+      return ["1stfloor", "2ndFloor", "3rdFloor", "Laundry"];
+    }
+
+    return ["HK1", "HK2", "Laundry"];
+  }
+
+  function updateAssignmentDropdownOptions(selectId, includeBlank) {
+    const select = document.getElementById(selectId);
+    if (!select) return;
+
+    const currentValue = select.value;
+    const assignments = getActiveAssignments();
+
+    select.innerHTML = "";
+
+    if (includeBlank) {
+      const blank = document.createElement("option");
+      blank.value = "";
+      blank.innerText = "Select assignment";
+      select.appendChild(blank);
+    }
+
+    assignments.forEach(function(assignment) {
+      const option = document.createElement("option");
+      option.value = assignment;
+      option.innerText = assignment;
+      select.appendChild(option);
+    });
+
+    if (assignments.includes(currentValue)) {
+      select.value = currentValue;
+    }
+  }
+
+  function syncModeControls() {
+    const activeAssignments = getActiveAssignments();
+
+    if (!activeAssignments.includes(currentAssignment)) {
+      currentAssignment = activeAssignments[0];
+    }
+
+    updateAssignmentDropdownOptions("adminAssignmentSelect", false);
+    updateAssignmentDropdownOptions("adminEditAssignmentInput", true);
+    updateAssignmentDropdownOptions("reassignFrom", false);
+    updateAssignmentDropdownOptions("reassignTo", true);
+
+    const mainSelect = document.getElementById("adminAssignmentSelect");
+    if (mainSelect) {
+      mainSelect.value = currentAssignment;
+    }
+
+    const modeTitle = document.getElementById("adminModeTitle");
+    const modeButton = document.getElementById("adminModeButton");
+
+    if (modeTitle) {
+      modeTitle.innerText =
+        housekeepingMode === "three"
+          ? "Mode 3 - Floors"
+          : "Mode 2 - HK1 / HK2";
+    }
+
+    if (modeButton) {
+      modeButton.innerText =
+        housekeepingMode === "three"
+          ? "SWITCH TO MODE 2"
+          : "SWITCH TO MODE 3";
+    }
+  }
+
+  async function toggleHousekeepingMode() {
+    const newMode = housekeepingMode === "three" ? "two" : "three";
+
+    const ok = confirm(
+      newMode === "three"
+        ? "Switch to Mode 3 floor schedules?"
+        : "Switch to Mode 2 HK1/HK2 schedules?"
+    );
+
+    if (!ok) return;
+
+    showLoading();
+
+    await setDoc(doc(db, "settings", "housekeepingmode"), {
+      settingName: "housekeepingMode",
+      settingValue: newMode,
+      notes: "Use two or three",
+      updatedAt: serverTimestamp()
+    }, { merge: true });
+
+    housekeepingMode = newMode;
+    syncModeControls();
+    selectedCategory = "";
+
+    await loadAdminTasks();
+
+    hideLoading();
+    showAppMessage(
+      newMode === "three"
+        ? "Mode 3 active. Use 1stfloor, 2ndFloor, and 3rdFloor."
+        : "Mode 2 active. Use HK1 and HK2."
+    );
+  }
 
   /* =========================
      15 - ADMIN STARTUP
@@ -963,6 +1073,8 @@
         housekeepingMode = String(data.settingValue || "two").toLowerCase();
       }
     });
+
+    syncModeControls();
 
     const areaSnap = await getDocs(collection(db, "areas"));
 
@@ -1134,8 +1246,8 @@
     box.innerHTML = "";
 
     const buttons = currentAssignment === "Laundry"
-      ? ["Weekly Laundry", "Daily Laundry", "Reassignment", "Employees", "Logout"]
-      : ["Common Area", "Weekly Room", "Daily Room", "Dehumidifier", "Reassignment", "Employees", "Logout"];
+      ? ["Weekly Laundry", "Daily Laundry", "Reports", "Reassignment", "Employees", "Logout"]
+      : ["Common Area", "Weekly Room", "Daily Room", "Dehumidifier", "Reports", "Reassignment", "Employees", "Logout"];
 
     buttons.forEach(function(item) {
       const btn = document.createElement("button");
@@ -1149,6 +1261,8 @@
 
         if (item === "Employees") {
           btn.onclick = openEmployees;
+        } else if (item === "Reports") {
+          btn.onclick = function() { window.location.href = "reports.html"; };
         } else if (item === "Reassignment") {
           btn.onclick = openReassignment;
         } else {
@@ -2279,7 +2393,7 @@
     updateReassignmentDateDisplay();
     showLoading();
 
-    const assignments = ["HK1", "HK2", "1stfloor", "2ndFloor", "3rdFloor", "Laundry"];
+    const assignments = getActiveAssignments();
     const resultBox = document.getElementById("workloadResults");
     resultBox.innerHTML = "";
 
@@ -2379,6 +2493,7 @@
   window.searchAdminAreas = searchAdminAreas;
   window.changeAdminAreaScheduleDay = changeAdminAreaScheduleDay;
   window.closeAppMessage = closeAppMessage;
+  window.toggleHousekeepingMode = toggleHousekeepingMode;
 
   /* =========================
      53 - WINDOW FUNCTIONS - ADMIN TASKS
