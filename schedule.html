@@ -9,20 +9,25 @@
     .card { width: 100%; max-width: 430px; background: white; border-radius: 20px; padding: 15px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); margin: auto; position: relative; min-height: 400px; }
     .view-tag { display: inline-block; background: black; color: white; padding: 4px 10px; border-radius: 8px; font-size: 12px; margin-bottom: 10px; }
     h2, h3 { text-align: center; margin: 5px 0; }
+    
     button { width: 100%; border: none; border-radius: 15px; background: #1976d2; color: white; font-size: 18px; font-weight: bold; padding: 16px; margin: 8px 0; cursor: pointer; transition: 0.2s; }
     button:active { transform: scale(0.98); }
     
-    /* SMALLER ROOM BUTTONS */
+    /* SMALLER ROOM BUTTONS GRID */
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    
     .room-btn { 
-        min-height: 75px !important; 
+        min-height: 80px !important; 
         font-size: 18px !important; 
-        padding: 8px !important;
+        padding: 10px !important;
         display: flex;
         flex-direction: column;
         align-items: center;
         justify-content: center;
+        margin: 0 !important; /* Managed by grid gap */
     }
-    .count-tag { font-size: 12px; margin-top: 4px; opacity: 0.9; font-weight: normal; }
+    
+    .count-tag { font-size: 13px; margin-top: 5px; opacity: 0.9; font-weight: normal; }
 
     /* LOGIC COLORS */
     .status-red { background: #c62828 !important; }    /* Default */
@@ -34,7 +39,7 @@
     .top-box { border: 2px solid #e0e0e0; border-radius: 20px; padding: 15px; margin-bottom: 15px; background: #fafafa; text-align: center; }
     .date-row { display: flex; align-items: center; justify-content: center; gap: 12px; margin-bottom: 10px; }
     .date-btn { width: auto; padding: 10px 15px; background: #555; font-size: 16px; }
-    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    
     #categoryButtons button { min-height: 110px; font-size: 17px; }
     select { width: 100%; padding: 15px; border-radius: 12px; border: 2px solid #1976d2; margin-top: 10px; font-size: 16px; }
     .empty-msg { text-align: center; color: #666; padding: 20px; font-style: italic; }
@@ -157,52 +162,86 @@
     }
   }
 
- // Replace the part of your script that draws the Room Buttons:
 window.showV3 = async function(cat) {
   document.getElementById("view2").classList.add("hidden");
   document.getElementById("view3").classList.remove("hidden");
   document.getElementById("catTitle").innerText = cat;
   const box = document.getElementById("areaButtons");
-  box.innerHTML = "<p>Loading rooms...</p>";
+  box.innerHTML = "<p style='text-align:center;'>Calculating status...</p>";
   
   const filtered = matchedAreas.filter(a => String(a["Category"] || "").toLowerCase().trim() === cat.toLowerCase());
   const seen = new Set();
   box.innerHTML = "";
+  box.className = "grid-2"; // Force 2-column layout
 
   for (const area of filtered) {
     if (!seen.has(area["Area"])) {
       seen.add(area["Area"]);
       
-      // Fetch actual task counts for this specific room
+      // FETCH REAL-TIME TASK STATUS
       const taskQuery = query(collection(db, "tasks"), where("workId", "==", area.workId));
       const taskSnap = await getDocs(taskQuery);
-      const total = taskSnap.size;
       
-      // For now, we check a 'completedTasks' collection or assume 0
-      // You'll need a collection called 'taskLogs' to track real-time completion
-      const completed = 0; 
+      let total = 0;
+      let completed = 0;
+
+      if (!taskSnap.empty) {
+        const data = taskSnap.docs[0].data();
+        // Calculate based on your H-S-T-M-V columns
+        ['H', 'S', 'T', 'M', 'V'].forEach(key => {
+          if (data[key] && data[key] !== "") {
+            total++;
+            if (data[key + "_done"] === true) {
+              completed++;
+            }
+          }
+        });
+      }
 
       const btn = document.createElement("button");
       
-      // COLOR LOGIC: Red (0), Yellow (Some), Green (All)
-      if (total === 0) btn.className = "room-btn back"; // No tasks found
-      else if (completed === 0) btn.className = "room-btn status-red";
-      else if (completed < total) btn.className = "room-btn status-yellow";
-      else btn.className = "room-btn status-green";
+      // PROGRESS COLOR LOGIC
+      if (total === 0) {
+        btn.className = "room-btn back"; 
+      } else if (completed === 0) {
+        btn.className = "room-btn status-red";
+      } else if (completed < total) {
+        btn.className = "room-btn status-yellow";
+      } else {
+        btn.className = "room-btn status-green";
+      }
 
       btn.innerHTML = `
-        <div style="font-size: 18px;">${area["Area"]}</div>
-        <div style="font-size: 12px; opacity: 0.8;">${completed}/${total} Tasks</div>
+        <div style="font-size: 18px; font-weight:bold;">${area["Area"]}</div>
+        <div class="count-tag">${completed} / ${total} DONE</div>
       `;
       
       btn.onclick = () => {
-        sessionStorage.setItem("selectedWork", JSON.stringify({ workId: area.workId, areaName: area["Area"] }));
+        sessionStorage.setItem("selectedWork", JSON.stringify({ 
+            workId: area.workId, 
+            areaName: area["Area"] 
+        }));
         window.location.href = "tasks.html";
       };
       box.appendChild(btn);
     }
   }
 }
+
+  window.adjustDate = (n) => { workDate.setDate(workDate.getDate() + n); loadData(); };
+  window.toggleCover = () => document.getElementById("coverBox").classList.toggle("hidden");
+  window.updateAssignment = (val) => { 
+    if(!val) return; 
+    currentAssign = val; 
+    session.assignment = val;
+    sessionStorage.setItem("currentEmployee", JSON.stringify(session));
+    loadData(); 
+    document.getElementById("coverBox").classList.add("hidden"); 
+  };
+  window.showV2 = () => { document.getElementById("view2").classList.remove("hidden"); document.getElementById("view3").classList.add("hidden"); };
+  window.logout = () => { sessionStorage.clear(); window.location.href = "index.html"; };
+
+  loadData();
 </script>
 </body>
 </html>
