@@ -4,22 +4,25 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GCR Tasks</title>
     <style>
+        /* 01 - STYLES */
         * { box-sizing: border-box; }
-        body { margin: 0; font-family: Arial, sans-serif; background: #f2f2f2; padding: 10px; }
-        .card { width: 100%; max-width: 430px; background: white; border-radius: 20px; padding: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); margin: auto; }
+        body { margin: 0; font-family: Arial, sans-serif; background: #eef2f7; padding: 10px; }
+        .card { width: 100%; max-width: 460px; background: white; border-radius: 28px; padding: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.12); margin: auto; }
         .view-tag { display: inline-block; background: black; color: white; padding: 4px 10px; border-radius: 8px; font-size: 12px; margin-bottom: 15px; }
-        h2 { text-align: center; color: #1976d2; margin-bottom: 20px; }
+        h2 { text-align: center; color: #1847d1; margin-bottom: 5px; font-size: 28px; }
         
-        /* Task Row Styling */
-        .task-row { display: flex; align-items: center; justify-content: space-between; background: #fff; border: 2px solid #eee; padding: 15px; border-radius: 15px; margin-bottom: 10px; }
-        .task-name { font-size: 18px; font-weight: bold; }
+        .counter-box { text-align: center; font-size: 20px; font-weight: bold; color: #1847d1; margin-bottom: 20px; }
         
-        /* Checkbox Styling */
-        .check-btn { width: 40px; height: 40px; border-radius: 10px; border: 3px solid #1976d2; cursor: pointer; display: flex; align-items: center; justify-content: center; }
-        .done { background: #4caf50; border-color: #4caf50; color: white; }
-        .done::after { content: '✔'; font-size: 20px; }
+        .task-card { background: #f9fbff; border: 2px solid #dce3f0; border-radius: 20px; padding: 20px; margin-top: 18px; }
+        .task-name { font-size: 22px; font-weight: bold; color: #1847d1; margin-bottom: 15px; text-align: center; }
+        
+        .buttons { display: flex; gap: 15px; }
+        button { flex: 1; padding: 15px; border: none; border-radius: 15px; font-size: 20px; font-weight: bold; color: white; cursor: pointer; }
+        .yes { background: #22aa44; }
+        .no { background: #d93025; }
+        .back-btn { width: 100%; padding: 18px; background: #333; color: white; border: none; border-radius: 18px; font-size: 20px; margin-top: 25px; cursor: pointer; }
 
-        .back-btn { width: 100%; padding: 15px; background: #555; color: white; border: none; border-radius: 15px; font-size: 16px; margin-top: 20px; cursor: pointer; }
+        .status-msg { text-align: center; margin-top: 10px; font-weight: bold; font-size: 16px; }
     </style>
 </head>
 <body>
@@ -27,6 +30,9 @@
 <div class="card">
     <div class="view-tag">Task Checklist</div>
     <h2 id="areaTitle">Loading Area...</h2>
+    <div class="counter-box">
+        Progress: <span id="completedCount">0</span> / <span id="totalCount">0</span>
+    </div>
     
     <div id="taskList"></div>
 
@@ -35,7 +41,7 @@
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getFirestore, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { getFirestore, collection, query, where, getDocs, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
     const firebaseConfig = {
         apiKey: "AIzaSyBgq_ooBeEN4noEyIxYPLVokgM6RjCO648",
@@ -49,18 +55,19 @@
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    // 1. Get the room details from the previous page
     const selectedWork = JSON.parse(sessionStorage.getItem("selectedWork"));
     if (!selectedWork) { window.location.href = "schedule.html"; }
 
     document.getElementById("areaTitle").innerText = selectedWork.areaName;
+
+    let totalTasks = 0;
+    let completedTasks = 0;
 
     async function loadTasks() {
         const list = document.getElementById("taskList");
         list.innerHTML = "";
 
         try {
-            // 2. Query Firestore for tasks matching this room's workId
             const q = query(collection(db, "tasks"), where("workId", "==", selectedWork.workId));
             const snap = await getDocs(q);
 
@@ -69,20 +76,59 @@
                 return;
             }
 
-            snap.forEach(doc => {
-                const taskData = doc.data();
-                
+            totalTasks = snap.size;
+            document.getElementById("totalCount").innerText = totalTasks;
+
+            snap.forEach(docSnap => {
+                const data = docSnap.data();
+                const docId = docSnap.id;
+                if (data.status === "done") completedTasks++;
+
                 const row = document.createElement("div");
-                row.className = "task-row";
+                row.className = "task-card";
                 row.innerHTML = `
-                    <span class="task-name">${taskData.Task}</span>
-                    <div class="check-btn" onclick="this.classList.toggle('done')"></div>
+                    <div class="task-name">${data.Task}</div>
+                    <div class="buttons">
+                        <button class="yes" onclick="updateStatus('${docId}', 'done')">YES</button>
+                        <button class="no" onclick="updateStatus('${docId}', 'incomplete')">NO</button>
+                    </div>
+                    <div id="msg-${docId}" class="status-msg" style="color: ${data.status === 'done' ? '#22aa44' : '#d93025'}">
+                        ${data.status === 'done' ? 'Task Completed' : (data.status === 'incomplete' ? 'Marked Incomplete' : '')}
+                    </div>
                 `;
                 list.appendChild(row);
             });
+
+            document.getElementById("completedCount").innerText = completedTasks;
+
         } catch (err) {
             console.error(err);
             list.innerHTML = "<p>Error loading tasks.</p>";
+        }
+    }
+
+    window.updateStatus = async function(docId, newStatus) {
+        const msg = document.getElementById(`msg-${docId}`);
+        const prevStatus = msg.innerText.includes("Completed") ? "done" : "incomplete";
+        
+        try {
+            await updateDoc(doc(db, "tasks", docId), { status: newStatus });
+            
+            // UI Updates
+            if (newStatus === "done") {
+                msg.innerText = "Task Completed";
+                msg.style.color = "#22aa44";
+                if (prevStatus !== "done") completedTasks++;
+            } else {
+                msg.innerText = "Marked Incomplete";
+                msg.style.color = "#d93025";
+                if (prevStatus === "done") completedTasks--;
+            }
+            
+            document.getElementById("completedCount").innerText = completedTasks;
+
+        } catch (err) {
+            alert("Error updating task.");
         }
     }
 
