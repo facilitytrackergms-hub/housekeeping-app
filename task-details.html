@@ -1,170 +1,92 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Task Checklist</title>
-  <style>
-    /* 01 - GLOBAL STYLE */
-    * { box-sizing: border-box; }
-    body { margin: 0; padding: 20px; font-family: Arial, sans-serif; background: #eef2f7; }
-    
-    .card { 
-      background: white; 
-      border-radius: 20px; 
-      padding: 25px; 
-      box-shadow: 0 4px 15px rgba(0,0,0,0.05); 
-      position: relative; 
-      max-width: 500px;
-      margin: auto;
-    }
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GCR Tasks</title>
+    <style>
+        * { box-sizing: border-box; }
+        body { margin: 0; font-family: Arial, sans-serif; background: #f2f2f2; padding: 10px; }
+        .card { width: 100%; max-width: 430px; background: white; border-radius: 20px; padding: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); margin: auto; }
+        .view-tag { display: inline-block; background: black; color: white; padding: 4px 10px; border-radius: 8px; font-size: 12px; margin-bottom: 15px; }
+        h2 { text-align: center; color: #1976d2; margin-bottom: 20px; }
+        
+        /* Task Row Styling */
+        .task-row { display: flex; align-items: center; justify-content: space-between; background: #fff; border: 2px solid #eee; padding: 15px; border-radius: 15px; margin-bottom: 10px; }
+        .task-name { font-size: 18px; font-weight: bold; }
+        
+        /* Checkbox Styling */
+        .check-btn { width: 40px; height: 40px; border-radius: 10px; border: 3px solid #1976d2; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+        .done { background: #4caf50; border-color: #4caf50; color: white; }
+        .done::after { content: '✔'; font-size: 20px; }
 
-    .view-label { 
-      position: absolute; 
-      top: 12px; 
-      right: 20px; 
-      font-weight: bold; 
-      color: #1847d1; 
-      font-size: 13px; 
-    }
-
-    h2 { color: #1847d1; margin-top: 0; padding-right: 40px; text-align: center; }
-    
-    /* 02 - CHECKLIST STYLE */
-    .item { 
-      display: flex; 
-      align-items: center; 
-      padding: 18px 0; 
-      border-bottom: 1px solid #eee; 
-      font-size: 19px; 
-      cursor: pointer;
-    }
-    
-    input[type="checkbox"] { 
-      width: 28px; 
-      height: 28px; 
-      margin-right: 15px; 
-      cursor: pointer; 
-    }
-
-    /* 03 - ACTION BUTTONS */
-    .finish-btn { 
-      margin-top: 20px; 
-      width: 100%; 
-      padding: 20px; 
-      background: #1c7a32; 
-      color: white; 
-      border: none; 
-      border-radius: 15px; 
-      font-size: 20px; 
-      font-weight: bold; 
-      cursor: pointer; 
-    }
-    
-    .back-btn {
-      margin-top: 15px;
-      width: 100%;
-      padding: 15px;
-      background: #555;
-      color: white;
-      border: none;
-      border-radius: 15px;
-      font-size: 16px;
-      cursor: pointer;
-    }
-  </style>
+        .back-btn { width: 100%; padding: 15px; background: #555; color: white; border: none; border-radius: 15px; font-size: 16px; margin-top: 20px; cursor: pointer; }
+    </style>
 </head>
 <body>
 
-  <div class="card">
-    <div class="view-label">V5 tasks.html</div>
+<div class="card">
+    <div class="view-tag">Task Checklist</div>
+    <h2 id="areaTitle">Loading Area...</h2>
     
-    <h2 id="title">Loading...</h2>
-    <div id="checklist"></div>
-    
-    <button class="finish-btn" onclick="submit()">FINISH AREA</button>
-    <button class="back-btn" onclick="window.location.href='schedule.html'">BACK</button>
-  </div>
+    <div id="taskList"></div>
 
-  <script type="module">
+    <button class="back-btn" onclick="window.location.href='schedule.html'">BACK TO ROOMS</button>
+</div>
+
+<script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-    import { getFirestore, collection, query, where, getDocs, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+    import { getFirestore, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
     const firebaseConfig = {
-      apiKey: "AIzaSyBgq_ooBeEN4noEyIxYPLVokgM6RjCO648",
-      authDomain: "gms-task-tracker.firebaseapp.com",
-      projectId: "gms-task-tracker",
-      storageBucket: "gms-task-tracker.firebasestorage.app",
-      messagingSenderId: "790880979860",
-      appId: "1:790880979860:web:6faee2a6e56955af3c1d81"
+        apiKey: "AIzaSyBgq_ooBeEN4noEyIxYPLVokgM6RjCO648",
+        authDomain: "gms-task-tracker.firebaseapp.com",
+        projectId: "gms-task-tracker",
+        storageBucket: "gms-task-tracker.firebasestorage.app",
+        messagingSenderId: "790880979860",
+        appId: "1:790880979860:web:6faee2a6e56955af3c1d81"
     };
 
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
 
-    const work = JSON.parse(sessionStorage.getItem("selectedWork"));
-    const user = JSON.parse(sessionStorage.getItem("currentEmployee"));
+    // 1. Get the room details from the previous page
+    const selectedWork = JSON.parse(sessionStorage.getItem("selectedWork"));
+    if (!selectedWork) { window.location.href = "schedule.html"; }
 
-    if (!work || !user) {
-      window.location.href = "index.html";
-    } else {
-      document.getElementById("title").innerText = work.areaName;
-    }
+    document.getElementById("areaTitle").innerText = selectedWork.areaName;
 
     async function loadTasks() {
-      // Find all tasks linked to this room's WorkId
-      const q = query(collection(db, "tasks"), where("workId", "==", String(work.workId)));
-      const snap = await getDocs(q);
-      const list = document.getElementById("checklist");
-      
-      list.innerHTML = "";
-      snap.forEach(doc => {
-        const task = doc.data();
-        const item = document.createElement("div");
-        item.className = "item";
-        item.innerHTML = `<input type="checkbox"> <span>${task.taskName}</span>`;
-        // Allow clicking the text to toggle checkbox
-        item.onclick = (e) => {
-          if(e.target.type !== 'checkbox') {
-            const cb = item.querySelector('input');
-            cb.checked = !cb.checked;
-          }
-        };
-        list.appendChild(item);
-      });
+        const list = document.getElementById("taskList");
+        list.innerHTML = "";
 
-      if (snap.empty) {
-        list.innerHTML = "<p style='text-align:center; padding:20px; color:#666;'>No tasks listed for this room.</p>";
-      }
+        try {
+            // 2. Query Firestore for tasks matching this room's workId
+            const q = query(collection(db, "tasks"), where("workId", "==", selectedWork.workId));
+            const snap = await getDocs(q);
+
+            if (snap.empty) {
+                list.innerHTML = "<p style='text-align:center;'>No tasks found for this area.</p>";
+                return;
+            }
+
+            snap.forEach(doc => {
+                const taskData = doc.data();
+                
+                const row = document.createElement("div");
+                row.className = "task-row";
+                row.innerHTML = `
+                    <span class="task-name">${taskData.Task}</span>
+                    <div class="check-btn" onclick="this.classList.toggle('done')"></div>
+                `;
+                list.appendChild(row);
+            });
+        } catch (err) {
+            console.error(err);
+            list.innerHTML = "<p>Error loading tasks.</p>";
+        }
     }
 
-    window.submit = async function() {
-      // 1. Optional: Check if at least one thing was checked
-      const checks = document.querySelectorAll('input[type="checkbox"]');
-      const anyChecked = Array.from(checks).some(c => c.checked);
-      
-      if(checks.length > 0 && !anyChecked) {
-        alert("Please check at least one task before finishing.");
-        return;
-      }
-
-      try {
-        // 2. Log the completion (matching field names in logs.html)
-        await addDoc(collection(db, "logs"), {
-          employeeName: user.firstName || "Unknown",
-          areaName: work.areaName,
-          workId: work.workId,
-          timestamp: serverTimestamp()
-        });
-        
-        // 3. Go back to main schedule
-        window.location.href = "schedule.html";
-      } catch (e) {
-        console.error(e);
-        alert("Error: Could not save your progress.");
-      }
-    };
-
     loadTasks();
-  </script>
+</script>
 </body>
 </html>
