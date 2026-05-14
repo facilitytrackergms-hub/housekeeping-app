@@ -163,70 +163,68 @@
     }
   }
 
-window.showV3 = async function(cat) {
-  document.getElementById("view2").classList.add("hidden");
-  document.getElementById("view3").classList.remove("hidden");
-  document.getElementById("catTitle").innerText = cat;
-  const box = document.getElementById("areaButtons");
-  box.innerHTML = "<p style='text-align:center;'>Calculating status...</p>";
-  
-  const filtered = matchedAreas.filter(a => String(a["Category"] || "").toLowerCase().trim() === cat.toLowerCase());
-  const seen = new Set();
-  box.innerHTML = "";
+  window.showV3 = async function(cat) {
+    document.getElementById("view2").classList.add("hidden");
+    document.getElementById("view3").classList.remove("hidden");
+    document.getElementById("catTitle").innerText = cat;
+    const box = document.getElementById("areaButtons");
+    box.innerHTML = "<p style='text-align:center;'>Calculating status...</p>";
+    
+    const filtered = matchedAreas.filter(a => String(a["Category"] || "").toLowerCase().trim() === cat.toLowerCase());
+    const seen = new Set();
+    box.innerHTML = "";
 
-  for (const area of filtered) {
-    if (!seen.has(area["Area"])) {
-      seen.add(area["Area"]);
-      
-      // FETCH REAL-TIME TASK STATUS
-      const taskQuery = query(collection(db, "tasks"), where("workId", "==", area.workId));
-      const taskSnap = await getDocs(taskQuery);
-      
-      let total = 0;
-      let completed = 0;
+    for (const area of filtered) {
+      if (!seen.has(area["Area"])) {
+        seen.add(area["Area"]);
+        
+        // FETCH REAL-TIME TASK STATUS FROM NEW DB STRUCTURE
+        const cleanId = String(area.workId).toLowerCase().trim();
+        const taskQuery = query(collection(db, "tasks"), where("workId", "==", cleanId));
+        const taskSnap = await getDocs(taskQuery);
+        
+        // Total is just the number of matching task documents
+        let total = taskSnap.size;
+        let completed = 0;
 
-      if (!taskSnap.empty) {
-        // Since one workId matches one Area document in tasks
-        const data = taskSnap.docs[0].data();
-        ['H', 'S', 'T', 'M', 'V'].forEach(key => {
-          if (data[key] && data[key] !== "" && data[key] !== "0") {
-            total++;
-            if (data[key + "_done"] === true) {
+        if (!taskSnap.empty) {
+          taskSnap.forEach(doc => {
+            const data = doc.data();
+            if (data.isDone === true) {
               completed++;
             }
-          }
-        });
-      }
+          });
+        }
 
-      const btn = document.createElement("button");
-      
-      // PROGRESS COLOR LOGIC
-      if (total === 0) {
-        btn.className = "room-btn back"; 
-      } else if (completed === 0) {
-        btn.className = "room-btn status-red";
-      } else if (completed < total) {
-        btn.className = "room-btn status-yellow";
-      } else {
-        btn.className = "room-btn status-green";
-      }
+        const btn = document.createElement("button");
+        
+        // PROGRESS COLOR LOGIC
+        if (total === 0) {
+          btn.className = "room-btn back"; 
+        } else if (completed === 0) {
+          btn.className = "room-btn status-red";
+        } else if (completed < total) {
+          btn.className = "room-btn status-yellow";
+        } else {
+          btn.className = "room-btn status-green";
+        }
 
-      btn.innerHTML = `
-        <div style="font-weight:bold;">${area["Area"]}</div>
-        <div class="count-tag">${completed} / ${total} DONE</div>
-      `;
-      
-      btn.onclick = () => {
-        sessionStorage.setItem("selectedWork", JSON.stringify({ 
-            workId: area.workId, 
-            areaName: area["Area"] 
-        }));
-        window.location.href = "tasks-details.html";
-      };
-      box.appendChild(btn);
+        btn.innerHTML = `
+          <div style="font-weight:bold;">${area["Area"]}</div>
+          <div class="count-tag">${completed} / ${total} DONE</div>
+        `;
+        
+        btn.onclick = () => {
+          sessionStorage.setItem("selectedWork", JSON.stringify({ 
+              workId: cleanId, 
+              areaName: area["Area"] 
+          }));
+          window.location.href = "tasks.html"; 
+        };
+        box.appendChild(btn);
+      }
     }
   }
-}
 
   window.adjustDate = (n) => { workDate.setDate(workDate.getDate() + n); loadData(); };
   window.toggleCover = () => document.getElementById("coverBox").classList.toggle("hidden");
