@@ -3,7 +3,193 @@
 <head>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>GCR Schedule</title>
+  <style><!DOCTYPE html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>GCR Schedule</title>
   <style>
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: Arial, sans-serif; background: #f2f2f2; padding: 10px; }
+    .card { width: 100%; max-width: 430px; background: white; border-radius: 20px; padding: 15px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); margin: auto; min-height: 450px; }
+    .view-tag { display: inline-block; background: black; color: white; padding: 4px 10px; border-radius: 8px; font-size: 12px; margin-bottom: 10px; }
+    h2, h3 { text-align: center; margin: 5px 0; }
+    button { width: 100%; border: none; border-radius: 15px; background: #1976d2; color: white; font-size: 18px; font-weight: bold; padding: 16px; margin: 8px 0; cursor: pointer; transition: 0.2s; }
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+    .room-btn { min-height: 75px; font-size: 16px; padding: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; margin: 0; line-height: 1.2; }
+    .count-tag { font-size: 13px; margin-top: 4px; opacity: 0.9; font-weight: normal; }
+    .status-red { background: #c62828 !important; }
+    .status-yellow { background: #fbc02d !important; color: black !important; }
+    .status-green { background: #2e7d32 !important; }
+    .back { background: #555 !important; }
+    .hidden { display: none !important; }
+    .top-box { border: 2px solid #e0e0e0; border-radius: 20px; padding: 15px; margin-bottom: 15px; background: #fafafa; text-align: center; }
+    
+    /* Dropdown Styling */
+    select { width: 100%; padding: 15px; border-radius: 12px; border: 2px solid #1976d2; margin-top: 10px; font-size: 16px; background: white; }
+    .change-btn { font-size:13px; padding:10px; background:#666; margin-top:10px; }
+  </style>
+</head>
+<body>
+
+<div class="card">
+  <div id="view2">
+    <div class="view-tag">Schedule Dashboard</div>
+    <div class="top-box">
+      <h3 id="dateDisplay">---</h3>
+      <h2 id="empName">Hi, ---</h2>
+      <h3 id="assignDisplay" style="color:#1976d2; font-weight: bold;">---</h3>
+      
+      <button class="change-btn" onclick="document.getElementById('coverBox').classList.toggle('hidden')">CHANGE ASSIGNMENT</button>
+      <div id="coverBox" class="hidden">
+        <select id="assignSelect" onchange="updateAssignment(this.value)"></select>
+      </div>
+    </div>
+    
+    <div id="categoryButtons" class="grid-2"></div>
+    <button class="back" onclick="location.href='index.html'" style="margin-top:20px;">LOGOUT</button>
+  </div>
+
+  <div id="view3" class="hidden">
+    <div class="view-tag">Area Selection</div>
+    <h2 id="catTitle" style="color:#1976d2; margin-bottom: 15px;">Category</h2>
+    <div id="areaButtons" class="grid-2"></div>
+    <button class="back" onclick="showV2()" style="margin-top:20px;">BACK</button>
+  </div>
+</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+  import { getFirestore, collection, getDocs, doc, getDoc, query, where } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyBgq_ooBeEN4noEyIxYPLVokgM6RjCO648",
+    authDomain: "gms-task-tracker.firebaseapp.com",
+    projectId: "gms-task-tracker",
+    storageBucket: "gms-task-tracker.firebasestorage.app",
+    messagingSenderId: "790880979860",
+    appId: "1:790880979860:web:6faee2a6e56955af3c1d81"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  const session = JSON.parse(sessionStorage.getItem("currentEmployee"));
+  if(!session) { window.location.href = "index.html"; }
+
+  let currentAssign = session.assignment; 
+  let matchedAreas = [];
+
+  async function loadData() {
+    const today = new Date().toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
+    document.getElementById("dateDisplay").innerText = today.toUpperCase();
+    document.getElementById("empName").innerText = "Hi, " + session.firstName;
+    document.getElementById("assignDisplay").innerText = currentAssign;
+
+    // 1. Get Mode (2HK vs 3HK)
+    const modeSnap = await getDoc(doc(db, "settings", "housekeepingMode"));
+    const mode = (modeSnap.exists() ? (modeSnap.data().settingValue || "two") : "two").toLowerCase().trim();
+    
+    // 2. Setup Dropdown Options
+    const select = document.getElementById("assignSelect");
+    let fullList = (mode === "three") ? ["1stFloor", "2ndFloor", "3rdFloor", "Laundry"] : ["HK1", "HK2", "Laundry"];
+    select.innerHTML = '<option value="" disabled selected>Switch Schedule...</option>';
+    fullList.forEach(s => {
+        const opt = document.createElement("option");
+        opt.value = s; opt.textContent = s;
+        select.appendChild(opt);
+    });
+
+    // 3. Fetch Rooms
+    const targetField = (mode === "three") ? "Floor" : "Mode";
+    const areaSnap = await getDocs(query(collection(db, "areas"), where(targetField, "==", currentAssign)));
+    
+    matchedAreas = [];
+    areaSnap.forEach(d => {
+        const data = d.data();
+        const dbDay = String(data.Schedule || "").toLowerCase().trim();
+        if(dbDay === "daily" || dbDay === today) { matchedAreas.push(data); }
+    });
+
+    // 4. Fetch All Tasks & History
+    const [taskSnap, historySnap] = await Promise.all([
+        getDocs(collection(db, "tasks")),
+        getDocs(collection(db, "task_history"))
+    ]);
+
+    window.historySet = new Set();
+    historySnap.forEach(doc => window.historySet.add(doc.id));
+
+    window.taskRegistry = {}; 
+    taskSnap.forEach(doc => {
+        const t = doc.data();
+        const wid = String(t.workId).toLowerCase().trim();
+        if(!window.taskRegistry[wid]) window.taskRegistry[wid] = [];
+        window.taskRegistry[wid].push(doc.id);
+    });
+
+    drawCategories();
+  }
+
+  window.updateAssignment = (newVal) => {
+    currentAssign = newVal;
+    document.getElementById('coverBox').classList.add('hidden');
+    loadData();
+  };
+
+  window.drawCategories = function() {
+    const box = document.getElementById("categoryButtons");
+    const cats = ["Common Area", "Weekly Room", "Daily Room", "Dehumidifier"];
+    box.innerHTML = "";
+
+    cats.forEach(cat => {
+        const rooms = matchedAreas.filter(a => String(a.Category || "").toLowerCase().trim() === cat.toLowerCase().trim());
+        if (rooms.length === 0) return;
+
+        let doneRooms = 0;
+        rooms.forEach(area => {
+            const wid = String(area.workId).toLowerCase().trim();
+            const tasks = window.taskRegistry[wid] || [];
+            const done = tasks.filter(id => window.historySet.has(`${wid}_${id}`));
+            if (tasks.length > 0 && done.length === tasks.length) doneRooms++;
+        });
+
+        const btn = document.createElement("button");
+        btn.className = doneRooms === 0 ? "status-red" : (doneRooms < rooms.length ? "status-yellow" : "status-green");
+        btn.innerText = `${cat} (${doneRooms}/${rooms.length})`;
+        btn.onclick = () => showV3(cat);
+        box.appendChild(btn);
+    });
+  }
+
+  window.showV3 = function(cat) {
+    document.getElementById("view2").classList.add("hidden");
+    document.getElementById("view3").classList.remove("hidden");
+    document.getElementById("catTitle").innerText = cat;
+    const box = document.getElementById("areaButtons");
+    box.innerHTML = "";
+
+    const rooms = matchedAreas.filter(a => String(a.Category || "").toLowerCase().trim() === cat.toLowerCase().trim());
+    rooms.forEach(area => {
+        const wid = String(area.workId).toLowerCase().trim();
+        const tasks = window.taskRegistry[wid] || [];
+        const done = tasks.filter(id => window.historySet.has(`${wid}_${id}`));
+        const btn = document.createElement("button");
+        btn.className = "room-btn " + (tasks.length === 0 ? "back" : (done.length === 0 ? "status-red" : (done.length < tasks.length ? "status-yellow" : "status-green")));
+        btn.innerHTML = `<div>${area.Area}</div><div class="count-tag">${done.length}/${tasks.length} Tasks</div>`;
+        btn.onclick = () => {
+            sessionStorage.setItem("selectedWork", JSON.stringify({ workId: wid, areaName: area.Area }));
+            location.href = "tasks.html";
+        };
+        box.appendChild(btn);
+    });
+  }
+
+  window.showV2 = () => { document.getElementById("view3").classList.add("hidden"); document.getElementById("view2").classList.remove("hidden"); };
+  loadData();
+</script>
+</body>
+</html>
     * { box-sizing: border-box; }
     body { margin: 0; font-family: Arial, sans-serif; background: #f2f2f2; padding: 10px; }
     .card { width: 100%; max-width: 430px; background: white; border-radius: 20px; padding: 15px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); margin: auto; min-height: 400px; }
