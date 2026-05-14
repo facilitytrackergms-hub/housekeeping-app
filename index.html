@@ -1,30 +1,173 @@
-<!-- Purpose: Login Page Logic | Location: index.html -->
 <!DOCTYPE html>
 <html>
+
 <head>
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>GCR Login</title>
+
+  <title>Employee Login</title>
+
   <style>
-    * { box-sizing: border-box; }
-    body { margin: 0; font-family: Arial, sans-serif; background: #f2f2f2; display: flex; justify-content: center; align-items: center; height: 100vh; }
-    .login-card { background: white; padding: 30px; border-radius: 20px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); width: 90%; max-width: 350px; text-align: center; }
-    input { width: 100%; padding: 15px; margin: 15px 0; border: 2px solid #ddd; border-radius: 12px; font-size: 20px; text-align: center; }
-    button { width: 100%; padding: 15px; background: #1976d2; color: white; border: none; border-radius: 12px; font-size: 18px; font-weight: bold; cursor: pointer; }
-    .error { color: #c62828; font-size: 14px; margin-top: 10px; display: none; }
+
+    /* 01 - GLOBAL STYLE */
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      padding: 0;
+      font-family: Arial, sans-serif;
+      background: #eef2f7;
+
+      display: flex;
+      justify-content: center;
+      align-items: center;
+
+      min-height: 100vh;
+    }
+
+    .card {
+      width: 92%;
+      max-width: 420px;
+
+      background: white;
+
+      border-radius: 30px;
+
+      padding: 35px 25px;
+
+      box-shadow: 0 10px 30px rgba(0,0,0,0.12);
+
+      text-align: center;
+    }
+
+    .view-tag {
+      display: inline-block;
+      background: black;
+      color: white;
+      padding: 4px 10px;
+      border-radius: 8px;
+      font-size: 12px;
+      margin-bottom: 14px;
+    }
+
+    h1 {
+      margin: 0 0 35px 0;
+      font-size: 42px;
+      color: #1847d1;
+    }
+
+    input {
+      width: 100%;
+      padding: 22px;
+
+      font-size: 28px;
+
+      border-radius: 18px;
+      border: 2px solid #2e5cff;
+
+      outline: none;
+
+      margin-bottom: 22px;
+      text-align: center;
+    }
+
+    button {
+      width: 100%;
+
+      padding: 22px;
+
+      font-size: 28px;
+      font-weight: bold;
+
+      border: none;
+      border-radius: 18px;
+
+      background: #2e5cff;
+      color: white;
+
+      cursor: pointer;
+
+      margin-bottom: 18px;
+    }
+
+    button:active {
+      transform: scale(0.98);
+    }
+
+    #message {
+      margin-top: 20px;
+
+      padding: 22px;
+
+      border-radius: 20px;
+
+      font-size: 24px;
+      font-weight: bold;
+
+      background: #edf9ef;
+      color: #1c7a32;
+
+      display: none;
+    }
+
   </style>
 </head>
+
 <body>
 
-<div class="login-card">
-  <h2>Enter PIN</h2>
-  <input type="password" id="pinInput" placeholder="0000" maxlength="8" inputmode="numeric">
-  <button onclick="handleLogin()">LOGIN</button>
-  <div id="errorMsg" class="error">Invalid PIN.</div>
-</div>
+  <!-- 02 - VIEW 1 LOGIN -->
+
+  <div class="card">
+
+    <div class="view-tag">
+      VIEW 1
+    </div>
+
+    <div id="pinView">
+
+      <h1>Employee Login</h1>
+
+      <input
+        type="password"
+        inputmode="numeric"
+        pattern="[0-9]*"
+        id="pin"
+        placeholder="Enter PIN"
+        autocomplete="off"
+        autocorrect="off"
+        autocapitalize="off"
+        spellcheck="false"
+      >
+
+      <button onclick="checkPin()">
+        NEXT
+      </button>
+
+    </div>
+
+    <div id="message"></div>
+
+  </div>
 
 <script type="module">
+
+  /* 03 - FIREBASE IMPORTS */
+
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-  import { getFirestore, doc, getDoc, collection, query, where, getDocs } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+  import {
+    getFirestore,
+    collection,
+    query,
+    where,
+    limit,
+    getDocs
+  } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+
+  /* 04 - FIREBASE CONFIG */
 
   const firebaseConfig = {
     apiKey: "AIzaSyBgq_ooBeEN4noEyIxYPLVokgM6RjCO648",
@@ -32,60 +175,164 @@
     projectId: "gms-task-tracker",
     storageBucket: "gms-task-tracker.firebasestorage.app",
     messagingSenderId: "790880979860",
-    appId: "1:790880979860:web:6faee2a6e56955af3c1d81"
+    appId: "1:790880979860:web:6faee2a6e56955af3c1d81",
+    measurementId: "G-5TRHQMS039"
   };
 
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
 
-  window.handleLogin = async function() {
-    const pinValue = document.getElementById("pinInput").value;
-    const error = document.getElementById("errorMsg");
-    error.style.display = "none";
+
+  /* 05 - LOGIN */
+
+  async function checkPin() {
+    const pinInput = document.getElementById("pin").value.trim();
+
+    if (!pinInput) {
+      showMessage("Enter PIN", false);
+      return;
+    }
+
+    showMessage("Checking...", true);
 
     try {
-      const modeSnap = await getDoc(doc(db, "settings", "housekeepingMode"));
-      const mode = (modeSnap.exists() ? (modeSnap.data().settingValue || modeSnap.data().value) : "two").toLowerCase().trim();
+      const employeeQuery = query(
+        collection(db, "employees"),
+        where("pin", "==", pinInput),
+        limit(1)
+      );
 
-      const q = query(collection(db, "employees"), where("pin", "in", [pinValue, Number(pinValue)]));
-      const empSnap = await getDocs(q);
+      const employeeSnap = await getDocs(employeeQuery);
 
-      if (!empSnap.empty) {
-        const empData = empSnap.docs[0].data();
-        
-        let finalAssign = "";
-        if (mode === "three") {
-            finalAssign = empData.mode3_assign || empData.assignment || "Floor Not Set";
-        } else {
-            finalAssign = empData.mode2_assign || empData.assignment || "Schedule Not Set";
-        }
-        
-        const role = String(empData.role || "").toLowerCase();
-        if (role === "admin") {
-          sessionStorage.setItem("currentEmployee", JSON.stringify({ firstName: empData.firstName || empData.name, role: "admin" }));
-          window.location.href = "admin.html";
-        } else {
-          sessionStorage.setItem("currentEmployee", JSON.stringify({
-            firstName: empData.firstName || empData.name,
-            assignment: finalAssign
-          }));
-          window.location.href = "schedule.html";
-        }
-      } else {
-        const adminSnap = await getDoc(doc(db, "settings", "admin"));
-        const masterPass = adminSnap.exists() ? (adminSnap.data().Password || adminSnap.data().password) : null;
-        
-        if (masterPass && pinValue === String(masterPass)) {
-          window.location.href = "admin.html";
-        } else {
-          error.style.display = "block";
-        }
+      if (employeeSnap.empty) {
+        showMessage("Invalid PIN", false);
+        return;
       }
-    } catch (err) {
-      console.error("Login Error:", err);
-      alert("System Error. Check connection.");
+
+      const docSnap = employeeSnap.docs[0];
+      const emp = docSnap.data();
+
+      if (!isEmployeeActive(emp)) {
+        showMessage("Inactive employee", false);
+        return;
+      }
+
+      const currentEmployee = buildEmployeeSession_(docSnap.id, emp, pinInput);
+
+      sessionStorage.setItem(
+        "currentEmployee",
+        JSON.stringify(currentEmployee)
+      );
+
+      sessionStorage.setItem(
+        "selectedDailyTask",
+        JSON.stringify({
+          assignment: currentEmployee.defaultSchedule || currentEmployee.assignment,
+          schedule: "Daily"
+        })
+      );
+
+      if (currentEmployee.role === "admin") {
+        window.location.href = "admin.html";
+        return;
+      }
+
+      showMessage("Login successful", true);
+
+      setTimeout(function() {
+        window.location.href = "schedule.html";
+      }, 500);
+
+    } catch (error) {
+      console.error("Login error details:", error);
+      showMessage("Connection error", false);
     }
-  };
+  }
+
+
+  /* 06 - EMPLOYEE SESSION */
+
+  function buildEmployeeSession_(docId, emp, pinInput) {
+    const firstName = cleanText_(emp.firstName || "Employee");
+    const lastName = cleanText_(emp.lastName || "");
+    const employeeName = cleanText_(emp.name || `${firstName} ${lastName}`);
+    const role = cleanText_(emp.role || "employee").toLowerCase();
+    const assignment = cleanText_(emp.assignment || "Housekeeping");
+    const defaultSchedule = cleanText_(emp.defaultSchedule || "");
+
+    return {
+      id: docId,
+      employeeId: cleanText_(emp.employeeId || docId),
+      firstName: firstName,
+      lastName: lastName,
+      employeeName: employeeName,
+      name: employeeName,
+      pin: pinInput,
+      role: role,
+      assignment: assignment,
+      defaultSchedule: defaultSchedule
+    };
+  }
+
+  function isEmployeeActive(emp) {
+    const active = emp.active;
+
+    if (active === false) return false;
+
+    const activeText = cleanText_(active).toLowerCase();
+
+    if (activeText === "no") return false;
+    if (activeText === "false") return false;
+    if (activeText === "inactive") return false;
+
+    return true;
+  }
+
+
+  /* 07 - MESSAGE */
+
+  function showMessage(text, success) {
+    const message = document.getElementById("message");
+
+    message.style.display = "block";
+
+    if (success) {
+      message.style.background = "#edf9ef";
+      message.style.color = "#1c7a32";
+    } else {
+      message.style.background = "#ffecec";
+      message.style.color = "#c62828";
+    }
+
+    message.innerHTML = text;
+  }
+
+
+  /* 08 - HELPERS */
+
+  function cleanText_(value) {
+    if (value === null || value === undefined) return "";
+
+    return String(value)
+      .replace(/\u00A0/g, " ")
+      .replace(/\s+/g, " ")
+      .trim();
+  }
+
+
+  /* 09 - EVENTS */
+
+  document
+    .getElementById("pin")
+    .addEventListener("keydown", function(event) {
+      if (event.key === "Enter") {
+        checkPin();
+      }
+    });
+
+  window.checkPin = checkPin;
+
 </script>
+
 </body>
 </html>
