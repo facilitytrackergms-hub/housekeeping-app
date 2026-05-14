@@ -9,36 +9,15 @@
     .card { width: 100%; max-width: 430px; background: white; border-radius: 20px; padding: 15px; box-shadow: 0 4px 20px rgba(0,0,0,0.15); margin: auto; }
     .view-tag { display: inline-block; background: black; color: white; padding: 4px 10px; border-radius: 8px; font-size: 12px; margin-bottom: 10px; }
     h2 { text-align: center; color: #1976d2; margin-bottom: 15px; }
-    
-    /* 2-Column Grid for Phone */
     #taskList { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 20px; }
-    
-    /* Task Button - Default RED */
     .task-btn { 
-      background: #c62828; 
-      color: white; 
-      border: none; 
-      border-radius: 15px; 
-      padding: 10px; 
-      font-size: 15px; 
-      font-weight: bold; 
-      min-height: 80px; 
-      cursor: pointer; 
-      transition: 0.2s; 
-      display: flex; 
-      align-items: center; 
-      justify-content: center; 
-      text-align: center;
-      box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+      background: #c62828; color: white; border: none; border-radius: 15px; 
+      padding: 10px; font-size: 15px; font-weight: bold; min-height: 80px; 
+      cursor: pointer; transition: 0.2s; display: flex; align-items: center; 
+      justify-content: center; text-align: center; box-shadow: 0 2px 5px rgba(0,0,0,0.2);
     }
-    
-    /* Task Button - Clicked GREEN */
     .task-btn.done { background: #2e7d32 !important; }
-    .task-btn:active { transform: scale(0.95); }
-
-    /* Action Buttons */
     .complete-all-btn { width: 100%; padding: 15px; background: #1976d2; color: white; border: none; border-radius: 15px; font-size: 16px; font-weight: bold; margin-bottom: 15px; cursor: pointer; }
-    .complete-all-btn:active { transform: scale(0.98); }
     .back-btn { width: 100%; padding: 15px; background: #555; color: white; border: none; border-radius: 15px; font-size: 16px; font-weight: bold; cursor: pointer; }
   </style>
 </head>
@@ -47,17 +26,14 @@
 <div class="card">
   <div class="view-tag">Task Checklist</div>
   <h2 id="areaTitle">Loading...</h2>
-  
   <button class="complete-all-btn" onclick="completeAll()">✔ COMPLETE ALL</button>
-  
   <div id="taskList"></div>
-  
   <button class="back-btn" onclick="window.location.href='schedule.html'">BACK TO ROOMS</button>
 </div>
 
 <script type="module">
   import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
-  import { getFirestore, collection, query, where, getDocs, doc, updateDoc } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+  import { getFirestore, collection, query, where, getDocs, doc, setDoc, deleteDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
   const firebaseConfig = {
     apiKey: "AIzaSyBgq_ooBeEN4noEyIxYPLVokgM6RjCO648",
@@ -81,55 +57,68 @@
     list.innerHTML = "<p style='grid-column: 1 / -1; text-align: center;'>Finding tasks...</p>";
 
     try {
+      // 1. Get History first to see what's done
+      const hSnap = await getDocs(query(collection(db, "task_history"), where("workId", "==", selectedWork.workId)));
+      const doneIds = new Set();
+      hSnap.forEach(d => doneIds.add(d.data().taskId));
+
+      // 2. Get Tasks
       const q = query(collection(db, "tasks"), where("workId", "==", selectedWork.workId));
       const snap = await getDocs(q);
 
       list.innerHTML = ""; 
 
-      if (snap.empty) {
-        list.innerHTML = `<div style='grid-column: 1 / -1; text-align: center; color: #666;'>No tasks found for ${selectedWork.areaName}</div>`;
-        return;
-      }
-
       snap.forEach(d => {
         const data = d.data();
         const docId = d.id;
         const taskText = data.Task;  
-        const isDone = data.isDone === true || String(data.isDone).toLowerCase() === "true";
         
         if (taskText && taskText.trim() !== "" && taskText !== "0") {
           const btn = document.createElement("button");
-          btn.className = "task-btn"; 
-          if (isDone) btn.classList.add('done');
+          btn.className = "task-btn" + (doneIds.has(docId) ? " done" : "");
           btn.innerText = taskText;
+          btn.dataset.id = docId;
           
           btn.onclick = async function() {
-            const newState = !this.classList.contains('done');
-            this.classList.toggle('done'); 
-            await updateDoc(doc(db, "tasks", docId), { isDone: newState });
+            const isNowDone = this.classList.toggle('done');
+            const historyId = `${selectedWork.workId}_${docId}`;
+            
+            if (isNowDone) {
+              await setDoc(doc(db, "task_history", historyId), {
+                workId: selectedWork.workId,
+                taskId: docId,
+                status: "complete",
+                timestamp: serverTimestamp()
+              });
+            } else {
+              await deleteDoc(doc(db, "task_history", historyId));
+            }
           };
-          
           list.appendChild(btn);
         }
       });
-
     } catch (err) {
-      console.error("Fetch Error:", err);
-      list.innerHTML = `<p style="grid-column: 1 / -1; color:red; font-weight:bold; text-align:center;">Error: ${err.message}</p>`;
+      list.innerHTML = `<p style="color:red; text-align:center;">Error: ${err.message}</p>`;
     }
   }
 
-  loadTasks();
-
   window.completeAll = async function() {
-    document.querySelectorAll('.task-btn').forEach(btn => btn.classList.add('done'));
-    
-    const q = query(collection(db, "tasks"), where("workId", "==", selectedWork.workId));
-    const snap = await getDocs(q);
-    snap.forEach(d => {
-      updateDoc(doc(db, "tasks", d.id), { isDone: true });
-    });
+    const btns = document.querySelectorAll('.task-btn');
+    for (const btn of btns) {
+      if (!btn.classList.contains('done')) {
+        btn.classList.add('done');
+        const historyId = `${selectedWork.workId}_${btn.dataset.id}`;
+        await setDoc(doc(db, "task_history", historyId), {
+          workId: selectedWork.workId,
+          taskId: btn.dataset.id,
+          status: "complete",
+          timestamp: serverTimestamp()
+        });
+      }
+    }
   };
+
+  loadTasks();
 </script>
 </body>
 </html>
