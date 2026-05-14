@@ -16,19 +16,18 @@
     .room-btn { min-height: 75px; font-size: 16px; padding: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; margin: 0; line-height: 1.2; }
     .count-tag { font-size: 13px; margin-top: 4px; opacity: 0.9; font-weight: normal; }
 
-    /* STATUS COLORS */
+    /* LOGIC COLORS */
     .status-red { background: #c62828 !important; }
     .status-yellow { background: #fbc02d !important; color: black !important; }
     .status-green { background: #2e7d32 !important; }
 
     .back { background: #555 !important; }
     .hidden { display: none !important; }
-    
     .top-box { border: 2px solid #e0e0e0; border-radius: 20px; padding: 15px; margin-bottom: 15px; background: #fafafa; }
     
-    /* DROPDOWN STYLING */
-    select { width: 100%; padding: 15px; border-radius: 12px; border: 2px solid #1976d2; margin-top: 10px; font-size: 16px; background: white; font-weight: bold; }
-    .label-text { font-size: 12px; color: #666; text-transform: uppercase; font-weight: bold; margin-top: 10px; display: block; text-align: center; }
+    /* DROPDOWN */
+    select { width: 100%; padding: 15px; border-radius: 12px; border: 2px solid #1976d2; margin-top: 5px; font-size: 16px; background: white; font-weight: bold; }
+    .label-text { font-size: 11px; color: #666; text-transform: uppercase; font-weight: bold; margin-top: 10px; display: block; text-align: center; }
   </style>
 </head>
 <body>
@@ -40,10 +39,7 @@
       <h3 id="dateDisplay">---</h3>
       <h2 id="empName">Hi, ---</h2>
       
-      <span class="label-text">Current Assignment</span>
-      <h3 id="assignDisplay" style="color:#1976d2; font-weight: bold; margin-bottom: 10px;">---</h3>
-      
-      <span class="label-text">Switch Schedule</span>
+      <span class="label-text">Switch Assignment</span>
       <select id="assignSelect" onchange="updateAssignment(this.value)"></select>
     </div>
     
@@ -85,25 +81,24 @@
     const today = new Date().toLocaleDateString('en-US', { weekday: 'long' }).toLowerCase();
     document.getElementById("dateDisplay").innerText = today.toUpperCase();
     document.getElementById("empName").innerText = "Hi, " + session.firstName;
-    document.getElementById("assignDisplay").innerText = currentAssign;
 
-    // 1. Get Mode and Build Dropdown
+    // 1. Fetch Assignment Options & Settings
     const modeSnap = await getDoc(doc(db, "settings", "housekeepingMode"));
     const mode = (modeSnap.exists() ? (modeSnap.data().settingValue || "two") : "two").toLowerCase().trim();
     
     const select = document.getElementById("assignSelect");
     let fullList = (mode === "three") ? ["1stFloor", "2ndFloor", "3rdFloor", "Laundry"] : ["HK1", "HK2", "Laundry"];
     
-    select.innerHTML = `<option value="${currentAssign}" selected>${currentAssign} (Current)</option>`;
+    select.innerHTML = "";
     fullList.forEach(s => {
-        if(s !== currentAssign) {
-            const opt = document.createElement("option");
-            opt.value = s; opt.textContent = s;
-            select.appendChild(opt);
-        }
+        const opt = document.createElement("option");
+        opt.value = s;
+        opt.textContent = s;
+        if(s === currentAssign) opt.selected = true;
+        select.appendChild(opt);
     });
 
-    // 2. Fetch Rooms
+    // 2. Fetch Rooms for selected assignment
     const targetField = (mode === "three") ? "Floor" : "Mode";
     const areaSnap = await getDocs(query(collection(db, "areas"), where(targetField, "==", currentAssign)));
     
@@ -114,7 +109,7 @@
         if(dbDay === "daily" || dbDay === today) { matchedAreas.push(data); }
     });
 
-    // 3. Fetch All Tasks & History (No Limits)
+    // 3. FETCH ALL TASKS & HISTORY (No 10-ID Limit)
     const [taskSnap, historySnap] = await Promise.all([
         getDocs(collection(db, "tasks")),
         getDocs(collection(db, "task_history"))
