@@ -157,78 +157,52 @@
     }
   }
 
-  window.showV3 = async function(cat) {
-    document.getElementById("view2").classList.add("hidden");
-    document.getElementById("view3").classList.remove("hidden");
-    document.getElementById("catTitle").innerText = cat;
-    const box = document.getElementById("areaButtons");
-    box.innerHTML = "";
-    
-    const filtered = matchedAreas.filter(a => String(a["Category"] || "").toLowerCase().trim() === cat.toLowerCase());
-    const seen = new Set();
-    
-    for (const area of filtered) { 
-      if (!seen.has(area["Area"])) { 
-        seen.add(area["Area"]);
+ // Replace the part of your script that draws the Room Buttons:
+window.showV3 = async function(cat) {
+  document.getElementById("view2").classList.add("hidden");
+  document.getElementById("view3").classList.remove("hidden");
+  document.getElementById("catTitle").innerText = cat;
+  const box = document.getElementById("areaButtons");
+  box.innerHTML = "<p>Loading rooms...</p>";
+  
+  const filtered = matchedAreas.filter(a => String(a["Category"] || "").toLowerCase().trim() === cat.toLowerCase());
+  const seen = new Set();
+  box.innerHTML = "";
 
-        // TASK COUNTER LOGIC
-        // This checks the 'tasks' collection for completion status
-        const qTasks = query(collection(db, "tasks"), where("workId", "==", area.workId));
-        const taskSnap = await getDocs(qTasks);
-        
-        let total = 0;
-        let done = 0;
-        
-        taskSnap.forEach(tDoc => {
-            const tData = tDoc.data();
-            // Count active tasks (H, S, T, M, V)
-            ['H', 'S', 'T', 'M', 'V'].forEach(key => {
-                if(tData[key] && tData[key] !== "") {
-                    total++;
-                    if(tData[key + "_done"] === true) done++; // Assumes task-details.html saves [Key]_done
-                }
-            });
-        });
+  for (const area of filtered) {
+    if (!seen.has(area["Area"])) {
+      seen.add(area["Area"]);
+      
+      // Fetch actual task counts for this specific room
+      const taskQuery = query(collection(db, "tasks"), where("workId", "==", area.workId));
+      const taskSnap = await getDocs(taskQuery);
+      const total = taskSnap.size;
+      
+      // For now, we check a 'completedTasks' collection or assume 0
+      // You'll need a collection called 'taskLogs' to track real-time completion
+      const completed = 0; 
 
-        const btn = document.createElement("button");
-        
-        // APPLY COLOR RULES
-        if (done === 0) {
-            btn.className = "room-btn status-red";
-        } else if (done < total) {
-            btn.className = "room-btn status-yellow";
-        } else {
-            btn.className = "room-btn status-green";
-        }
+      const btn = document.createElement("button");
+      
+      // COLOR LOGIC: Red (0), Yellow (Some), Green (All)
+      if (total === 0) btn.className = "room-btn back"; // No tasks found
+      else if (completed === 0) btn.className = "room-btn status-red";
+      else if (completed < total) btn.className = "room-btn status-yellow";
+      else btn.className = "room-btn status-green";
 
-        btn.innerHTML = `
-            <div>${area["Area"]}</div>
-            <div class="count-tag">Tasks: ${done}/${total}</div>
-        `;
-        
-        btn.onclick = () => {
-          sessionStorage.setItem("selectedWork", JSON.stringify({ workId: area.workId, areaName: area["Area"] }));
-          window.location.href = "task-details.html";
-        };
-        box.appendChild(btn);
-      }
+      btn.innerHTML = `
+        <div style="font-size: 18px;">${area["Area"]}</div>
+        <div style="font-size: 12px; opacity: 0.8;">${completed}/${total} Tasks</div>
+      `;
+      
+      btn.onclick = () => {
+        sessionStorage.setItem("selectedWork", JSON.stringify({ workId: area.workId, areaName: area["Area"] }));
+        window.location.href = "tasks.html";
+      };
+      box.appendChild(btn);
     }
   }
-
-  window.adjustDate = (n) => { workDate.setDate(workDate.getDate() + n); loadData(); };
-  window.toggleCover = () => document.getElementById("coverBox").classList.toggle("hidden");
-  window.updateAssignment = (val) => { 
-    if(!val) return; 
-    currentAssign = val; 
-    session.assignment = val;
-    sessionStorage.setItem("currentEmployee", JSON.stringify(session));
-    loadData(); 
-    document.getElementById("coverBox").classList.add("hidden"); 
-  };
-  window.showV2 = () => { document.getElementById("view2").classList.remove("hidden"); document.getElementById("view3").classList.add("hidden"); };
-  window.logout = () => { sessionStorage.clear(); window.location.href = "index.html"; };
-
-  loadData();
+}
 </script>
 </body>
 </html>
