@@ -7,22 +7,32 @@
         /* 01 - STYLES */
         * { box-sizing: border-box; }
         body { margin: 0; font-family: Arial, sans-serif; background: #eef2f7; padding: 10px; }
-        .card { width: 100%; max-width: 460px; background: white; border-radius: 28px; padding: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.12); margin: auto; }
-        .view-tag { display: inline-block; background: black; color: white; padding: 4px 10px; border-radius: 8px; font-size: 12px; margin-bottom: 15px; }
-        h2 { text-align: center; color: #1847d1; margin-bottom: 5px; font-size: 28px; }
+        .card { width: 100%; max-width: 460px; background: white; border-radius: 28px; padding: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.12); margin: auto; }
+        .view-tag { display: inline-block; background: black; color: white; padding: 4px 10px; border-radius: 8px; font-size: 12px; margin-bottom: 10px; }
+        h2 { text-align: center; color: #1847d1; margin-bottom: 5px; font-size: 24px; }
         
-        .counter-box { text-align: center; font-size: 20px; font-weight: bold; color: #1847d1; margin-bottom: 20px; }
+        .counter-box { text-align: center; font-size: 18px; font-weight: bold; color: #1847d1; margin-bottom: 15px; }
         
-        .task-card { background: #f9fbff; border: 2px solid #dce3f0; border-radius: 20px; padding: 20px; margin-top: 18px; }
-        .task-name { font-size: 22px; font-weight: bold; color: #1847d1; margin-bottom: 15px; text-align: center; }
-        
-        .buttons { display: flex; gap: 15px; }
-        button { flex: 1; padding: 15px; border: none; border-radius: 15px; font-size: 20px; font-weight: bold; color: white; cursor: pointer; }
-        .yes { background: #22aa44; }
-        .no { background: #d93025; }
-        .back-btn { width: 100%; padding: 18px; background: #333; color: white; border: none; border-radius: 18px; font-size: 20px; margin-top: 25px; cursor: pointer; }
+        /* 3 IN A ROW GRID */
+        .task-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-top: 10px; }
+        .task-btn { 
+            aspect-ratio: 1 / 1; 
+            border-radius: 15px; 
+            font-size: 22px; 
+            font-weight: bold; 
+            color: white; 
+            background: #d93025; /* Red Default */
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            cursor: pointer;
+            transition: 0.2s;
+            border: none;
+        }
+        .task-btn.done { background: #22aa44 !important; } /* Green Complete */
 
-        .status-msg { text-align: center; margin-top: 10px; font-weight: bold; font-size: 16px; }
+        .all-btn { width: 100%; padding: 15px; background: #1847d1; color: white; border: none; border-radius: 15px; font-size: 18px; font-weight: bold; margin-bottom: 10px; cursor: pointer; }
+        .back-btn { width: 100%; padding: 15px; background: #333; color: white; border: none; border-radius: 15px; font-size: 18px; margin-top: 20px; cursor: pointer; }
     </style>
 </head>
 <body>
@@ -34,7 +44,9 @@
         Progress: <span id="completedCount">0</span> / <span id="totalCount">0</span>
     </div>
     
-    <div id="taskList"></div>
+    <button class="all-btn" onclick="completeAll()">COMPLETE ALL TASKS</button>
+    
+    <div id="taskGrid" class="task-grid"></div>
 
     <button class="back-btn" onclick="window.location.href='schedule.html'">BACK TO ROOMS</button>
 </div>
@@ -60,79 +72,79 @@
 
     document.getElementById("areaTitle").innerText = selectedWork.areaName;
 
-    let totalTasks = 0;
-    let completedTasks = 0;
+    let currentTaskDocId = null;
+    let activeKeys = [];
 
-    async function loadTasks() {
-        const list = document.getElementById("taskList");
-        list.innerHTML = "";
+    async function loadTaskGrid() {
+        const grid = document.getElementById("taskGrid");
+        grid.innerHTML = "";
 
         try {
             const q = query(collection(db, "tasks"), where("workId", "==", selectedWork.workId));
             const snap = await getDocs(q);
 
-            if (snap.empty) {
-                list.innerHTML = "<p style='text-align:center;'>No tasks found for this area.</p>";
-                return;
-            }
+            if (snap.empty) return;
+            const taskDoc = snap.docs[0];
+            currentTaskDocId = taskDoc.id;
+            const data = taskDoc.data();
 
-            totalTasks = snap.size;
-            document.getElementById("totalCount").innerText = totalTasks;
+            let total = 0;
+            let done = 0;
+            activeKeys = [];
 
-            snap.forEach(docSnap => {
-                const data = docSnap.data();
-                const docId = docSnap.id;
-                if (data.status === "done") completedTasks++;
+            ['H', 'S', 'T', 'M', 'V'].forEach(key => {
+                // Check if the task exists in the spreadsheet for this room
+                if (data[key] && data[key] !== "") {
+                    total++;
+                    activeKeys.push(key);
+                    const isDone = data[key + "_done"] === true;
+                    if (isDone) done++;
 
-                const row = document.createElement("div");
-                row.className = "task-card";
-                row.innerHTML = `
-                    <div class="task-name">${data.Task}</div>
-                    <div class="buttons">
-                        <button class="yes" onclick="updateStatus('${docId}', 'done')">YES</button>
-                        <button class="no" onclick="updateStatus('${docId}', 'incomplete')">NO</button>
-                    </div>
-                    <div id="msg-${docId}" class="status-msg" style="color: ${data.status === 'done' ? '#22aa44' : '#d93025'}">
-                        ${data.status === 'done' ? 'Task Completed' : (data.status === 'incomplete' ? 'Marked Incomplete' : '')}
-                    </div>
-                `;
-                list.appendChild(row);
+                    const btn = document.createElement("button");
+                    btn.className = `task-btn ${isDone ? 'done' : ''}`;
+                    btn.innerText = key;
+                    btn.onclick = () => toggleTask(key, !isDone);
+                    grid.appendChild(btn);
+                }
             });
 
-            document.getElementById("completedCount").innerText = completedTasks;
+            document.getElementById("totalCount").innerText = total;
+            document.getElementById("completedCount").innerText = done;
 
         } catch (err) {
             console.error(err);
-            list.innerHTML = "<p>Error loading tasks.</p>";
         }
     }
 
-    window.updateStatus = async function(docId, newStatus) {
-        const msg = document.getElementById(`msg-${docId}`);
-        const prevStatus = msg.innerText.includes("Completed") ? "done" : "incomplete";
-        
+    window.toggleTask = async function(key, newStatus) {
         try {
-            await updateDoc(doc(db, "tasks", docId), { status: newStatus });
+            const taskRef = doc(db, "tasks", currentTaskDocId);
+            const updateData = {};
+            updateData[key + "_done"] = newStatus;
             
-            // UI Updates
-            if (newStatus === "done") {
-                msg.innerText = "Task Completed";
-                msg.style.color = "#22aa44";
-                if (prevStatus !== "done") completedTasks++;
-            } else {
-                msg.innerText = "Marked Incomplete";
-                msg.style.color = "#d93025";
-                if (prevStatus === "done") completedTasks--;
-            }
-            
-            document.getElementById("completedCount").innerText = completedTasks;
-
+            await updateDoc(taskRef, updateData);
+            loadTaskGrid(); 
         } catch (err) {
             alert("Error updating task.");
         }
     }
 
-    loadTasks();
+    window.completeAll = async function() {
+        try {
+            const taskRef = doc(db, "tasks", currentTaskDocId);
+            const updateData = {};
+            activeKeys.forEach(key => {
+                updateData[key + "_done"] = true;
+            });
+            
+            await updateDoc(taskRef, updateData);
+            loadTaskGrid();
+        } catch (err) {
+            alert("Error completing all.");
+        }
+    }
+
+    loadTaskGrid();
 </script>
 </body>
 </html>
