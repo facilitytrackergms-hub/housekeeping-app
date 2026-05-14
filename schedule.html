@@ -11,7 +11,24 @@
     h2, h3 { text-align: center; margin: 5px 0; }
     button { width: 100%; border: none; border-radius: 15px; background: #1976d2; color: white; font-size: 18px; font-weight: bold; padding: 16px; margin: 8px 0; cursor: pointer; transition: 0.2s; }
     button:active { transform: scale(0.98); }
-    .red { background: #c62828 !important; }
+    
+    /* SMALLER ROOM BUTTONS */
+    .room-btn { 
+        min-height: 75px !important; 
+        font-size: 18px !important; 
+        padding: 8px !important;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+    }
+    .count-tag { font-size: 12px; margin-top: 4px; opacity: 0.9; font-weight: normal; }
+
+    /* LOGIC COLORS */
+    .status-red { background: #c62828 !important; }    /* Default */
+    .status-yellow { background: #fbc02d !important; color: black !important; } /* In Progress */
+    .status-green { background: #2e7d32 !important; }  /* Finished */
+
     .back { background: #555 !important; }
     .hidden { display: none !important; }
     .top-box { border: 2px solid #e0e0e0; border-radius: 20px; padding: 15px; margin-bottom: 15px; background: #fafafa; text-align: center; }
@@ -19,7 +36,6 @@
     .date-btn { width: auto; padding: 10px 15px; background: #555; font-size: 16px; }
     .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
     #categoryButtons button { min-height: 110px; font-size: 17px; }
-    #areaButtons button { min-height: 80px; font-size: 20px; }
     select { width: 100%; padding: 15px; border-radius: 12px; border: 2px solid #1976d2; margin-top: 10px; font-size: 16px; }
     .empty-msg { text-align: center; color: #666; padding: 20px; font-style: italic; }
   </style>
@@ -85,11 +101,9 @@
     document.getElementById("empName").innerText = "Hi, " + (session.firstName || "User");
     document.getElementById("assignDisplay").innerText = currentAssign;
 
-    // 1. Get Mode
     const modeSnap = await getDoc(doc(db, "settings", "housekeepingMode"));
     const mode = (modeSnap.exists() ? (modeSnap.data().settingValue || modeSnap.data().value) : "two").toLowerCase().trim();
     
-    // 2. Setup Dropdown based on Mode
     const select = document.getElementById("assignSelect");
     const myAssignLower = currentAssign.toLowerCase().trim();
     let fullList = (mode === "three") ? ["1stfloor", "2ndFloor", "3rdFloor", "Laundry"] : ["HK1", "HK2", "Laundry"];
@@ -103,10 +117,7 @@
       select.appendChild(option);
     });
 
-    // 3. Fetch Rooms with Query Filter (Faster & Accurate)
     const targetField = (mode === "three") ? "Floor" : "Mode";
-    
-    // We filter by the worker's current assignment (e.g., HK1 or 1stfloor)
     const q = query(collection(db, "areas"), where(targetField, "==", currentAssign));
     const snap = await getDocs(q);
     
@@ -114,7 +125,6 @@
     snap.forEach(d => {
       const data = d.data();
       const dbDay = String(data["Schedule"] || "").toLowerCase().trim();
-      // Only include if it's "daily" or the current weekday
       if(dbDay === "daily" || dbDay === today) {
         matchedAreas.push(data);
       }
@@ -147,7 +157,7 @@
     }
   }
 
-  window.showV3 = function(cat) {
+  window.showV3 = async function(cat) {
     document.getElementById("view2").classList.add("hidden");
     document.getElementById("view3").classList.remove("hidden");
     document.getElementById("catTitle").innerText = cat;
@@ -157,34 +167,64 @@
     const filtered = matchedAreas.filter(a => String(a["Category"] || "").toLowerCase().trim() === cat.toLowerCase());
     const seen = new Set();
     
-    filtered.forEach(area => { 
+    for (const area of filtered) { 
       if (!seen.has(area["Area"])) { 
         seen.add(area["Area"]);
+
+        // TASK COUNTER LOGIC
+        // This checks the 'tasks' collection for completion status
+        const qTasks = query(collection(db, "tasks"), where("workId", "==", area.workId));
+        const taskSnap = await getDocs(qTasks);
+        
+        let total = 0;
+        let done = 0;
+        
+        taskSnap.forEach(tDoc => {
+            const tData = tDoc.data();
+            // Count active tasks (H, S, T, M, V)
+            ['H', 'S', 'T', 'M', 'V'].forEach(key => {
+                if(tData[key] && tData[key] !== "") {
+                    total++;
+                    if(tData[key + "_done"] === true) done++; // Assumes task-details.html saves [Key]_done
+                }
+            });
+        });
+
         const btn = document.createElement("button");
-        btn.className = "red";
-        btn.innerHTML = `<div style="font-size: 22px;">${area["Area"]}</div>`;
+        
+        // APPLY COLOR RULES
+        if (done === 0) {
+            btn.className = "room-btn status-red";
+        } else if (done < total) {
+            btn.className = "room-btn status-yellow";
+        } else {
+            btn.className = "room-btn status-green";
+        }
+
+        btn.innerHTML = `
+            <div>${area["Area"]}</div>
+            <div class="count-tag">Tasks: ${done}/${total}</div>
+        `;
+        
         btn.onclick = () => {
           sessionStorage.setItem("selectedWork", JSON.stringify({ workId: area.workId, areaName: area["Area"] }));
           window.location.href = "task-details.html";
         };
         box.appendChild(btn);
       }
-    });
+    }
   }
 
   window.adjustDate = (n) => { workDate.setDate(workDate.getDate() + n); loadData(); };
   window.toggleCover = () => document.getElementById("coverBox").classList.toggle("hidden");
-  
   window.updateAssignment = (val) => { 
     if(!val) return; 
     currentAssign = val; 
-    // Update session so it persists if they refresh
     session.assignment = val;
     sessionStorage.setItem("currentEmployee", JSON.stringify(session));
     loadData(); 
     document.getElementById("coverBox").classList.add("hidden"); 
   };
-
   window.showV2 = () => { document.getElementById("view2").classList.remove("hidden"); document.getElementById("view3").classList.add("hidden"); };
   window.logout = () => { sessionStorage.clear(); window.location.href = "index.html"; };
 
