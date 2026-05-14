@@ -1,3 +1,4 @@
+<!-- Purpose: Schedule Dashboard and Task Counting | Location: schedule.html -->
 <!DOCTYPE html>
 <html>
 <head>
@@ -136,33 +137,44 @@
       }
     });
 
-    // ⚡ SPEED OPTIMIZATION: Fetch all tasks concurrently before drawing buttons
+    // ⚡ SPEED OPTIMIZATION: Chunked Firestore Queries
     document.getElementById("categoryButtons").innerHTML = "<p style='text-align:center; font-weight:bold; color:#1976d2; grid-column: 1/-1;'>Loading Tasks...</p>";
 
-    const taskPromises = matchedAreas.map(async (area) => {
-      const cleanId = String(area.workId).toLowerCase().trim();
-      const tQuery = query(collection(db, "tasks"), where("workId", "==", cleanId));
+    const workIds = matchedAreas.map(a => String(a.workId).toLowerCase().trim()).filter(id => id !== "undefined" && id !== "");
+    const uniqueWorkIds = [...new Set(workIds)];
+    
+    let taskMap = {};
+    uniqueWorkIds.forEach(id => taskMap[id] = { total: 0, completed: 0 });
+
+    const chunks = [];
+    for (let i = 0; i < uniqueWorkIds.length; i += 10) {
+      chunks.push(uniqueWorkIds.slice(i, i + 10));
+    }
+
+    const taskPromises = chunks.map(async (chunk) => {
+      const tQuery = query(collection(db, "tasks"), where("workId", "in", chunk));
       const tSnap = await getDocs(tQuery);
-      
-      let total = tSnap.size;
-      let completed = 0;
-      
       tSnap.forEach(doc => {
-        if (doc.data().isDone === true) {
-          completed++;
+        const data = doc.data();
+        const wid = String(data.workId).toLowerCase().trim();
+        if (taskMap[wid]) {
+          taskMap[wid].total++;
+          if (data.isDone === true || String(data.isDone).toLowerCase() === "true") {
+            taskMap[wid].completed++;
+          }
         }
       });
-
-      // Save counts into memory for instant access later
-      area.taskTotal = total;
-      area.taskCompleted = completed;
-      return area;
     });
 
-    // Wait for all task counts to finish loading
     await Promise.all(taskPromises);
 
-    // Draw UI instantly from memory
+    // Reattach memory mapping back to the areas
+    matchedAreas.forEach(area => {
+      const wid = String(area.workId).toLowerCase().trim();
+      area.taskTotal = taskMap[wid] ? taskMap[wid].total : 0;
+      area.taskCompleted = taskMap[wid] ? taskMap[wid].completed : 0;
+    });
+
     drawCategories();
   }
 
@@ -184,7 +196,6 @@
       if (totalRooms > 0) {
         let completedRooms = 0;
         
-        // Check memory for every room in this category
         for (const areaName of uniqueRooms) {
           const areaObj = filtered.find(a => a["Area"] === areaName);
           
@@ -226,7 +237,6 @@
       if (!seen.has(area["Area"])) {
         seen.add(area["Area"]);
         
-        // Grab pre-calculated counts from memory
         const total = area.taskTotal || 0;
         const completed = area.taskCompleted || 0;
 
@@ -248,8 +258,7 @@
               workId: cleanId, 
               areaName: area["Area"] 
           }));
-          window.location.href = "task.html
-"; 
+          window.location.href = "tasks.html"; 
         };
         box.appendChild(btn);
       }
@@ -273,3 +282,4 @@
 </script>
 </body>
 </html>
+<!-- End Schedule Dashboard and Task Counting -->
