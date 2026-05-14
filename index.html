@@ -37,53 +37,61 @@
   const app = initializeApp(firebaseConfig);
   const db = getFirestore(app);
 
-window.handleLogin = async function() {
-  const pinValue = document.getElementById("pinInput").value;
-  const error = document.getElementById("errorMsg");
-  error.style.display = "none";
+  // --- THIS IS THE LOGIN FUNCTION ---
+  window.handleLogin = async function() {
+    const pinValue = document.getElementById("pinInput").value;
+    const error = document.getElementById("errorMsg");
+    error.style.display = "none";
 
-  try {
-    // 1. Get Building Mode
-    const modeSnap = await getDoc(doc(db, "settings", "housekeepingMode"));
-    const mode = (modeSnap.exists() ? (modeSnap.data().settingValue || modeSnap.data().value) : "two").toLowerCase().trim();
+    try {
+      // 1. Get Building Mode
+      const modeSnap = await getDoc(doc(db, "settings", "housekeepingMode"));
+      const mode = (modeSnap.exists() ? (modeSnap.data().settingValue || modeSnap.data().value) : "two").toLowerCase().trim();
 
-    // 2. Search Employees for the PIN (Checking both String and Number versions)
-    const q = query(collection(db, "employees"), where("pin", "in", [pinValue, Number(pinValue)]));
-    const empSnap = await getDocs(q);
+      // 2. Search Employees for the PIN (Fixes the "Blue Number" issue)
+      const q = query(collection(db, "employees"), where("pin", "in", [pinValue, Number(pinValue)]));
+      const empSnap = await getDocs(q);
 
-    if (!empSnap.empty) {
-      const empData = empSnap.docs[0].data();
-      
-      // 3. Check if they are an Admin or Employee
-      if (empData.role && empData.role.toLowerCase() === "admin") {
-        // If Role is Admin, go to Admin Panel
-        sessionStorage.setItem("currentEmployee", JSON.stringify({ firstName: empData.firstName || empData.name, role: "admin" }));
-        window.location.href = "admin.html";
+      if (!empSnap.empty) {
+        const empData = empSnap.docs[0].data();
+        
+        // 3. Assignment Fallback (Fixes the "undefined" error)
+        let finalAssign = "";
+        if (mode === "three") {
+            finalAssign = empData.mode3_assign || empData.assignment || "Floor Not Set";
+        } else {
+            finalAssign = empData.mode2_assign || empData.assignment || "Schedule Not Set";
+        }
+        
+        // 4. Role Check
+        const role = String(empData.role || "").toLowerCase();
+        if (role === "admin") {
+          sessionStorage.setItem("currentEmployee", JSON.stringify({ firstName: empData.firstName || empData.name, role: "admin" }));
+          window.location.href = "admin.html";
+        } else {
+          sessionStorage.setItem("currentEmployee", JSON.stringify({
+            firstName: empData.firstName || empData.name,
+            assignment: finalAssign
+          }));
+          window.location.href = "schedule.html";
+        }
       } else {
-        // If Role is Employee, go to Schedule
-        const assignment = (mode === "three") ? empData.mode3_assign : empData.mode2_assign;
-        sessionStorage.setItem("currentEmployee", JSON.stringify({
-          firstName: empData.firstName || empData.name,
-          assignment: assignment
-        }));
-        window.location.href = "schedule.html";
+        // 5. Master Pass Fallback
+        const adminSnap = await getDoc(doc(db, "settings", "admin"));
+        const masterPass = adminSnap.exists() ? (adminSnap.data().Password || adminSnap.data().password) : null;
+        
+        if (masterPass && pinValue === String(masterPass)) {
+          window.location.href = "admin.html";
+        } else {
+          error.style.display = "block";
+        }
       }
-    } else {
-      // 4. Final fallback: Check the Master Admin password in Settings
-      const adminSnap = await getDoc(doc(db, "settings", "admin"));
-      const masterPass = adminSnap.exists() ? (adminSnap.data().Password || adminSnap.data().password) : null;
-      
-      if (masterPass && pinValue === String(masterPass)) {
-        window.location.href = "admin.html";
-      } else {
-        error.style.display = "block";
-      }
+    } catch (err) {
+      console.error("Login Error:", err);
+      alert("System Error. Check connection.");
     }
-  } catch (err) {
-    console.error("Login Error:", err);
-    alert("System Error. Check connection.");
-  }
-};
+  };
+</script>
 </script>
 </body>
 </html>
