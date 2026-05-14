@@ -165,7 +165,7 @@
         btn.innerHTML = `<div style="font-size: 22px;">${area["Area"]}</div>`;
         btn.onclick = () => {
           sessionStorage.setItem("selectedWork", JSON.stringify({ workId: area.workId, areaName: area["Area"] }));
-          window.location.href = "tasks.html";
+          window.location.href = "task-details.html";
         };
         box.appendChild(btn);
       }
