@@ -673,13 +673,26 @@
     <div class="assignment-title" id="adminIssuesAssignmentTitle"></div>
     <h2>Issues</h2>
 
+    <label>Date</label>
+    <input
+      type="date"
+      id="issueDatePicker"
+      onchange="loadFilteredIssues()"
+    >
+
     <label>Status</label>
-    <select id="issueStatusFilter" onchange="drawIssueList()">
+    <select id="issueStatusFilter" onchange="loadFilteredIssues()">
       <option value="Open">Open</option>
       <option value="Needs Follow-Up">Needs Follow-Up</option>
       <option value="Resolved">Resolved</option>
+      <option value="Deleted">Deleted</option>
       <option value="All">All</option>
     </select>
+
+    <div class="button-row">
+      <button class="green" onclick="loadFilteredIssues()">LOAD</button>
+      <button class="yellow" onclick="loadAllIssues()">LOAD ALL</button>
+    </div>
 
     <label>Search</label>
     <input id="issueSearchInput" placeholder="Room, employee, reason" oninput="drawIssueList()">
@@ -2427,6 +2440,56 @@
   ========================== */
 
   async function openIssues() {
+    document.getElementById("issueDatePicker").value = currentWorkDateISO;
+    document.getElementById("issueStatusFilter").value = "Open";
+    document.getElementById("issueSearchInput").value = "";
+
+    await loadFilteredIssues();
+
+    updateAssignmentTitles();
+    showAdminView("adminIssuesView");
+  }
+
+  async function loadFilteredIssues() {
+    showLoading();
+
+    const picker = document.getElementById("issueDatePicker");
+    const selectedDate = picker && picker.value ? picker.value : currentWorkDateISO;
+    const statusFilter = document.getElementById("issueStatusFilter").value;
+
+    currentWorkDateISO = selectedDate;
+    updateDateDisplay();
+
+    const issueQuery = query(
+      collection(db, "issue_logs"),
+      where("workDateISO", "==", selectedDate),
+      where("schedule", "==", currentAssignment)
+    );
+
+    const snap = await getDocs(issueQuery);
+
+    allIssues = snap.docs.map(function(issueDoc) {
+      return {
+        id: issueDoc.id,
+        ...issueDoc.data()
+      };
+    });
+
+    allIssues = allIssues.sort(function(a, b) {
+      const aValue = String(a.createdDate || "") + " " + String(a.createdTime || "");
+      const bValue = String(b.createdDate || "") + " " + String(b.createdTime || "");
+      return bValue.localeCompare(aValue);
+    });
+
+    drawIssueList();
+
+    hideLoading();
+  }
+
+  async function loadAllIssues() {
+    const ok = confirm("Load every issue record?");
+    if (!ok) return;
+
     showLoading();
 
     const snap = await getDocs(collection(db, "issue_logs"));
@@ -2444,16 +2507,10 @@
       return bValue.localeCompare(aValue);
     });
 
-    await syncResolvedIssuesToAreaStatus();
-
-    document.getElementById("issueStatusFilter").value = "Open";
-    document.getElementById("issueSearchInput").value = "";
-
+    document.getElementById("issueStatusFilter").value = "All";
     drawIssueList();
 
     hideLoading();
-    updateAssignmentTitles();
-    showAdminView("adminIssuesView");
   }
 
   function drawIssueList() {
@@ -2645,20 +2702,10 @@
   }
 
   function isStatusMatchForIssue(statusData, issue, scheduleValue) {
-    const issueEmployeeId = String(issue.employeeId || "").trim();
-    const issueEmployeeName = normalizeText(issue.employeeName || "");
     const issueAreaId = String(issue.areaId || "").trim();
     const issueAreaName = normalizeText(issue.areaName || "");
 
     if (scheduleValue && String(statusData.schedule || "") !== scheduleValue) {
-      return false;
-    }
-
-    if (issueEmployeeId && String(statusData.employeeId || "") !== issueEmployeeId) {
-      return false;
-    }
-
-    if (!issueEmployeeId && issueEmployeeName && normalizeText(statusData.employeeName || "") !== issueEmployeeName) {
       return false;
     }
 
@@ -3537,6 +3584,8 @@
 
   window.openEmployees = openEmployees;
   window.openIssues = openIssues;
+  window.loadFilteredIssues = loadFilteredIssues;
+  window.loadAllIssues = loadAllIssues;
   window.openIssueReasons = openIssueReasons;
   window.openDailyStatus = openDailyStatus;
   window.changeDailyStatusDate = changeDailyStatusDate;
