@@ -1330,12 +1330,14 @@ select.appendChild(blankOption);
     if (areAllTaskButtonsDone()) {
       const undoConfirmed = await showCustomConfirm("Undo all tasks?");
       if (!undoConfirmed) return;
+      await savePopupActionLog("UNDO_ALL_TASK_BUTTONS");
       uncheckAllTasks();
       return;
     }
 
     const confirmed = await showCustomConfirm("All tasks done?");
     if (!confirmed) return;
+    await savePopupActionLog("MARK_ALL_TASK_BUTTONS_DONE");
     checkAllTasks();
   }
 
@@ -1440,6 +1442,8 @@ select.appendChild(blankOption);
   async function undoCurrentAreaCompletion() {
     showLoading();
 
+    await savePopupActionLog("UNDO_ROOM_DONE");
+
     const statusId = makeStatusId(currentAreaId);
     const statusRef = doc(db, "task_area_status", statusId);
 
@@ -1454,8 +1458,41 @@ select.appendChild(blankOption);
     showView(3);
   }
 
+  async function savePopupActionLog(actionName) {
+    const logId = cleanId([
+      "popup",
+      currentWorkDateISO,
+      employeeId,
+      currentAssignment,
+      currentAreaId || "no_area",
+      actionName,
+      Date.now()
+    ].join("_"));
+
+    await setDoc(doc(db, "popup_action_logs", logId), {
+      logId: logId,
+      employeeId: String(employeeId || ""),
+      employeeName: employeeName,
+      action: actionName,
+      schedule: currentAssignment,
+      modeType: getModeTypeForAssignment(currentAssignment),
+      areaId: currentAreaId || "",
+      areaName: currentAreaName || "",
+      category: selectedCategory || "",
+      workDateISO: currentWorkDateISO,
+      workDate: currentWorkDateDisplay,
+      weekday: currentWorkDayName,
+      selectedDay: selectedWeeklyDayName || currentWorkDayName,
+      clickedTime: getTimeNow(),
+      timestamp: Date.now(),
+      updatedAt: serverTimestamp()
+    }, { merge: true });
+  }
+
   async function saveCurrentAreaComplete() {
     showLoading();
+
+    await savePopupActionLog("MARK_AREA_DONE");
 
     const taskResults = {};
 
