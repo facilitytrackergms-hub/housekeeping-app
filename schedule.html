@@ -100,6 +100,16 @@
       margin-bottom: 0;
     }
 
+    .user-name-label {
+      text-align: center;
+      font-size: 13px;
+      font-weight: bold;
+      color: #555;
+      margin: -2px 0 6px;
+      line-height: 1.1;
+    }
+
+
     .date-row {
       display: flex;
       align-items: center;
@@ -355,6 +365,7 @@
     </div>
 
     <div class="top-info-box">
+      <div id="userNameLabel" class="user-name-label"></div>
       <h2 id="assignmentTitle"></h2>
       <button id="coverScheduleButton" class="cover-btn" onclick="showCoverScheduleDropdown()">COVER SCHEDULE</button>
       <select id="coverScheduleSelect" class="hidden" onchange="changeCoverSchedule()"></select>
@@ -518,6 +529,7 @@
   let customConfirmYesValue = true;
   let customConfirmNoValue = false;
 
+  document.getElementById("userNameLabel").innerText = employeeName;
   document.getElementById("assignmentTitle").innerText = currentAssignment;
 
   startSchedule();
