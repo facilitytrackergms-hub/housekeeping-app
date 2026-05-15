@@ -942,11 +942,11 @@ select.appendChild(blankOption);
 
       if (categoryTasks.length === 0) return;
 
-      const counts = getTaskCounts(categoryTasks);
+      const counts = getAreaCounts(categoryTasks);
       const btn = document.createElement("button");
 
-      btn.innerText = category + " " + counts.completed + "/" + categoryTasks.length;
-      btn.className = getProgressColor(counts.completed, counts.incomplete, categoryTasks.length);
+      btn.innerText = category + " " + counts.completed + "/" + counts.total;
+      btn.className = getProgressColor(counts.completed, counts.incomplete, counts.total);
 
       btn.onclick = function() {
         selectedCategory = category;
@@ -1047,6 +1047,40 @@ select.appendChild(blankOption);
 
 
   /* 11 - COUNTS */
+
+  function getAreaCounts(tasks) {
+    const areaIds = [];
+    const used = {};
+    let completed = 0;
+    let incomplete = 0;
+
+    tasks.forEach(function(task) {
+      if (!task.areaId || used[task.areaId]) return;
+      used[task.areaId] = true;
+      areaIds.push(task.areaId);
+    });
+
+    areaIds.forEach(function(areaId) {
+      const areaTasks = tasks.filter(function(task) {
+        return task.areaId === areaId;
+      });
+
+      const counts = getTaskCounts(areaTasks);
+      const total = areaTasks.length;
+
+      if (total > 0 && counts.completed >= total && counts.incomplete === 0) {
+        completed++;
+      } else if (counts.completed > 0 || counts.incomplete > 0) {
+        incomplete++;
+      }
+    });
+
+    return {
+      completed: completed,
+      incomplete: incomplete,
+      total: areaIds.length
+    };
+  }
 
   function getTaskCounts(tasks) {
     let completed = 0;
