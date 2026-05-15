@@ -686,7 +686,13 @@ data[status.areaId] = status;
 
 
   async function loadActiveIssueData() {
-    const snap = await getDocs(collection(db, "issue_logs"));
+    const issueQuery = query(
+      collection(db, "issue_logs"),
+      where("workDateISO", "==", currentWorkDateISO),
+      where("schedule", "==", currentAssignment)
+    );
+
+    const snap = await getDocs(issueQuery);
     const data = {};
 
     snap.docs.forEach(function(item) {
@@ -694,14 +700,6 @@ data[status.areaId] = status;
       const status = String(issue.status || "Open");
 
       if (status === "Resolved" || status === "Deleted") return;
-
-      const issueDate = issue.workDateISO || issue.createdDate || "";
-      if (String(issueDate || "") !== String(currentWorkDateISO || "")) return;
-
-      if (issue.employeeId && String(issue.employeeId || "") !== String(employeeId || "")) return;
-      if (issue.employeeName && String(issue.employeeName || "") !== String(employeeName || "")) return;
-
-      if (issue.schedule && String(issue.schedule || "") !== String(currentAssignment || "")) return;
 
       const areaId = String(issue.areaId || "");
       const areaName = String(issue.areaName || "");
