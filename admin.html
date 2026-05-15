@@ -89,6 +89,21 @@
       border-color: #0d47a1;
     }
 
+
+    .admin-employee-shortcut {
+      margin: 0 0 8px;
+    }
+
+    .admin-employee-shortcut button {
+      min-height: 38px;
+      font-size: 14px;
+      padding: 8px 6px;
+      margin: 0;
+      border-radius: 12px;
+      background: #1565c0;
+      color: white;
+    }
+
     h2, h3 {
       text-align: center;
       margin-top: 0;
@@ -487,6 +502,10 @@
     <div class="admin-mode-toggle-row">
       <button id="modeTwoButton" type="button" onclick="setHousekeepingMode('two')">Mode 2</button>
       <button id="modeThreeButton" type="button" onclick="setHousekeepingMode('three')">Mode 3</button>
+    </div>
+
+    <div class="admin-employee-shortcut">
+      <button type="button" onclick="openEmployees()">Edit Employees Info</button>
     </div>
 
     <label>Schedule</label>
@@ -1571,8 +1590,8 @@
     }
 
     const buttons = currentAssignment === "Laundry"
-      ? ["Weekly Laundry", "Daily Laundry", "Daily Status", "Issues", "Issue Reasons", "Reports", "Reassignment", "Employees", "Logout"]
-      : ["Common Area", "Weekly Room", "Daily Room", "Dehumidifier", "Daily Status", "Issues", "Issue Reasons", "Reports", "Reassignment", "Employees", "Logout"];
+      ? ["Weekly Laundry", "Daily Laundry", "Daily Status", "Issues", "Issue Reasons", "Reports", "Reassignment", "Logout"]
+      : ["Common Area", "Weekly Room", "Daily Room", "Dehumidifier", "Daily Status", "Issues", "Issue Reasons", "Reports", "Reassignment", "Logout"];
 
     buttons.forEach(function(item) {
       const btn = document.createElement("button");
