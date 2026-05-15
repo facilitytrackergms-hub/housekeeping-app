@@ -548,9 +548,10 @@
 
     try {
       updateDateDisplay();
-      updateDateTitles();
-
+      
       housekeepingMode = await loadHousekeepingMode();
+       updateDateTitles();
+      
       allSchedules = await loadSchedules();
       loadCoverScheduleDropdown();
 
