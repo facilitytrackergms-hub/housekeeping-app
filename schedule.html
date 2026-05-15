@@ -965,6 +965,7 @@ select.appendChild(blankOption);
 
     header.innerText =
       employeeName + " • " +
+      homeAssignment + " • " +
       dayText + " • " +
       modeText + " • " +
       getDisplayAssignment();
@@ -1854,6 +1855,12 @@ async function saveReasonIfNeeded(reasonText) {
 
   function showView(num) {
     updateMiniHeader();
+
+    const header = document.getElementById("miniHeader");
+    if (header) {
+      if (num === 2) header.classList.add("hidden");
+      else header.classList.remove("hidden");
+    }
 
     [2, 3, 4].forEach(function(viewNumber) {
       document.getElementById("view" + viewNumber).classList.add("hidden");
