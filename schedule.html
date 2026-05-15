@@ -86,6 +86,23 @@
     .back { background: #555 !important; color: white !important; }
     .hidden { display: none !important; }
 
+    .mini-header {
+      width: 100%;
+      text-align: center;
+      font-size: 11px;
+      font-weight: bold;
+      color: #333;
+      background: #f7f7f7;
+      border: 1px solid #ddd;
+      border-radius: 10px;
+      padding: 4px 6px;
+      margin: 0 0 6px;
+      line-height: 1.15;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
     .top-info-box,
     .date-section-box {
       border: 2px solid #e0e0e0;
@@ -375,6 +392,8 @@
 
 <div class="card">
 
+  <div id="miniHeader" class="mini-header"></div>
+
   <div id="view2">
     <div class="date-section-box">
       <div class="date-row">
@@ -396,10 +415,6 @@
   </div>
 
   <div id="view3" class="hidden">
-    <div class="view-center">
-      <div class="view-tag" id="areaViewTag">VIEW 3</div>
-    </div>
-
     <div id="areaBigDatePickerBox" class="top-date-box hidden">
       <h3 id="areaDateTitle"></h3>
       <input type="date" id="bigDatePicker" onchange="changeWorkDateFromBigPicker()">
@@ -410,10 +425,6 @@
   </div>
 
   <div id="view4" class="hidden">
-    <div class="view-center">
-      <div class="view-tag">VIEW 7</div>
-    </div>
-
     <button id="allTasksButton" class="green" onclick="confirmCheckAllTasks()">ALL TASKS</button>
 
     <div id="checklistBox">
@@ -926,18 +937,38 @@ select.appendChild(blankOption);
       ? "MODE 3"
       : "MODE 2";
 
-  document.getElementById("assignmentTitle").innerText =
-    currentAssignment === homeAssignment
-      ? currentAssignment
-      : currentAssignment + " COVER";
+  const assignmentText = getDisplayAssignment();
+
+  document.getElementById("assignmentTitle").innerText = assignmentText;
 
   document.getElementById("modeLabel").innerText =
     modeText + " • " + currentAssignment;
 
   document.getElementById("workDateTitle").innerText = selectedWeeklyDayName || currentWorkDayName;
   document.getElementById("areaDateTitle").innerText = selectedWeeklyDayName || currentWorkDayName;
+  updateMiniHeader();
   drawWeekdayButtons();
 }
+
+  function getDisplayAssignment() {
+    return currentAssignment === homeAssignment
+      ? currentAssignment
+      : currentAssignment + " COVER";
+  }
+
+  function updateMiniHeader() {
+    const header = document.getElementById("miniHeader");
+    if (!header) return;
+
+    const modeText = housekeepingMode === "three" ? "Mode 3" : "Mode 2";
+    const dayText = selectedWeeklyDayName || currentWorkDayName || "";
+
+    header.innerText =
+      employeeName + " • " +
+      dayText + " • " +
+      modeText + " • " +
+      getDisplayAssignment();
+  }
 
   function drawWeekdayButtons() {
     const box = document.getElementById("weekdayButtons");
@@ -1097,6 +1128,7 @@ select.appendChild(blankOption);
 
   function setAreaViewTag(category) {
     const tag = document.getElementById("areaViewTag");
+    if (!tag) return;
 
     if (category === "Common Area") tag.innerText = "VIEW 3";
     else if (category === "Weekly Room") tag.innerText = "VIEW 4";
@@ -1821,6 +1853,8 @@ async function saveReasonIfNeeded(reasonText) {
   }
 
   function showView(num) {
+    updateMiniHeader();
+
     [2, 3, 4].forEach(function(viewNumber) {
       document.getElementById("view" + viewNumber).classList.add("hidden");
     });
@@ -1895,3 +1929,4 @@ async function saveReasonIfNeeded(reasonText) {
 
 </body>
 </html>
+
