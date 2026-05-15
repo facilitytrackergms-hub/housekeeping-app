@@ -677,11 +677,10 @@
     snap.docs.forEach(function(item) {
       const status = item.data();
 
-      if (String(status.employeeId || "") !== String(employeeId || "")) return;
-      if (String(status.schedule || "") !== String(currentAssignment || "")) return;
-      if (!status.areaId) return;
+if (String(status.schedule || "") !== String(currentAssignment || "")) return;
+if (!status.areaId) return;
 
-      data[status.areaId] = status;
+data[status.areaId] = status;
     });
 
     return data;
@@ -1512,14 +1511,13 @@ select.appendChild(blankOption);
     return note;
   }
 
-  function makeStatusId(areaId) {
-    return cleanId([
-      currentWorkDateISO,
-      employeeId,
-      currentAssignment,
-      areaId
-    ].join("_"));
-  }
+function makeStatusId(areaId) {
+  return cleanId([
+    currentWorkDateISO,
+    currentAssignment,
+    areaId
+  ].join("_"));
+}
 
   function makeHistoryId(areaId) {
     return cleanId([
