@@ -304,6 +304,33 @@
       line-height: 1.25;
     }
 
+    .status-card {
+      border: 1px solid #ccc;
+      border-radius: 14px;
+      padding: 10px;
+      margin: 8px 0;
+      background: #fafafa;
+    }
+
+    .status-card h3 {
+      text-align: left;
+      margin: 0 0 6px;
+      font-size: 18px;
+    }
+
+    .status-line {
+      font-size: 14px;
+      font-weight: bold;
+      margin: 3px 0;
+      color: #333;
+    }
+
+    .status-task-line {
+      font-size: 13px;
+      margin: 3px 0;
+      line-height: 1.25;
+    }
+
     /* =========================
        05 - LOADING SCREEN STYLE
     ========================== */
@@ -643,6 +670,55 @@
   </div>
 
   <!-- =========================
+       09C - ADMIN VIEW 8C - DAILY STATUS
+  ========================== -->
+
+  <div id="adminDailyStatusView" class="hidden">
+
+    <div class="view-center">
+      <div class="view-tag">ADMIN VIEW 8C - DAILY STATUS</div>
+    </div>
+
+    <div class="assignment-title" id="adminDailyStatusAssignmentTitle"></div>
+    <h2>Daily Status</h2>
+
+    <label>Date</label>
+    <input
+      type="date"
+      id="dailyStatusDatePicker"
+      onchange="changeDailyStatusDate()"
+    >
+
+    <label>Category</label>
+    <select id="dailyStatusCategoryFilter" onchange="drawDailyStatusList()">
+      <option value="All">All</option>
+      <option>Common Area</option>
+      <option>Weekly Room</option>
+      <option>Daily Room</option>
+      <option>Dehumidifier</option>
+      <option>Weekly Laundry</option>
+      <option>Daily Laundry</option>
+    </select>
+
+    <label>Status</label>
+    <select id="dailyStatusResultFilter" onchange="drawDailyStatusList()">
+      <option value="All">All</option>
+      <option value="Completed">Done</option>
+      <option value="Incomplete">Not Done / Issue</option>
+      <option value="Missing">No Save</option>
+    </select>
+
+    <label>Search</label>
+    <input id="dailyStatusSearchInput" placeholder="Room, employee, task" oninput="drawDailyStatusList()">
+
+    <div id="dailyStatusSummary" class="workload-card"></div>
+    <div id="dailyStatusList"></div>
+
+    <button class="back" onclick="backToAdminCategories()">BACK</button>
+
+  </div>
+
+  <!-- =========================
        10 - ADMIN VIEW 9 - EDIT EMPLOYEE
   ========================== -->
 
@@ -886,6 +962,7 @@
   let allAreasForDay = [];
   let allSubTasks = [];
   let allIssues = [];
+  let allStatusRecords = [];
   let currentAreaTasks = [];
   let currentEmployeeId = "";
   let currentEditingTaskId = "";
@@ -1052,6 +1129,7 @@
       "adminEditView",
       "adminEmployeesView",
       "adminIssuesView",
+      "adminDailyStatusView",
       "adminEmployeeEditView",
       "adminReassignmentView",
       "adminWorkloadView"
@@ -1071,6 +1149,7 @@
       "adminSubtaskAssignmentTitle",
       "adminEmployeesAssignmentTitle",
       "adminIssuesAssignmentTitle",
+      "adminDailyStatusAssignmentTitle",
       "adminEmployeeEditAssignmentTitle"
     ].forEach(function(id) {
       const el = document.getElementById(id);
@@ -1329,8 +1408,8 @@
     box.innerHTML = "";
 
     const buttons = currentAssignment === "Laundry"
-      ? ["Weekly Laundry", "Daily Laundry", "Issues", "Reports", "Reassignment", "Employees", "Logout"]
-      : ["Common Area", "Weekly Room", "Daily Room", "Dehumidifier", "Issues", "Reports", "Reassignment", "Employees", "Logout"];
+      ? ["Weekly Laundry", "Daily Laundry", "Daily Status", "Issues", "Reports", "Reassignment", "Employees", "Logout"]
+      : ["Common Area", "Weekly Room", "Daily Room", "Dehumidifier", "Daily Status", "Issues", "Reports", "Reassignment", "Employees", "Logout"];
 
     buttons.forEach(function(item) {
       const btn = document.createElement("button");
@@ -1346,6 +1425,8 @@
           btn.onclick = openEmployees;
         } else if (item === "Issues") {
           btn.onclick = openIssues;
+        } else if (item === "Daily Status") {
+          btn.onclick = openDailyStatus;
         } else if (item === "Reports") {
           btn.onclick = function() { window.location.href = "reports.html"; };
         } else if (item === "Reassignment") {
@@ -2662,6 +2743,197 @@
   }
 
   /* =========================
+     44C - DAILY STATUS
+  ========================== */
+
+  async function openDailyStatus() {
+    document.getElementById("dailyStatusDatePicker").value = currentWorkDateISO;
+    document.getElementById("dailyStatusCategoryFilter").value = "All";
+    document.getElementById("dailyStatusResultFilter").value = "All";
+    document.getElementById("dailyStatusSearchInput").value = "";
+    await loadDailyStatusRecords();
+    drawDailyStatusList();
+    updateAssignmentTitles();
+    showAdminView("adminDailyStatusView");
+  }
+
+  async function changeDailyStatusDate() {
+    const picker = document.getElementById("dailyStatusDatePicker");
+    if (!picker.value) return;
+    currentWorkDateISO = picker.value;
+    updateDateDisplay();
+    await loadDailyStatusRecords();
+    drawDailyStatusList();
+  }
+
+  async function loadDailyStatusRecords() {
+    showLoading();
+
+    const statusQuery = query(
+      collection(db, "task_area_status"),
+      where("workDateISO", "==", currentWorkDateISO)
+    );
+
+    const snap = await getDocs(statusQuery);
+
+    allStatusRecords = snap.docs
+      .map(function(statusDoc) {
+        return {
+          id: statusDoc.id,
+          ...statusDoc.data()
+        };
+      })
+      .filter(function(item) {
+        return String(item.schedule || "") === String(currentAssignment || "");
+      })
+      .sort(function(a, b) {
+        return String(a.areaName || "").localeCompare(String(b.areaName || ""));
+      });
+
+    hideLoading();
+  }
+
+  function drawDailyStatusList() {
+    const listBox = document.getElementById("dailyStatusList");
+    const summaryBox = document.getElementById("dailyStatusSummary");
+    const categoryFilter = document.getElementById("dailyStatusCategoryFilter").value;
+    const statusFilter = document.getElementById("dailyStatusResultFilter").value;
+    const searchText = String(document.getElementById("dailyStatusSearchInput").value || "").trim().toLowerCase();
+
+    listBox.innerHTML = "";
+
+    const expectedAreas = getExpectedAreasForDailyStatus(categoryFilter);
+    const statusByArea = {};
+
+    allStatusRecords.forEach(function(record) {
+      if (!record.areaId) return;
+      statusByArea[String(record.areaId)] = record;
+    });
+
+    let rows = expectedAreas.map(function(area) {
+      const record = statusByArea[String(area.workId || area.areaId || area.id)] || null;
+      return buildDailyStatusRow(area, record);
+    });
+
+    rows = rows.filter(function(row) {
+      if (categoryFilter !== "All" && row.category !== categoryFilter) return false;
+      if (statusFilter !== "All" && row.statusValue !== statusFilter) return false;
+
+      if (searchText) {
+        const combined = [
+          row.areaName,
+          row.employeeName,
+          row.category,
+          row.statusLabel,
+          row.taskText
+        ].join(" ").toLowerCase();
+
+        if (!combined.includes(searchText)) return false;
+      }
+
+      return true;
+    });
+
+    const doneCount = rows.filter(function(row) { return row.statusValue === "Completed"; }).length;
+    const issueCount = rows.filter(function(row) { return row.statusValue === "Incomplete"; }).length;
+    const missingCount = rows.filter(function(row) { return row.statusValue === "Missing"; }).length;
+
+    summaryBox.innerHTML =
+      '<h3>' + escapeHtml(currentAssignment + " - " + currentWorkDateISO) + '</h3>' +
+      '<div class="workload-row"><span>Done</span><span>' + doneCount + '</span></div>' +
+      '<div class="workload-row"><span>Not Done / Issue</span><span>' + issueCount + '</span></div>' +
+      '<div class="workload-row"><span>No Save</span><span>' + missingCount + '</span></div>' +
+      '<div class="workload-total">TOTAL: ' + rows.length + '</div>';
+
+    if (rows.length === 0) {
+      const empty = document.createElement("h3");
+      empty.innerText = "No records found.";
+      listBox.appendChild(empty);
+      return;
+    }
+
+    rows.forEach(function(row) {
+      const card = document.createElement("div");
+      card.className = "status-card";
+
+      const colorClass = row.statusValue === "Completed"
+        ? "green"
+        : row.statusValue === "Incomplete"
+          ? "yellow"
+          : "red";
+
+      card.innerHTML =
+        '<h3>' + escapeHtml(row.areaName) + '</h3>' +
+        '<div class="status-line">Status: ' + escapeHtml(row.statusLabel) + '</div>' +
+        '<div class="status-line">Category: ' + escapeHtml(row.category) + '</div>' +
+        '<div class="status-line">Employee: ' + escapeHtml(row.employeeName) + '</div>' +
+        '<div class="status-line">Count: ' + escapeHtml(row.countText) + '</div>' +
+        '<button class="' + colorClass + '">' + escapeHtml(row.statusLabel.toUpperCase()) + '</button>' +
+        row.taskHtml;
+
+      listBox.appendChild(card);
+    });
+  }
+
+  function getExpectedAreasForDailyStatus(categoryFilter) {
+    return allAreasForAssignment.filter(function(area) {
+      if (categoryFilter !== "All" && area.category !== categoryFilter) return false;
+
+      if (isWeeklyCategory(area.category)) {
+        return String(area.scheduleDay || "").trim().toLowerCase() === currentWorkDayName.toLowerCase();
+      }
+
+      return isAreaForCurrentDay(area);
+    });
+  }
+
+  function buildDailyStatusRow(area, record) {
+    const areaName = area.areaName || "Area";
+    const category = area.category || "";
+
+    if (!record) {
+      return {
+        areaName: areaName,
+        category: category,
+        employeeName: "",
+        statusValue: "Missing",
+        statusLabel: "No Save",
+        countText: "0/" + getTasksForWorkId(area.workId).length,
+        taskText: "",
+        taskHtml: ""
+      };
+    }
+
+    const completed = Number(record.completedCount || 0);
+    const incomplete = Number(record.incompleteCount || 0);
+    const total = Number(record.totalCount || completed + incomplete || 0);
+    const statusValue = incomplete > 0 ? "Incomplete" : "Completed";
+    const statusLabel = statusValue === "Completed" ? "Done" : "Not Done / Issue";
+    const tasks = record.tasks || {};
+    const taskKeys = Object.keys(tasks);
+    let taskText = "";
+    let taskHtml = "";
+
+    taskKeys.forEach(function(taskKey) {
+      const task = tasks[taskKey] || {};
+      const line = String(task.taskName || "Task") + " - " + String(task.status || "") + (task.reason ? " - " + task.reason : "");
+      taskText += " " + line;
+      taskHtml += '<div class="status-task-line">' + escapeHtml(line) + '</div>';
+    });
+
+    return {
+      areaName: areaName,
+      category: category,
+      employeeName: record.employeeName || "",
+      statusValue: statusValue,
+      statusLabel: statusLabel,
+      countText: completed + "/" + total,
+      taskText: taskText,
+      taskHtml: taskHtml
+    };
+  }
+
+  /* =========================
      45 - OPEN NEW EMPLOYEE
   ========================== */
 
@@ -3054,6 +3326,9 @@
 
   window.openEmployees = openEmployees;
   window.openIssues = openIssues;
+  window.openDailyStatus = openDailyStatus;
+  window.changeDailyStatusDate = changeDailyStatusDate;
+  window.drawDailyStatusList = drawDailyStatusList;
   window.drawIssueList = drawIssueList;
   window.markIssueFollowUp = markIssueFollowUp;
   window.resolveIssue = resolveIssue;
