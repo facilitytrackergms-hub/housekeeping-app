@@ -519,6 +519,7 @@
   let allTasksForSchedule = [];
   let allTasksForDay = [];
   let progressData = {};
+  let activeIssueData = {};
 
   let selectedCategory = "";
   let currentAreaId = "";
@@ -560,6 +561,7 @@
       allAreasForSchedule = await loadAreasForAssignment(currentAssignment);
       allTasksForSchedule = await loadTasksForAssignment(currentAssignment);
       progressData = await loadProgressData();
+      activeIssueData = await loadActiveIssueData();
 
       allTasksForDay = buildTasksForToday(modeType);
 
@@ -660,6 +662,57 @@
     });
 
     return data;
+  }
+
+
+  async function loadActiveIssueData() {
+    const snap = await getDocs(collection(db, "issue_logs"));
+    const data = {};
+
+    snap.docs.forEach(function(item) {
+      const issue = item.data();
+      const status = String(issue.status || "Open");
+
+      if (status === "Resolved" || status === "Deleted") return;
+
+      const issueDate = issue.workDateISO || issue.createdDate || "";
+      if (String(issueDate || "") !== String(currentWorkDateISO || "")) return;
+
+      if (issue.employeeId && String(issue.employeeId || "") !== String(employeeId || "")) return;
+      if (issue.employeeName && String(issue.employeeName || "") !== String(employeeName || "")) return;
+
+      if (issue.schedule && String(issue.schedule || "") !== String(currentAssignment || "")) return;
+
+      const areaId = String(issue.areaId || "");
+      const areaName = String(issue.areaName || "");
+      const taskName = String(issue.taskName || "").trim().toLowerCase();
+
+      if (areaId && taskName) {
+        data[areaId + "|" + taskName] = true;
+      }
+
+      if (areaName && taskName) {
+        data[areaName.trim().toLowerCase() + "|" + taskName] = true;
+      }
+    });
+
+    return data;
+  }
+
+  function hasActiveIssueForTask(task) {
+    const taskName = String(task.taskName || "").trim().toLowerCase();
+    const areaIdKey = String(task.areaId || "") + "|" + taskName;
+    const areaNameKey = String(task.areaName || "").trim().toLowerCase() + "|" + taskName;
+
+    return activeIssueData[areaIdKey] === true || activeIssueData[areaNameKey] === true;
+  }
+
+  function getEffectiveTaskStatus(task, savedStatus) {
+    if (savedStatus === "Incomplete" && !hasActiveIssueForTask(task)) {
+      return "Completed";
+    }
+
+    return savedStatus;
   }
 
 
@@ -1001,9 +1054,11 @@ select.appendChild(blankOption);
 
     tasks.forEach(function(task) {
       const areaStatus = progressData[task.areaId] || {};
-      const taskStatus = areaStatus.tasks && areaStatus.tasks[task.taskId]
+      const savedStatus = areaStatus.tasks && areaStatus.tasks[task.taskId]
         ? areaStatus.tasks[task.taskId].status
         : "";
+
+      const taskStatus = getEffectiveTaskStatus(task, savedStatus);
 
       if (taskStatus === "Completed") completed++;
       else if (taskStatus === "Incomplete") incomplete++;
@@ -1124,7 +1179,8 @@ select.appendChild(blankOption);
 
     currentTaskList.forEach(function(task, index) {
       const savedStatus = savedTasks[task.taskId] ? savedTasks[task.taskId].status : "";
-      const isCompleted = savedStatus === "Completed";
+      const taskStatus = getEffectiveTaskStatus(task, savedStatus);
+      const isCompleted = taskStatus === "Completed";
 
       const div = document.createElement("div");
       div.className = isCompleted ? "check-row task-done" : "check-row task-missing";
