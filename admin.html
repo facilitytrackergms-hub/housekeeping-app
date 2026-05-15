@@ -542,7 +542,7 @@
 
     <div class="button-row-three">
       <button class="green" onclick="saveAdminAreaOnly()">SAVE</button>
-      <button class="red" id="deleteAreaButton" onclick="deleteAdminArea()">DELETE AREA</button>
+     <button class="red" id="deleteAreaButton" onclick="deleteAdminArea()">DELETE ROOM</button>
       <button class="back" onclick="backToAdminAreas()">BACK</button>
     </div>
 
@@ -1703,18 +1703,18 @@
      32 - AREA SCHEDULE DAY
   ========================== */
 
-  function setAreaScheduleBoxVisibility() {
-    const box = document.getElementById("adminAreaScheduleBox");
-    const deleteButton = document.getElementById("deleteAreaButton");
+function setAreaScheduleBoxVisibility() {
+  const box = document.getElementById("adminAreaScheduleBox");
+  const deleteButton = document.getElementById("deleteAreaButton");
 
-    if (isWeeklyCategory(selectedCategory)) {
-      box.classList.remove("hidden");
-      deleteButton.innerText = "DELETE DAY";
-    } else {
-      box.classList.add("hidden");
-      deleteButton.innerText = "DELETE AREA";
-    }
+  if (isWeeklyCategory(selectedCategory)) {
+    box.classList.remove("hidden");
+    deleteButton.innerText = "DELETE ROOM";
+  } else {
+    box.classList.add("hidden");
+    deleteButton.innerText = "DELETE AREA";
   }
+}
 
   function changeAdminAreaScheduleDay() {
     selectedAreaScheduleDay = document.getElementById("adminAreaScheduleInput").value;
@@ -2059,33 +2059,77 @@
      42 - DELETE WHOLE AREA / DAY
   ========================== */
 
-  async function deleteAdminArea() {
-    if (!selectedAreaDocId) {
-      backToAdminAreas();
-      return;
-    }
+async function deleteAdminArea() {
+  if (!selectedAreaDocId) {
+    backToAdminAreas();
+    return;
+  }
 
-    const ok = confirm(isWeeklyCategory(selectedCategory)
-      ? "Delete this day and all sub tasks?"
-      : "Delete this whole area and all sub tasks?");
+  if (isWeeklyCategory(selectedCategory)) {
+    const choice = prompt(
+      "Delete room " + selectedArea + "?\n\n" +
+      "Type 1 = delete only " + selectedAreaScheduleDay + "\n" +
+      "Type 2 = delete from all days\n" +
+      "Leave blank = cancel"
+    );
 
-    if (!ok) return;
+    if (choice !== "1" && choice !== "2") return;
 
     showLoading();
 
-    const tasksToDelete = getTasksForWorkId(selectedAreaWorkId);
+    if (choice === "1") {
+      const tasksToDelete = getTasksForWorkId(selectedAreaWorkId);
 
-    for (let i = 0; i < tasksToDelete.length; i++) {
-      await deleteDoc(doc(db, "tasks", tasksToDelete[i].id));
+      for (let i = 0; i < tasksToDelete.length; i++) {
+        await deleteDoc(doc(db, "tasks", tasksToDelete[i].id));
+      }
+
+      await deleteDoc(doc(db, "areas", selectedAreaDocId));
     }
 
-    await deleteDoc(doc(db, "areas", selectedAreaDocId));
+    if (choice === "2") {
+      const matchingAreas = allAreas.filter(function(area) {
+        return area.category === selectedCategory &&
+          getAreaAssignment(area) === currentAssignment &&
+          String(area.areaName || "").trim().toLowerCase() === String(selectedArea || "").trim().toLowerCase();
+      });
+
+      for (let a = 0; a < matchingAreas.length; a++) {
+        const area = matchingAreas[a];
+        const tasksToDelete = getTasksForWorkId(area.workId);
+
+        for (let t = 0; t < tasksToDelete.length; t++) {
+          await deleteDoc(doc(db, "tasks", tasksToDelete[t].id));
+        }
+
+        await deleteDoc(doc(db, "areas", area.id));
+      }
+    }
+
     await loadAdminTasks();
     drawAdminAreaButtons(selectedCategory);
     showAdminView("adminAreaView");
     hideLoading();
+    return;
   }
 
+  const ok = confirm("Delete this whole area and all sub tasks?");
+  if (!ok) return;
+
+  showLoading();
+
+  const tasksToDelete = getTasksForWorkId(selectedAreaWorkId);
+
+  for (let i = 0; i < tasksToDelete.length; i++) {
+    await deleteDoc(doc(db, "tasks", tasksToDelete[i].id));
+  }
+
+  await deleteDoc(doc(db, "areas", selectedAreaDocId));
+  await loadAdminTasks();
+  drawAdminAreaButtons(selectedCategory);
+  showAdminView("adminAreaView");
+  hideLoading();
+}
   /* =========================
      43 - BACK BUTTONS
   ========================== */
