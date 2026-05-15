@@ -365,8 +365,9 @@
     </div>
 
     <div class="top-info-box">
-      <div id="userNameLabel" class="user-name-label"></div>
-      <h2 id="assignmentTitle"></h2>
+     <div id="userNameLabel" class="user-name-label"></div>
+<h2 id="assignmentTitle"></h2>
+<div id="modeLabel" class="user-name-label"></div>
       <button id="coverScheduleButton" class="cover-btn" onclick="showCoverScheduleDropdown()">COVER SCHEDULE</button>
       <select id="coverScheduleSelect" class="hidden" onchange="changeCoverSchedule()"></select>
     </div>
@@ -801,15 +802,24 @@
     currentWorkDateDisplay = mm + "/" + dd + "/" + yyyy;
   }
 
-  function updateDateTitles() {
-    document.getElementById("assignmentTitle").innerText =
-      currentAssignment === homeAssignment
-        ? currentAssignment
-        : currentAssignment + " COVER";
+ function updateDateTitles() {
 
-    document.getElementById("workDateTitle").innerText = currentWorkDayName;
-    document.getElementById("areaDateTitle").innerText = currentWorkDayName;
-  }
+  const modeText =
+    housekeepingMode === "three"
+      ? "MODE 3"
+      : "MODE 2";
+
+  document.getElementById("assignmentTitle").innerText =
+    currentAssignment === homeAssignment
+      ? currentAssignment
+      : currentAssignment + " COVER";
+
+  document.getElementById("modeLabel").innerText =
+    modeText + " • " + currentAssignment;
+
+  document.getElementById("workDateTitle").innerText = currentWorkDayName;
+  document.getElementById("areaDateTitle").innerText = currentWorkDayName;
+}
 
   function openCalendar() {
     const picker = document.getElementById("quickDatePicker");
