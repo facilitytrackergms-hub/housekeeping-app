@@ -101,6 +101,14 @@
       margin: 0 0 6px;
     }
 
+    .mode-label {
+      text-align: center;
+      font-size: 13px;
+      font-weight: bold;
+      margin: -2px 0 8px;
+      color: #555;
+    }
+
     .green {
       background: #2e7d32 !important;
       color: white !important;
@@ -390,6 +398,7 @@
     </div>
 
     <div class="assignment-title" id="adminAreaAssignmentTitle"></div>
+    <div class="mode-label" id="adminAreaModeLabel"></div>
     <h2 id="adminAreaTitle">Area</h2>
 
     <div id="adminAreaBigDatePickerBox" class="hidden">
@@ -1001,6 +1010,14 @@
       const el = document.getElementById(id);
       if (el) el.innerText = currentAssignment;
     });
+
+    const areaModeLabel = document.getElementById("adminAreaModeLabel");
+    if (areaModeLabel) {
+      areaModeLabel.innerText =
+        housekeepingMode === "three"
+          ? "MODE 3 ACTIVE"
+          : "MODE 2 ACTIVE";
+    }
   }
 
   /* =========================
