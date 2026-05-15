@@ -1705,19 +1705,23 @@
      32 - AREA SCHEDULE DAY
   ========================== */
 
-  function setAreaScheduleBoxVisibility() {
-    const box = document.getElementById("adminAreaScheduleBox");
-    const deleteButton = document.getElementById("deleteAreaButton");
+function setAreaScheduleBoxVisibility() {
+  const box = document.getElementById("adminAreaScheduleBox");
+  const deleteButton = document.getElementById("deleteAreaButton");
 
-    if (isWeeklyCategory(selectedCategory)) {
-      box.classList.remove("hidden");
-      deleteButton.innerText = "DELETE " + String(selectedAreaScheduleDay || "DAY").toUpperCase();
-    } else {
-      box.classList.add("hidden");
-      deleteButton.innerText = "DELETE AREA";
-    }
+  if (isWeeklyCategory(selectedCategory)) {
+    box.classList.remove("hidden");
+
+    deleteButton.innerText =
+      "DELETE " + selectedAreaScheduleDay.toUpperCase();
+
+  } else {
+    box.classList.add("hidden");
+    deleteButton.innerText = "DELETE AREA";
   }
+}
 
+function changeAdminAreaScheduleDay() {
   function changeAdminAreaScheduleDay() {
     selectedAreaScheduleDay = document.getElementById("adminAreaScheduleInput").value;
     closeAdminSubTaskEditor();
