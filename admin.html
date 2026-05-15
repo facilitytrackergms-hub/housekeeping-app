@@ -2310,6 +2310,8 @@
       return bValue.localeCompare(aValue);
     });
 
+    await syncResolvedIssuesToAreaStatus();
+
     document.getElementById("issueStatusFilter").value = "Open";
     document.getElementById("issueSearchInput").value = "";
 
@@ -2447,12 +2449,48 @@
 
   async function resolveLinkedAreaStatus(issue) {
     const workDateISO = issue.workDateISO || issue.createdDate || "";
-    const employeeIdValue = issue.employeeId || "";
     const scheduleValue = issue.schedule || currentAssignment || "";
+
+    if (!workDateISO) {
+      return false;
+    }
+
+    const exactUpdated = await resolveExactStatusMatch(issue, workDateISO, scheduleValue);
+
+    if (exactUpdated) {
+      return true;
+    }
+
+    const statusQuery = query(
+      collection(db, "task_area_status"),
+      where("workDateISO", "==", workDateISO)
+    );
+
+    const snap = await getDocs(statusQuery);
+
+    for (const statusDoc of snap.docs) {
+      const statusData = statusDoc.data();
+
+      if (!isStatusMatchForIssue(statusData, issue, scheduleValue)) {
+        continue;
+      }
+
+      const updated = await updateStatusTasksForIssue(statusDoc.ref, statusData, issue);
+
+      if (updated) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  async function resolveExactStatusMatch(issue, workDateISO, scheduleValue) {
+    const employeeIdValue = issue.employeeId || "";
     const areaIdValue = issue.areaId || "";
 
     if (!workDateISO || !employeeIdValue || !scheduleValue || !areaIdValue) {
-      return;
+      return false;
     }
 
     const statusId = cleanStatusId([
@@ -2466,49 +2504,139 @@
     const statusSnap = await getDoc(statusRef);
 
     if (!statusSnap.exists()) {
-      return;
+      return false;
     }
 
-    const statusData = statusSnap.data();
+    return await updateStatusTasksForIssue(statusRef, statusSnap.data(), issue);
+  }
+
+  function isStatusMatchForIssue(statusData, issue, scheduleValue) {
+    const issueEmployeeId = String(issue.employeeId || "").trim();
+    const issueEmployeeName = normalizeText(issue.employeeName || "");
+    const issueAreaId = String(issue.areaId || "").trim();
+    const issueAreaName = normalizeText(issue.areaName || "");
+
+    if (scheduleValue && String(statusData.schedule || "") !== scheduleValue) {
+      return false;
+    }
+
+    if (issueEmployeeId && String(statusData.employeeId || "") !== issueEmployeeId) {
+      return false;
+    }
+
+    if (!issueEmployeeId && issueEmployeeName && normalizeText(statusData.employeeName || "") !== issueEmployeeName) {
+      return false;
+    }
+
+    if (issueAreaId && String(statusData.areaId || "") === issueAreaId) {
+      return true;
+    }
+
+    if (issueAreaName && normalizeText(statusData.areaName || "") === issueAreaName) {
+      return true;
+    }
+
+    return false;
+  }
+
+  async function updateStatusTasksForIssue(statusRef, statusData, issue) {
     const tasks = statusData.tasks || {};
+    const taskKeys = Object.keys(tasks);
     let taskUpdated = false;
 
-    Object.keys(tasks).forEach(function(taskKey) {
-      const task = tasks[taskKey] || {};
-      const taskNameMatch = String(task.taskName || "").trim().toLowerCase() === String(issue.taskName || "").trim().toLowerCase();
-      const taskIdMatch = issue.taskId && String(task.taskId || taskKey) === String(issue.taskId);
+    taskKeys.forEach(function(taskKey) {
+      if (taskUpdated) return;
 
-      if (!taskUpdated && task.status === "Incomplete" && (taskIdMatch || taskNameMatch)) {
+      const task = tasks[taskKey] || {};
+      const statusText = String(task.status || "").trim();
+      const taskNameMatch =
+        normalizeText(task.taskName || "") === normalizeText(issue.taskName || "");
+
+      const taskIdMatch =
+        issue.taskId &&
+        String(task.taskId || taskKey) === String(issue.taskId);
+
+      if (statusText === "Incomplete" && (taskIdMatch || taskNameMatch)) {
         tasks[taskKey] = {
           ...task,
           status: "Completed",
           reason: ""
         };
+
         taskUpdated = true;
       }
     });
 
     if (!taskUpdated) {
-      return;
+      const incompleteKeys = taskKeys.filter(function(taskKey) {
+        return String((tasks[taskKey] || {}).status || "").trim() === "Incomplete";
+      });
+
+      if (incompleteKeys.length === 1) {
+        const onlyKey = incompleteKeys[0];
+
+        tasks[onlyKey] = {
+          ...tasks[onlyKey],
+          status: "Completed",
+          reason: ""
+        };
+
+        taskUpdated = true;
+      }
     }
 
+    if (!taskUpdated) {
+      return false;
+    }
+
+    const counts = getStatusCountsFromTasks(tasks);
+
+    await updateDoc(statusRef, {
+      tasks: tasks,
+      completedCount: counts.completedCount,
+      incompleteCount: counts.incompleteCount,
+      totalCount: counts.totalCount,
+      status: counts.incompleteCount > 0 ? "Incomplete" : "Completed",
+      updatedAt: serverTimestamp()
+    });
+
+    return true;
+  }
+
+  function getStatusCountsFromTasks(tasks) {
     const keys = Object.keys(tasks);
     let completedCount = 0;
     let incompleteCount = 0;
 
     keys.forEach(function(taskKey) {
-      if (tasks[taskKey].status === "Completed") completedCount++;
-      if (tasks[taskKey].status === "Incomplete") incompleteCount++;
+      const status = String((tasks[taskKey] || {}).status || "").trim();
+
+      if (status === "Completed") completedCount++;
+      else if (status === "Incomplete") incompleteCount++;
     });
 
-    await updateDoc(statusRef, {
-      tasks: tasks,
+    return {
       completedCount: completedCount,
       incompleteCount: incompleteCount,
-      totalCount: keys.length,
-      status: incompleteCount > 0 ? "Incomplete" : "Completed",
-      updatedAt: serverTimestamp()
+      totalCount: keys.length
+    };
+  }
+
+  async function syncResolvedIssuesToAreaStatus() {
+    const resolvedIssues = allIssues.filter(function(issue) {
+      return String(issue.status || "") === "Resolved";
     });
+
+    for (const issue of resolvedIssues) {
+      await resolveLinkedAreaStatus(issue);
+    }
+  }
+
+  function normalizeText(value) {
+    return String(value || "")
+      .trim()
+      .toLowerCase()
+      .replace(/\s+/g, " ");
   }
 
   function cleanStatusId(value) {
