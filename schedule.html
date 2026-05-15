@@ -141,6 +141,26 @@
       height: 1px;
     }
 
+    .weekday-button-row {
+      display: grid;
+      grid-template-columns: repeat(7, 1fr);
+      gap: 4px;
+      margin-top: 8px;
+    }
+
+    .weekday-button-row button {
+      font-size: 11px;
+      padding: 9px 0;
+      border-radius: 10px;
+      margin: 0;
+      background: #555;
+    }
+
+    .weekday-button-row button.active-day {
+      background: #1976d2 !important;
+      color: white !important;
+    }
+
     #coverScheduleSelect {
       margin: 6px 0 0;
       font-size: 18px;
@@ -359,9 +379,8 @@
     <div class="date-section-box">
       <div class="date-row">
         <h3 id="workDateTitle"></h3>
-        <button class="date-change-btn" onclick="openCalendar()">CHANGE DATE</button>
-        <input type="date" id="quickDatePicker" class="hidden-date" onchange="changeWorkDateFromCalendar()">
       </div>
+      <div id="weekdayButtons" class="weekday-button-row"></div>
     </div>
 
     <div class="top-info-box">
@@ -513,6 +532,7 @@
   let currentWorkDateISO = getTodayISO();
   let currentWorkDateDisplay = "";
   let currentWorkDayName = "";
+  let selectedWeeklyDayName = "";
 
   let allSchedules = [];
   let allAreasForSchedule = [];
@@ -540,6 +560,9 @@
   /* 04 - START */
 
   async function startSchedule() {
+    updateDateDisplay();
+    selectedWeeklyDayName = currentWorkDayName;
+    drawWeekdayButtons();
     await loadAssignmentTasks();
     showView(2);
   }
@@ -763,7 +786,7 @@
 
     if (!day || day === "daily") return true;
 
-    return day === currentWorkDayName.toLowerCase();
+    return day === String(selectedWeeklyDayName || currentWorkDayName).toLowerCase();
   }
 
   function getModeTypeForAssignment(assignment) {
@@ -880,26 +903,45 @@ select.appendChild(blankOption);
   document.getElementById("modeLabel").innerText =
     modeText + " • " + currentAssignment;
 
-  document.getElementById("workDateTitle").innerText = currentWorkDayName;
-  document.getElementById("areaDateTitle").innerText = currentWorkDayName;
+  document.getElementById("workDateTitle").innerText = selectedWeeklyDayName || currentWorkDayName;
+  document.getElementById("areaDateTitle").innerText = selectedWeeklyDayName || currentWorkDayName;
+  drawWeekdayButtons();
 }
 
-  function openCalendar() {
-    const picker = document.getElementById("quickDatePicker");
-    picker.value = currentWorkDateISO;
+  function drawWeekdayButtons() {
+    const box = document.getElementById("weekdayButtons");
+    if (!box) return;
 
-    if (picker.showPicker) {
-      picker.showPicker();
-    } else {
-      picker.click();
-    }
+    const days = [
+      { full: "Sunday", short: "SUN" },
+      { full: "Monday", short: "MON" },
+      { full: "Tuesday", short: "TUE" },
+      { full: "Wednesday", short: "WED" },
+      { full: "Thursday", short: "THU" },
+      { full: "Friday", short: "FRI" },
+      { full: "Saturday", short: "SAT" }
+    ];
+
+    box.innerHTML = "";
+
+    days.forEach(function(day) {
+      const btn = document.createElement("button");
+      btn.innerText = day.short;
+
+      if ((selectedWeeklyDayName || currentWorkDayName) === day.full) {
+        btn.classList.add("active-day");
+      }
+
+      btn.onclick = function() {
+        changeSelectedWeekday(day.full);
+      };
+
+      box.appendChild(btn);
+    });
   }
 
-  async function changeWorkDateFromCalendar() {
-    const picker = document.getElementById("quickDatePicker");
-    if (!picker.value) return;
-
-    currentWorkDateISO = picker.value;
+  async function changeSelectedWeekday(dayName) {
+    selectedWeeklyDayName = dayName;
     await loadAssignmentTasks();
 
     if (selectedCategory) {
@@ -915,6 +957,8 @@ select.appendChild(blankOption);
     if (!picker.value) return;
 
     currentWorkDateISO = picker.value;
+    updateDateDisplay();
+    selectedWeeklyDayName = currentWorkDayName;
     await loadAssignmentTasks();
 
     if (selectedCategory) {
@@ -975,7 +1019,7 @@ select.appendChild(blankOption);
     setAreaDatePickerVisibility(category);
 
     document.getElementById("bigDatePicker").value = currentWorkDateISO;
-    document.getElementById("areaDateTitle").innerText = currentWorkDayName;
+    document.getElementById("areaDateTitle").innerText = selectedWeeklyDayName || currentWorkDayName;
 
     const categoryTasks = allTasksForDay.filter(function(task) {
       return task.category === category;
@@ -1039,6 +1083,7 @@ select.appendChild(blankOption);
     if (category === "Weekly Room" || category === "Weekly Laundry") {
       pickerBox.classList.remove("hidden");
       dateTitle.classList.remove("hidden");
+      document.getElementById("bigDatePicker").classList.add("hidden");
     } else {
       pickerBox.classList.add("hidden");
       dateTitle.classList.add("hidden");
@@ -1675,8 +1720,7 @@ async function createIssueLogs(taskResults) {
 
   window.showCoverScheduleDropdown = showCoverScheduleDropdown;
   window.changeCoverSchedule = changeCoverSchedule;
-  window.openCalendar = openCalendar;
-  window.changeWorkDateFromCalendar = changeWorkDateFromCalendar;
+  window.changeSelectedWeekday = changeSelectedWeekday;
   window.changeWorkDateFromBigPicker = changeWorkDateFromBigPicker;
   window.openAreaChoice = openAreaChoice;
   window.confirmCheckAllTasks = confirmCheckAllTasks;
