@@ -1322,7 +1322,7 @@
     updateDateDisplay();
     updateAssignmentTitles();
 
-    if (!currentAssignment) {
+    
       syncModeControls();
       allAreas = [];
       allAreasForAssignment = [];
@@ -1517,12 +1517,9 @@
     const box = document.getElementById("adminCategoryButtons");
     box.innerHTML = "";
 
-    if (!currentAssignment) {
-      const emptyMessage = document.createElement("h3");
-      emptyMessage.innerText = "Choose assignment to edit.";
-      box.appendChild(emptyMessage);
-      return;
-    }
+if (!currentAssignment) {
+  return;
+}
 
     const buttons = currentAssignment === "Laundry"
       ? ["Weekly Laundry", "Daily Laundry", "Daily Status", "Issues", "Issue Reasons", "Reports", "Reassignment", "Employees", getModeButtonText(), "Logout"]
