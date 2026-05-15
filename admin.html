@@ -1707,15 +1707,16 @@ function setAreaScheduleBoxVisibility() {
   const box = document.getElementById("adminAreaScheduleBox");
   const deleteButton = document.getElementById("deleteAreaButton");
 
-  if (isWeeklyCategory(selectedCategory)) {
-    box.classList.remove("hidden");
-    deleteButton.innerText = "DELETE ROOM";
-  } else {
-    box.classList.add("hidden");
-    deleteButton.innerText = "DELETE AREA";
-  }
-}
+if (isWeeklyCategory(selectedCategory)) {
+  box.classList.remove("hidden");
 
+  deleteButton.innerText =
+    "DELETE " + selectedAreaScheduleDay.toUpperCase();
+
+} else {
+  box.classList.add("hidden");
+  deleteButton.innerText = "DELETE AREA";
+}
   function changeAdminAreaScheduleDay() {
     selectedAreaScheduleDay = document.getElementById("adminAreaScheduleInput").value;
     closeAdminSubTaskEditor();
@@ -2066,19 +2067,27 @@ async function deleteAdminArea() {
   }
 
   if (isWeeklyCategory(selectedCategory)) {
-    const choice = prompt(
-      "Delete room " + selectedArea + "?\n\n" +
-      "Type 1 = delete only " + selectedAreaScheduleDay + "\n" +
-      "Type 2 = delete from all days\n" +
-      "Leave blank = cancel"
-    );
+   const choice = prompt(
+  "Delete room " + selectedArea + "?\n\n" +
+  "Type 1 = delete room " + selectedArea + " from " + selectedAreaScheduleDay + "\n" +
+  "Type 2 = delete room " + selectedArea + " from every day in selected schedule only\n" +
+  "Leave blank = cancel"
+);
 
-    if (choice !== "1" && choice !== "2") return;
-
+ if (choice !== "1" && choice !== "2") return;
     showLoading();
+   if (choice === "1") {
 
-    if (choice === "1") {
-      const tasksToDelete = getTasksForWorkId(selectedAreaWorkId);
+  const okSingle = confirm(
+    "Delete room " + selectedArea +
+    " from " + selectedAreaScheduleDay + " only?"
+  );
+
+  if (!okSingle) {
+    return;
+  }
+
+  const tasksToDelete = getTasksForWorkId(selectedAreaWorkId);
 
       for (let i = 0; i < tasksToDelete.length; i++) {
         await deleteDoc(doc(db, "tasks", tasksToDelete[i].id));
@@ -2088,12 +2097,23 @@ async function deleteAdminArea() {
     }
 
     if (choice === "2") {
-      const matchingAreas = allAreas.filter(function(area) {
-        return area.category === selectedCategory &&
-          getAreaAssignment(area) === currentAssignment &&
-          String(area.areaName || "").trim().toLowerCase() === String(selectedArea || "").trim().toLowerCase();
-      });
 
+  const okAll = confirm(
+    "Delete room " + selectedArea +
+    " from every " + selectedCategory +
+    " day in " + currentAssignment + "?"
+  );
+
+  if (!okAll) {
+    hideLoading();
+    return;
+  }
+
+  const matchingAreas = allAreas.filter(function(area) {
+    return area.category === selectedCategory &&
+      getAreaAssignment(area) === currentAssignment &&
+      String(area.areaName || "").trim().toLowerCase() === String(selectedArea || "").trim().toLowerCase();
+  });
       for (let a = 0; a < matchingAreas.length; a++) {
         const area = matchingAreas[a];
         const tasksToDelete = getTasksForWorkId(area.workId);
