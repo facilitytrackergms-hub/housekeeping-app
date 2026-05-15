@@ -1243,45 +1243,7 @@ select.appendChild(blankOption);
     showView(3);
   }
 
-  async function saveTaskChecklist() {
-    const reasonText = getReasonText();
-    const taskResults = {};
-    let hasIncomplete = false;
-
-    currentTaskList.forEach(function(task, index) {
-      const checked = document.getElementById("task_" + index).dataset.done === "true";
-      const status = checked ? "Completed" : "Incomplete";
-
-      if (!checked) hasIncomplete = true;
-
-      taskResults[task.taskId] = {
-        taskId: task.taskId,
-        taskName: task.taskName,
-        status: status,
-        reason: checked ? "" : reasonText
-      };
-    });
-
-    if (hasIncomplete && reasonText === "") {
-      alert("Select a reason before saving.");
-      return;
-    }
-
-    showLoading();
-
-    await saveAreaStatus(taskResults);
-    await loadAssignmentTasks();
-
-    hideLoading();
-
-    document.getElementById("message").innerText = "SAVED";
-    selectedDehumidifierPeriod = "";
-
-    setTimeout(function() {
-      drawAreaButtons(selectedCategory);
-      showView(3);
-    }, 500);
-  }
+ v
 
   async function saveAreaStatus(taskResults) {
     const statusSummary = getStatusSummary(taskResults);
@@ -1390,7 +1352,86 @@ select.appendChild(blankOption);
     ].join("_"));
   }
 
+async function createIssueLogs(taskResults) {
+  const noteText = document.getElementById("note").value || "";
+  const reasonValue = document.getElementById("reason").value || "";
 
+  const incompleteTasks = Object.keys(taskResults)
+    .map(function(key) {
+      return taskResults[key];
+    })
+    .filter(function(task) {
+      return task.status === "Incomplete";
+    });
+
+  for (const task of incompleteTasks) {
+
+    const issueId = cleanId([
+      "issue",
+      currentWorkDateISO,
+      employeeId,
+      currentAssignment,
+      currentAreaId,
+      task.taskId,
+      Date.now()
+    ].join("_"));
+
+    const issueRef = doc(db, "issue_logs", issueId);
+
+    await setDoc(issueRef, {
+      issueId: issueId,
+
+      createdDate: currentWorkDateISO,
+      createdTime: getTimeNow(),
+
+      employeeName: employeeName,
+
+      areaName: currentAreaName,
+      category: selectedCategory,
+
+      taskName: task.taskName,
+
+      issueReason: reasonValue,
+      issueNote: noteText,
+
+      status: "Open",
+
+      photo1Url: "",
+      photo1Path: "",
+
+      photo2Url: "",
+      photo2Path: "",
+
+      photo3Url: "",
+      photo3Path: "",
+
+      photo4Url: "",
+      photo4Path: "",
+
+      photo5Url: "",
+      photo5Path: "",
+
+      photoCount: 0,
+      hasPhotos: false,
+
+      needsFollowUp: true,
+      followUpNote: "",
+
+      resolvedBy: "",
+      resolvedDate: "",
+
+      autoDeleteDate: "",
+      lastUpdated: getTimeNow(),
+
+      workDateISO: currentWorkDateISO,
+      schedule: currentAssignment,
+      areaId: currentAreaId,
+      employeeId: employeeId,
+
+      updatedAt: serverTimestamp()
+    }, { merge: true });
+  }
+}
   /* 15 - MODAL */
 
   function showCustomConfirm(message) {
