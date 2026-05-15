@@ -1,6 +1,2615 @@
 <!DOCTYPE html>
 <html>
+<!DOCTYPE html>
+<html>
 
+<head>
+  <!-- =========================
+       01 - HEAD
+  ========================== -->
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin Dashboard</title>
+
+  <style>
+    /* =========================
+       02 - GLOBAL STYLE
+    ========================== */
+
+    * {
+      box-sizing: border-box;
+    }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: #f2f2f2;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      padding: 8px;
+    }
+
+    .card {
+      width: 100%;
+      max-width: 420px;
+      background: white;
+      border-radius: 18px;
+      padding: 12px;
+      box-shadow: 0 4px 18px rgba(0,0,0,0.18);
+    }
+
+    .view-tag {
+      display: inline-block;
+      background: black;
+      color: white;
+      padding: 4px 10px;
+      border-radius: 8px;
+      font-size: 12px;
+      margin-bottom: 6px;
+    }
+
+    .view-center {
+      text-align: center;
+    }
+
+    h2, h3 {
+      text-align: center;
+      margin-top: 0;
+    }
+
+    h2 {
+      font-size: 22px;
+      margin-bottom: 8px;
+    }
+
+    h3 {
+      font-size: 18px;
+      margin-bottom: 8px;
+    }
+
+    label {
+      font-size: 15px;
+      font-weight: bold;
+    }
+
+    input, select {
+      width: 100%;
+      font-size: 18px;
+      padding: 10px;
+      margin: 6px 0 10px;
+      border-radius: 12px;
+      border: 1px solid #ccc;
+    }
+
+    button {
+      width: 100%;
+      border: none;
+      border-radius: 12px;
+      background: #1976d2;
+      color: white;
+      font-size: 17px;
+      font-weight: bold;
+      padding: 11px;
+      margin: 5px 0;
+      cursor: pointer;
+    }
+
+    .assignment-title {
+      text-align: center;
+      font-size: 17px;
+      font-weight: bold;
+      margin: 0 0 6px;
+    }
+
+    .green {
+      background: #2e7d32 !important;
+      color: white !important;
+    }
+
+    .yellow {
+      background: #f9a825 !important;
+      color: black !important;
+    }
+
+    .red {
+      background: #c62828 !important;
+      color: white !important;
+    }
+
+    .back {
+      background: #555 !important;
+      color: white !important;
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    /* =========================
+       03 - BUTTON GRIDS
+    ========================== */
+
+    .rooms-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 7px;
+      margin-top: 8px;
+    }
+
+    .rooms-grid button {
+      width: 100%;
+      min-height: 58px;
+      font-size: 16px;
+      padding: 7px 5px;
+      line-height: 1.1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      border-radius: 12px;
+      margin: 0;
+    }
+
+    .room-number {
+      font-size: 21px;
+      font-weight: bold;
+      line-height: 1.1;
+    }
+
+    .room-counter {
+      font-size: 14px;
+      font-weight: bold;
+      margin-top: 2px;
+    }
+
+    .button-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 7px;
+      margin-top: 8px;
+    }
+
+    .button-row button {
+      font-size: 15px;
+      padding: 10px 6px;
+      margin: 0;
+    }
+
+    .button-row-three {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 7px;
+      margin-top: 8px;
+    }
+
+    .button-row-three button {
+      font-size: 14px;
+      padding: 10px 4px;
+      margin: 0;
+    }
+
+    /* =========================
+       04 - EDIT CARDS
+    ========================== */
+
+    .task-card {
+      border: 1px solid #ccc;
+      border-radius: 14px;
+      padding: 10px;
+      margin: 8px 0;
+      background: #fafafa;
+    }
+
+
+    .workload-card {
+      border: 1px solid #ccc;
+      border-radius: 14px;
+      padding: 12px;
+      margin: 10px 0;
+      background: #fafafa;
+    }
+
+    .workload-card h3 {
+      margin: 0 0 10px;
+      text-align: left;
+      font-size: 20px;
+    }
+
+    .workload-row {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      border-bottom: 1px solid #ddd;
+      padding: 6px 0;
+      font-size: 16px;
+      font-weight: bold;
+    }
+
+    .workload-total {
+      font-size: 18px;
+      font-weight: bold;
+      text-align: center;
+      margin-top: 10px;
+      padding-top: 8px;
+    }
+
+    .check-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px;
+      margin: 8px 0;
+    }
+
+    .check-item {
+      border: 1px solid #ccc;
+      border-radius: 10px;
+      padding: 8px;
+      font-size: 15px;
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: #fafafa;
+    }
+
+    .check-item input {
+      width: auto;
+      margin: 0;
+    }
+
+    #adminMessage,
+    #employeeMessage {
+      text-align: center;
+      font-size: 16px;
+      font-weight: bold;
+    }
+
+    /* =========================
+       05 - LOADING SCREEN STYLE
+    ========================== */
+
+    .loading-bg {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(255,255,255,0.70);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 99999;
+    }
+
+    .spinner {
+      width: 70px;
+      height: 70px;
+      border: 8px solid #ddd;
+      border-top: 8px solid #1976d2;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      from {
+        transform: rotate(0deg);
+      }
+
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    /* =========================
+       05B - CUSTOM MESSAGE POPUP
+    ========================== */
+
+    .app-message-bg {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(0,0,0,0.35);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      z-index: 100000;
+      padding: 18px;
+    }
+
+    .app-message-card {
+      width: 100%;
+      max-width: 360px;
+      background: white;
+      border-radius: 18px;
+      padding: 18px;
+      box-shadow: 0 6px 28px rgba(0,0,0,0.25);
+      text-align: center;
+    }
+
+    .app-message-card h3 {
+      margin: 0 0 10px;
+      font-size: 21px;
+    }
+
+    .app-message-card p {
+      margin: 0 0 14px;
+      font-size: 17px;
+      font-weight: bold;
+      line-height: 1.3;
+    }
+
+    .app-message-card button {
+      margin-top: 4px;
+    }
+
+  </style>
+</head>
+
+<body>
+
+<div class="card">
+
+  <!-- =========================
+       06 - ADMIN VIEW 2 - MAIN DASHBOARD
+  ========================== -->
+
+  <div id="adminView2">
+
+    <div class="view-center">
+      <div class="view-tag">ADMIN VIEW 2</div>
+    </div>
+
+    <label>Assignment</label>
+    <select id="adminAssignmentSelect" onchange="changeAdminAssignment()">
+      <option>HK1</option>
+      <option>HK2</option>
+      <option>Laundry</option>
+    </select>
+
+    <div class="task-card">
+      <h3 id="adminModeTitle">Mode 2</h3>
+      <button id="adminModeButton" class="yellow" onclick="toggleHousekeepingMode()">
+        SWITCH TO MODE 3
+      </button>
+    </div>
+
+    <div id="adminCategoryButtons" class="rooms-grid"></div>
+
+  </div>
+
+  <!-- =========================
+       07 - ADMIN VIEW 3 / 4 / 5 / 6 - AREA LIST
+  ========================== -->
+
+  <div id="adminAreaView" class="hidden">
+
+    <div class="view-center">
+      <div class="view-tag" id="adminAreaViewTag">ADMIN VIEW 3</div>
+    </div>
+
+    <div class="assignment-title" id="adminAreaAssignmentTitle"></div>
+    <h2 id="adminAreaTitle">Area</h2>
+
+    <div id="adminAreaBigDatePickerBox" class="hidden">
+      <h3 id="adminAreaDateTitle"></h3>
+
+      <input
+        type="date"
+        id="adminBigDatePicker"
+        onchange="changeAdminWorkDateFromBigPicker()"
+      >
+    </div>
+
+    <input
+      id="adminAreaSearchInput"
+      class="hidden"
+      placeholder="Search room"
+      oninput="searchAdminAreas()"
+    >
+
+    <button id="adminAddAreaButton" class="green" onclick="openNewAdminArea()">
+      ADD NEW AREA
+    </button>
+
+    <div id="adminBulkTaskBox" class="task-card hidden">
+      <h3>Default Tasks</h3>
+      <div id="adminBulkTaskChecks" class="check-grid"></div>
+
+      <div class="button-row">
+        <button class="green" onclick="addCheckedTasksToAllAreas()">ADD TO ALL</button>
+        <button class="red" onclick="deleteCheckedTasksFromAllAreas()">DELETE FROM ALL</button>
+      </div>
+    </div>
+
+    <div id="adminAreaButtons" class="rooms-grid"></div>
+
+    <button class="back" onclick="backToAdminCategories()">BACK</button>
+
+  </div>
+
+  <!-- =========================
+       08 - ADMIN VIEW 7 - EDIT AREA / TASKS
+  ========================== -->
+
+  <div id="adminEditView" class="hidden">
+
+    <div class="view-center">
+      <div class="view-tag">ADMIN VIEW 7</div>
+    </div>
+
+    <div class="assignment-title" id="adminEditAssignmentTitle"></div>
+    <h2 id="adminEditTitle">Edit Area</h2>
+
+    <label>Area Name</label>
+    <input id="adminEditAreaInput">
+
+    <label>Assignment</label>
+    <select id="adminEditAssignmentInput">
+      <option value="">Select assignment</option>
+      <option>HK1</option>
+      <option>HK2</option>
+      <option>1stfloor</option>
+      <option>2ndFloor</option>
+      <option>3rdFloor</option>
+      <option>Laundry</option>
+    </select>
+
+    <select id="adminEditCategoryInput" class="hidden">
+      <option value="">Select category</option>
+      <option>Common Area</option>
+      <option>Weekly Room</option>
+      <option>Daily Room</option>
+      <option>Dehumidifier</option>
+      <option>Weekly Laundry</option>
+      <option>Daily Laundry</option>
+    </select>
+
+    <div id="adminAreaScheduleBox" class="hidden">
+      <label>Schedule Day</label>
+      <select id="adminAreaScheduleInput" onchange="changeAdminAreaScheduleDay()">
+        <option value="">Select day</option>
+        <option value="daily">Daily</option>
+        <option value="weekly">Weekly</option>
+        <option>Monday</option>
+        <option>Tuesday</option>
+        <option>Wednesday</option>
+        <option>Thursday</option>
+        <option>Friday</option>
+        <option>Saturday</option>
+        <option>Sunday</option>
+      </select>
+    </div>
+
+    <div id="adminSingleTaskBox" class="task-card hidden">
+      <h3>Default Tasks</h3>
+      <div id="adminSingleTaskChecks" class="check-grid"></div>
+
+      <div class="button-row">
+        <button class="green" onclick="addCheckedTasksToSingleArea()">ADD TO ROOM</button>
+        <button class="red" onclick="deleteCheckedTasksFromSingleArea()">DELETE FROM ROOM</button>
+      </div>
+    </div>
+
+    <h3>Sub Tasks</h3>
+
+    <button class="green" onclick="openNewAdminSubTask()">ADD NEW SUB TASK</button>
+
+    <div id="adminSubtaskButtons" class="rooms-grid"></div>
+
+    <div id="adminSubtaskEditor" class="task-card hidden">
+
+      <div class="view-center">
+        <div class="view-tag" id="adminSubtaskViewTag">ADMIN VIEW 7-1</div>
+      </div>
+
+      <div class="assignment-title" id="adminSubtaskAssignmentTitle"></div>
+      <h3 id="adminSubtaskEditorTitle">Edit Sub Task</h3>
+
+      <label>Task Name</label>
+      <input id="adminTaskNameInput" list="taskNameOptions" placeholder="Type or choose task">
+
+      <datalist id="taskNameOptions"></datalist>
+
+      <div id="adminTaskScheduleBox" class="hidden">
+        <label>Schedule Day</label>
+        <select id="adminTaskScheduleInput">
+          <option value="">Select day</option>
+          <option value="daily">Daily</option>
+          <option value="weekly">Weekly</option>
+          <option>Monday</option>
+          <option>Tuesday</option>
+          <option>Wednesday</option>
+          <option>Thursday</option>
+          <option>Friday</option>
+          <option>Saturday</option>
+          <option>Sunday</option>
+        </select>
+      </div>
+
+      <div class="button-row">
+        <button class="green" onclick="saveAdminSubTask()">SAVE ROOM</button>
+        <button id="saveAllWeeklyButton" class="yellow hidden" onclick="saveAdminSubTaskToAllWeeklyRooms()">SAVE ALL</button>
+      </div>
+
+      <div class="button-row">
+        <button class="red" onclick="deleteAdminSubTask()">DELETE</button>
+        <button class="back" onclick="closeAdminSubTaskEditor()">CANCEL</button>
+      </div>
+
+    </div>
+
+    <div class="button-row-three">
+      <button class="green" onclick="saveAdminAreaOnly()">SAVE</button>
+      <button class="red" id="deleteAreaButton" onclick="deleteAdminArea()">DELETE ROOM</button>
+      <button class="back" onclick="backToAdminAreas()">BACK</button>
+    </div>
+
+    <p id="adminMessage"></p>
+
+  </div>
+
+  <!-- =========================
+       09 - ADMIN VIEW 8 - EMPLOYEES LIST
+  ========================== -->
+
+  <div id="adminEmployeesView" class="hidden">
+
+    <div class="view-center">
+      <div class="view-tag">ADMIN VIEW 8 - EMPLOYEES</div>
+    </div>
+
+    <div class="assignment-title" id="adminEmployeesAssignmentTitle"></div>
+    <h2>Employees</h2>
+
+    <button class="green" onclick="openNewEmployee()">ADD EMPLOYEE</button>
+
+    <div id="employeeList"></div>
+
+    <button class="back" onclick="backToAdminCategories()">BACK</button>
+
+  </div>
+
+  <!-- =========================
+       10 - ADMIN VIEW 9 - EDIT EMPLOYEE
+  ========================== -->
+
+  <div id="adminEmployeeEditView" class="hidden">
+
+    <div class="view-center">
+      <div class="view-tag">ADMIN VIEW 9 - EDIT EMPLOYEE</div>
+    </div>
+
+    <div class="assignment-title" id="adminEmployeeEditAssignmentTitle"></div>
+    <h2 id="employeeEditTitle">Employee</h2>
+
+    <label>First Name</label>
+    <input id="empFirstName">
+
+    <label>Last Name</label>
+    <input id="empLastName">
+
+    <label>PIN</label>
+    <input id="empPin">
+
+    <label>Assignment</label>
+    <select id="empAssignment">
+      <option value="">Select assignment</option>
+      <option>Housekeeping</option>
+      <option>Laundry</option>
+      <option>Admin</option>
+    </select>
+
+    <label>Default Schedule</label>
+    <select id="empDefaultSchedule">
+      <option value="">Select default schedule</option>
+      <option>HK1</option>
+      <option>HK2</option>
+      <option>Laundry</option>
+      <option>Admin</option>
+    </select>
+
+    <label>Role</label>
+    <select id="empRole">
+      <option value="">Select role</option>
+      <option value="employee">employee</option>
+      <option value="admin">admin</option>
+    </select>
+
+    <label>Active</label>
+    <select id="empActive">
+      <option value="">Select active</option>
+      <option value="true">true</option>
+      <option value="false">false</option>
+    </select>
+
+    <div class="button-row">
+      <button class="green" onclick="saveEmployee()">SAVE</button>
+      <button class="red" onclick="deleteEmployee()">DELETE</button>
+    </div>
+
+    <p id="employeeMessage"></p>
+
+    <button class="back" onclick="openEmployees()">BACK</button>
+
+  </div>
+
+  <!-- =========================
+       10B - ADMIN VIEW 10 - REASSIGNMENT
+  ========================== -->
+
+  <div id="adminReassignmentView" class="hidden">
+
+    <div class="view-center">
+      <div class="view-tag">ADMIN VIEW 10</div>
+    </div>
+
+    <h2>Reassignment</h2>
+
+    <label>From</label>
+    <select id="reassignFrom">
+      <option>HK1</option>
+      <option>HK2</option>
+      <option>1stfloor</option>
+      <option>2ndFloor</option>
+      <option>3rdFloor</option>
+      <option>Laundry</option>
+    </select>
+
+    <label>To</label>
+    <select id="reassignTo">
+      <option value="">Select assignment</option>
+      <option>HK1</option>
+      <option>HK2</option>
+      <option>1stfloor</option>
+      <option>2ndFloor</option>
+      <option>3rdFloor</option>
+      <option>Laundry</option>
+    </select>
+
+    <label>Category</label>
+    <select id="reassignCategory" onchange="changeReassignmentCategory()">
+      <option>Common Area</option>
+      <option>Weekly Room</option>
+      <option>Daily Room</option>
+      <option>Dehumidifier</option>
+      <option>Weekly Laundry</option>
+      <option>Daily Laundry</option>
+    </select>
+
+    <div id="reassignDateBox" class="hidden">
+      <h3 id="reassignDateTitle"></h3>
+
+      <input
+        type="date"
+        id="reassignDatePicker"
+        onchange="changeReassignmentDate()"
+      >
+    </div>
+
+   <div class="button-row">
+
+  <button class="green" onclick="loadReassignmentAreas()">
+    LOAD
+  </button>
+
+  <button class="yellow" onclick="checkAssignmentCounts()">
+    CHECK COUNT
+  </button>
+
+</div>
+
+    <div id="reassignmentAreaList" class="rooms-grid"></div>
+
+    <button class="back" onclick="backToAdminCategories()">BACK</button>
+
+  </div>
+
+  <!-- =========================
+       10C - ADMIN VIEW 11 - WORKLOAD
+  ========================== -->
+
+  <div id="adminWorkloadView" class="hidden">
+
+    <div class="view-center">
+      <div class="view-tag">ADMIN VIEW 11</div>
+    </div>
+
+    <h2>Assignment Workload</h2>
+
+    <div class="assignment-title" id="workloadDayTitle"></div>
+
+    <div id="workloadResults"></div>
+
+    <button class="back" onclick="backToReassignment()">BACK</button>
+
+  </div>
+
+</div>
+
+<div id="loadingScreen" class="loading-bg hidden">
+  <div class="spinner"></div>
+</div>
+
+<div id="appMessageBox" class="app-message-bg hidden">
+  <div class="app-message-card">
+    <h3 id="appMessageTitle">Message</h3>
+    <p id="appMessageText"></p>
+    <button class="green" onclick="closeAppMessage()">OK</button>
+  </div>
+</div>
+
+
+<script type="module">
+
+  /* =========================
+     11 - FIREBASE IMPORTS
+  ========================== */
+
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js";
+
+  import {
+    getFirestore,
+    collection,
+    query,
+    where,
+    getDocs,
+    doc,
+    addDoc,
+    setDoc,
+    updateDoc,
+    deleteDoc,
+    serverTimestamp,
+    writeBatch
+  } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
+
+  /* =========================
+     12 - FIREBASE CONFIG
+  ========================== */
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyBgq_ooBeEN4noEyIxYPLVokgM6RjCO648",
+    authDomain: "gms-task-tracker.firebaseapp.com",
+    projectId: "gms-task-tracker",
+    storageBucket: "gms-task-tracker.firebasestorage.app",
+    messagingSenderId: "790880979860",
+    appId: "1:790880979860:web:6faee2a6e56955af3c1d81",
+    measurementId: "G-5TRHQMS039"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  /* =========================
+     13 - SESSION DATA
+  ========================== */
+
+  const sessionData = JSON.parse(sessionStorage.getItem("currentEmployee"));
+
+  if (!sessionData) {
+    window.location.href = "index.html";
+  }
+
+  /* =========================
+     14 - GLOBAL ADMIN VARIABLES
+  ========================== */
+
+  let currentAssignment = sessionData.defaultSchedule || sessionData.assignment || "HK1";
+  let currentWorkDateISO = getTodayISO();
+  let currentWorkDayName = "";
+  let reassignWorkDateISO = getTodayISO();
+  let reassignWorkDayName = "";
+
+  let housekeepingMode = "two";
+  let selectedCategory = "";
+  let selectedArea = "";
+  let selectedAreaDocId = "";
+  let selectedAreaWorkId = "";
+  let selectedAreaScheduleDay = "";
+  let adminAreaSearchTerm = "";
+
+  let allAreas = [];
+  let allAreasForAssignment = [];
+  let allAreasForDay = [];
+  let allSubTasks = [];
+  let currentAreaTasks = [];
+  let currentEmployeeId = "";
+  let currentEditingTaskId = "";
+  let currentEditingTaskIndex = -1;
+  let originalEditingTaskName = "";
+
+  const DEFAULT_WEEKLY_ROOM_TASKS = ["Vac", "Fridge", "Bath", "Mop", "Toilet", "Sink", "Dust", "Bed", "AC Filter"];
+  const DEFAULT_DAILY_ROOM_TASKS = ["Clean"];
+  const REAL_ASSIGNMENTS = ["HK1", "HK2", "1stfloor", "2ndFloor", "3rdFloor", "Laundry"];
+
+  currentAssignment = REAL_ASSIGNMENTS.includes(currentAssignment) ? currentAssignment : "HK1";
+
+  function getActiveAssignments() {
+    if (housekeepingMode === "three") {
+      return ["1stfloor", "2ndFloor", "3rdFloor", "Laundry"];
+    }
+
+    return ["HK1", "HK2", "Laundry"];
+  }
+
+  function updateAssignmentDropdownOptions(selectId, includeBlank) {
+    const select = document.getElementById(selectId);
+    if (!select) return;
+
+    const currentValue = select.value;
+    const assignments = getActiveAssignments();
+
+    select.innerHTML = "";
+
+    if (includeBlank) {
+      const blank = document.createElement("option");
+      blank.value = "";
+      blank.innerText = "Select assignment";
+      select.appendChild(blank);
+    }
+
+    assignments.forEach(function(assignment) {
+      const option = document.createElement("option");
+      option.value = assignment;
+      option.innerText = assignment;
+      select.appendChild(option);
+    });
+
+    if (assignments.includes(currentValue)) {
+      select.value = currentValue;
+    }
+  }
+
+  function syncModeControls() {
+    const activeAssignments = getActiveAssignments();
+
+    if (!activeAssignments.includes(currentAssignment)) {
+      currentAssignment = activeAssignments[0];
+    }
+
+    updateAssignmentDropdownOptions("adminAssignmentSelect", false);
+    updateAssignmentDropdownOptions("adminEditAssignmentInput", true);
+    updateAssignmentDropdownOptions("reassignFrom", false);
+    updateAssignmentDropdownOptions("reassignTo", true);
+
+    const mainSelect = document.getElementById("adminAssignmentSelect");
+    if (mainSelect) {
+      mainSelect.value = currentAssignment;
+    }
+
+    const modeTitle = document.getElementById("adminModeTitle");
+    const modeButton = document.getElementById("adminModeButton");
+
+    if (modeTitle) {
+      modeTitle.innerText =
+        housekeepingMode === "three"
+          ? "Mode 3 - Floors"
+          : "Mode 2 - HK1 / HK2";
+    }
+
+    if (modeButton) {
+      modeButton.innerText =
+        housekeepingMode === "three"
+          ? "SWITCH TO MODE 2"
+          : "SWITCH TO MODE 3";
+    }
+  }
+
+  async function toggleHousekeepingMode() {
+    const newMode = housekeepingMode === "three" ? "two" : "three";
+
+    const ok = confirm(
+      newMode === "three"
+        ? "Switch to Mode 3 floor schedules?"
+        : "Switch to Mode 2 HK1/HK2 schedules?"
+    );
+
+    if (!ok) return;
+
+    showLoading();
+
+    await setDoc(doc(db, "settings", "housekeepingmode"), {
+      settingName: "housekeepingMode",
+      settingValue: newMode,
+      notes: "Use two or three",
+      updatedAt: serverTimestamp()
+    }, { merge: true });
+
+    housekeepingMode = newMode;
+    syncModeControls();
+    selectedCategory = "";
+
+    await loadAdminTasks();
+
+    hideLoading();
+    showAppMessage(
+      newMode === "three"
+        ? "Mode 3 active. Use 1stfloor, 2ndFloor, and 3rdFloor."
+        : "Mode 2 active. Use HK1 and HK2."
+    );
+  }
+
+  /* =========================
+     15 - ADMIN STARTUP
+  ========================== */
+
+  startAdmin();
+
+  async function startAdmin() {
+    document.getElementById("adminAssignmentSelect").value = currentAssignment;
+    await loadAdminTasks();
+    showAdminView("adminView2");
+  }
+
+  /* =========================
+     16 - LOADING FUNCTIONS
+  ========================== */
+
+  function showLoading() {
+    document.getElementById("loadingScreen").classList.remove("hidden");
+  }
+
+  function hideLoading() {
+    document.getElementById("loadingScreen").classList.add("hidden");
+  }
+
+  /* =========================
+     16B - CUSTOM MESSAGE FUNCTIONS
+  ========================== */
+
+  function showAppMessage(message, title) {
+    document.getElementById("appMessageTitle").innerText = title || "Notice";
+    document.getElementById("appMessageText").innerText = message;
+    document.getElementById("appMessageBox").classList.remove("hidden");
+  }
+
+  function closeAppMessage() {
+    document.getElementById("appMessageBox").classList.add("hidden");
+  }
+
+  /* =========================
+     17 - VIEW SWITCHING
+  ========================== */
+
+  function showAdminView(viewId) {
+    [
+      "adminView2",
+      "adminAreaView",
+      "adminEditView",
+      "adminEmployeesView",
+      "adminEmployeeEditView",
+      "adminReassignmentView",
+      "adminWorkloadView"
+    ].forEach(function(id) {
+      const el = document.getElementById(id);
+      if (el) el.classList.add("hidden");
+    });
+
+    updateAssignmentTitles();
+    document.getElementById(viewId).classList.remove("hidden");
+  }
+
+  function updateAssignmentTitles() {
+    [
+      "adminAreaAssignmentTitle",
+      "adminEditAssignmentTitle",
+      "adminSubtaskAssignmentTitle",
+      "adminEmployeesAssignmentTitle",
+      "adminEmployeeEditAssignmentTitle"
+    ].forEach(function(id) {
+      const el = document.getElementById(id);
+      if (el) el.innerText = currentAssignment;
+    });
+  }
+
+  /* =========================
+     18 - DATE FUNCTIONS
+  ========================== */
+
+  function getTodayISO() {
+    const today = new Date();
+    const yyyy = today.getFullYear();
+    const mm = String(today.getMonth() + 1).padStart(2, "0");
+    const dd = String(today.getDate()).padStart(2, "0");
+    return yyyy + "-" + mm + "-" + dd;
+  }
+
+  function getWeekdayName(iso) {
+    const date = new Date(iso + "T00:00:00");
+    return ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"][date.getDay()];
+  }
+
+  function updateDateDisplay() {
+    currentWorkDayName = getWeekdayName(currentWorkDateISO);
+  }
+
+  function updateReassignmentDateDisplay() {
+    reassignWorkDayName = getWeekdayName(reassignWorkDateISO);
+    const title = document.getElementById("reassignDateTitle");
+    if (title) title.innerText = reassignWorkDayName;
+  }
+
+  async function changeAdminWorkDateFromBigPicker() {
+    const picker = document.getElementById("adminBigDatePicker");
+    if (!picker.value) return;
+    currentWorkDateISO = picker.value;
+    await loadAdminTasks();
+    if (selectedCategory) {
+      drawAdminAreaButtons(selectedCategory);
+      showAdminView("adminAreaView");
+    }
+  }
+
+  /* =========================
+     19 - ASSIGNMENT CHANGE
+  ========================== */
+
+  async function changeAdminAssignment() {
+    currentAssignment = document.getElementById("adminAssignmentSelect").value;
+    selectedCategory = "";
+    await loadAdminTasks();
+    showAdminView("adminView2");
+  }
+
+  /* =========================
+     20 - LOAD AREAS AND SUB TASKS
+  ========================== */
+
+  async function loadAdminTasks() {
+    showLoading();
+    updateDateDisplay();
+    updateAssignmentTitles();
+
+    const dateTitle = document.getElementById("adminAreaDateTitle");
+    if (dateTitle) dateTitle.innerText = currentWorkDayName;
+
+    const settingsSnap = await getDocs(collection(db, "settings"));
+    housekeepingMode = "two";
+
+    settingsSnap.docs.forEach(function(docItem) {
+      const data = docItem.data();
+      if (data.settingName === "housekeepingMode" || docItem.id === "housekeepingmode") {
+        housekeepingMode = String(data.settingValue || "two").toLowerCase();
+      }
+    });
+
+    syncModeControls();
+
+    const areaSnap = await getDocs(collection(db, "areas"));
+
+    allAreas = areaSnap.docs.map(function(areaDoc) {
+      return normalizeArea({ id: areaDoc.id, ...areaDoc.data() });
+    }).filter(function(area) {
+      return area.active !== false && area.active !== "No";
+    });
+
+    const subTaskSnap = await getDocs(collection(db, "tasks"));
+
+    allSubTasks = subTaskSnap.docs.map(function(taskDoc) {
+      return normalizeSubTask({ id: taskDoc.id, ...taskDoc.data() });
+    }).filter(function(task) {
+      return task.active !== false && task.active !== "No";
+    });
+
+    allAreasForAssignment = allAreas.filter(function(area) {
+      return getAreaAssignment(area) === currentAssignment;
+    });
+
+    allAreasForDay = allAreasForAssignment.filter(function(area) {
+      return isAreaForCurrentDay(area);
+    });
+
+    updateTaskNameOptions();
+    drawAdminCategories();
+    hideLoading();
+  }
+
+  function normalizeArea(area) {
+    area.areaName = area.areaName || area.area || area.name || "";
+    area.category = area.category || "";
+    area.scheduleDay = area.scheduleDay || area.day || "daily";
+    area.day = area.day || area.scheduleDay;
+    area.schedule = area.schedule || "";
+    area.modeType = area.modeType || "two";
+    area.workId = area.areaId || area.workId || area.id || buildAreaId(area.modeType, area.schedule, area.category, area.scheduleDay, area.areaName, area.floor, area.laundryType);
+    area.areaId = area.areaId || area.workId;
+    return area;
+  }
+
+  function normalizeSubTask(task) {
+    task.taskName = task.taskName || task.task || "";
+    task.workId = task.areaId || task.workId || "";
+    task.areaId = task.areaId || task.workId;
+    return task;
+  }
+
+  function getAreaAssignment(area) {
+    return String(area.schedule || "").trim();
+  }
+
+  function isWeeklyCategory(category) {
+    return category === "Weekly Room" || category === "Weekly Laundry";
+  }
+
+  function isDailyOnlyCategory(category) {
+    return !isWeeklyCategory(category);
+  }
+
+  function isAreaForCurrentDay(area) {
+    const schedule = String(area.scheduleDay || "").trim().toLowerCase();
+    if (isDailyOnlyCategory(area.category)) return schedule === "daily" || schedule === "";
+    return schedule === currentWorkDayName.toLowerCase();
+  }
+
+  function isAreaForReassignDay(area) {
+    const schedule = String(area.scheduleDay || "").trim().toLowerCase();
+    if (isDailyOnlyCategory(area.category)) return schedule === "daily" || schedule === "";
+    return schedule === reassignWorkDayName.toLowerCase();
+  }
+
+  function getTasksForWorkId(workId) {
+    return allSubTasks.filter(function(task) {
+      return String(task.workId || "") === String(workId || "");
+    });
+  }
+
+  function buildWorkId(areaName, category, scheduleDay, assignment) {
+    const modeType = getModeTypeForAssignment(assignment);
+    return buildAreaId(modeType, assignment, category, scheduleDay, areaName, getFloorForAssignment(assignment), "");
+  }
+
+  function buildAreaId(modeType, schedule, category, day, areaName, floor, laundryType) {
+    return makeId([
+      modeType,
+      schedule,
+      category,
+      day,
+      areaName,
+      floor,
+      laundryType
+    ].join("_"));
+  }
+
+  function makeId(value) {
+    return String(value || "")
+      .toLowerCase()
+      .replace(/&/g, " and ")
+      .replace(/[^a-z0-9]+/g, "_")
+      .replace(/^_+|_+$/g, "")
+      .replace(/_+/g, "_") || "blank";
+  }
+
+  function getModeTypeForAssignment(assignment) {
+    if (assignment === "Laundry") return "laundry";
+    if (["1stfloor", "2ndFloor", "3rdFloor"].includes(assignment)) return "three";
+    return "two";
+  }
+
+  function getFloorForAssignment(assignment) {
+    if (["1stfloor", "2ndFloor", "3rdFloor"].includes(assignment)) return assignment;
+    return "";
+  }
+
+  function getAreaUpdateData(areaName, assignment, category, scheduleDay, workId) {
+    const modeType = getModeTypeForAssignment(assignment);
+    const floor = getFloorForAssignment(assignment);
+
+    return {
+      areaId: workId,
+      areaName: areaName,
+      areaSearch: String(areaName || "").toLowerCase(),
+      category: category,
+      categoryKey: makeId(category),
+      day: scheduleDay,
+      scheduleDay: scheduleDay,
+      schedule: assignment,
+      modeType: modeType,
+      modeLabel: assignment,
+      floor: floor,
+      laundryType: assignment === "Laundry" ? "Regular" : "",
+      sourceSheet: "admin",
+      active: true,
+      updatedAt: serverTimestamp()
+    };
+  }
+
+  /* =========================
+     21 - UPDATE TASK NAME OPTIONS
+  ========================== */
+
+  function updateTaskNameOptions() {
+    const list = document.getElementById("taskNameOptions");
+    if (!list) return;
+
+    list.innerHTML = "";
+
+    const names = [...new Set(allSubTasks.map(function(task) {
+      return String(task.taskName || "").trim();
+    }).filter(function(name) {
+      return name !== "";
+    }))];
+
+    names.forEach(function(name) {
+      const option = document.createElement("option");
+      option.value = name;
+      list.appendChild(option);
+    });
+  }
+
+  /* =========================
+     22 - DRAW CATEGORY BUTTONS
+  ========================== */
+
+  function drawAdminCategories() {
+    const box = document.getElementById("adminCategoryButtons");
+    box.innerHTML = "";
+
+    const buttons = currentAssignment === "Laundry"
+      ? ["Weekly Laundry", "Daily Laundry", "Reports", "Reassignment", "Employees", "Logout"]
+      : ["Common Area", "Weekly Room", "Daily Room", "Dehumidifier", "Reports", "Reassignment", "Employees", "Logout"];
+
+    buttons.forEach(function(item) {
+      const btn = document.createElement("button");
+      btn.innerText = item;
+
+      if (item === "Logout") {
+        btn.className = "back";
+        btn.onclick = logout;
+      } else {
+        btn.className = "yellow";
+
+        if (item === "Employees") {
+          btn.onclick = openEmployees;
+        } else if (item === "Reports") {
+          btn.onclick = function() { window.location.href = "reports.html"; };
+        } else if (item === "Reassignment") {
+          btn.onclick = openReassignment;
+        } else {
+          btn.onclick = function() {
+            selectedCategory = item;
+            adminAreaSearchTerm = "";
+            document.getElementById("adminAreaSearchInput").value = "";
+            drawAdminAreaButtons(item);
+            showAdminView("adminAreaView");
+          };
+        }
+      }
+
+      box.appendChild(btn);
+    });
+  }
+
+  /* =========================
+     23 - DRAW AREA BUTTONS
+  ========================== */
+
+  function drawAdminAreaButtons(category) {
+    const box = document.getElementById("adminAreaButtons");
+    box.innerHTML = "";
+
+    document.getElementById("adminAreaTitle").innerText = category;
+
+    setAdminAreaViewTag(category);
+    setAdminAreaDatePickerVisibility(category);
+    setAdminAreaSearchVisibility(category);
+    setAdminBulkTaskBoxVisibility(category);
+
+    document.getElementById("adminBigDatePicker").value = currentWorkDateISO;
+    document.getElementById("adminAddAreaButton").innerText = "ADD NEW " + category.toUpperCase();
+    document.getElementById("adminAreaDateTitle").innerText = currentWorkDayName;
+
+    updateAssignmentTitles();
+
+    let areas = allAreasForAssignment.filter(function(area) {
+      if (area.category !== category) return false;
+      if (isWeeklyCategory(category)) {
+        return String(area.scheduleDay || "").trim().toLowerCase() === currentWorkDayName.toLowerCase();
+      }
+      return isAreaForCurrentDay(area);
+    });
+
+    if (adminAreaSearchTerm) {
+      areas = areas.filter(function(area) {
+        return String(area.areaName || "").toLowerCase().includes(adminAreaSearchTerm.toLowerCase());
+      });
+    }
+
+    areas.forEach(function(area) {
+      const total = getTasksForWorkId(area.workId).length;
+      const btn = document.createElement("button");
+
+      btn.className = total > 0 ? "yellow" : "red";
+      btn.innerHTML =
+        '<div class="room-number">' + escapeHtml(area.areaName) + '</div>' +
+        '<div class="room-counter">' + total + ' TASKS</div>';
+
+      btn.onclick = function() {
+        openAdminEditArea(area.id);
+      };
+
+      box.appendChild(btn);
+    });
+
+    if (box.innerHTML === "") {
+      const empty = document.createElement("h3");
+      empty.innerText = "No areas found.";
+      box.appendChild(empty);
+    }
+  }
+
+  /* =========================
+     24 - SEARCH AREAS
+  ========================== */
+
+  function searchAdminAreas() {
+    adminAreaSearchTerm = document.getElementById("adminAreaSearchInput").value.trim();
+    drawAdminAreaButtons(selectedCategory);
+  }
+
+  function setAdminAreaSearchVisibility(category) {
+    const searchBox = document.getElementById("adminAreaSearchInput");
+    if (category === "Weekly Room" || category === "Weekly Laundry") {
+      searchBox.classList.remove("hidden");
+    } else {
+      searchBox.classList.add("hidden");
+    }
+  }
+
+  function getDefaultTasksForSelectedCategory() {
+    if (selectedCategory === "Weekly Room") return DEFAULT_WEEKLY_ROOM_TASKS;
+    if (selectedCategory === "Daily Room") return DEFAULT_DAILY_ROOM_TASKS;
+    if (selectedCategory === "Weekly Laundry") return ["Laundry Service"];
+    if (selectedCategory === "Daily Laundry") return ["Laundry Service"];
+    return [];
+  }
+
+  function setAdminBulkTaskBoxVisibility(category) {
+    const box = document.getElementById("adminBulkTaskBox");
+
+    if (["Weekly Room", "Daily Room", "Weekly Laundry", "Daily Laundry"].includes(category)) {
+      drawTaskCheckboxes("adminBulkTaskChecks", getDefaultTasksForSelectedCategory(), "bulkTaskCheck");
+      box.classList.remove("hidden");
+    } else {
+      box.classList.add("hidden");
+    }
+  }
+
+  function setAdminSingleTaskBoxVisibility(category) {
+    const box = document.getElementById("adminSingleTaskBox");
+
+    if (["Weekly Room", "Daily Room", "Weekly Laundry", "Daily Laundry"].includes(category)) {
+      drawTaskCheckboxes("adminSingleTaskChecks", getDefaultTasksForSelectedCategory(), "singleTaskCheck");
+      box.classList.remove("hidden");
+    } else {
+      box.classList.add("hidden");
+    }
+  }
+
+  function drawTaskCheckboxes(containerId, taskList, className) {
+    const box = document.getElementById(containerId);
+    box.innerHTML = "";
+
+    taskList.forEach(function(taskName) {
+      const label = document.createElement("label");
+      label.className = "check-item";
+      label.innerHTML =
+        '<input type="checkbox" class="' + className + '" value="' + escapeHtml(taskName) + '">' +
+        '<span>' + escapeHtml(taskName) + '</span>';
+      box.appendChild(label);
+    });
+  }
+
+  function getCheckedTaskNames(className) {
+    return Array.from(document.querySelectorAll("." + className + ":checked"))
+      .map(function(input) { return input.value; });
+  }
+
+  function getScheduleForSingleTask() {
+    if (isWeeklyCategory(selectedCategory)) return selectedAreaScheduleDay || currentWorkDayName;
+    return "daily";
+  }
+
+
+  function getTaskCreateData(area, taskName) {
+    return {
+      areaId: area.workId || area.areaId || area.id,
+      areaName: area.areaName || selectedArea,
+      areaSearch: String(area.areaName || selectedArea || "").toLowerCase(),
+      taskName: taskName,
+      taskSearch: String(taskName || "").toLowerCase(),
+      category: area.category || selectedCategory,
+      categoryKey: makeId(area.category || selectedCategory),
+      day: area.scheduleDay || area.day || getScheduleForSingleTask(),
+      schedule: area.schedule || getAreaAssignment(area) || currentAssignment,
+      modeType: area.modeType || getModeTypeForAssignment(area.schedule || currentAssignment),
+      modeLabel: area.schedule || currentAssignment,
+      floor: area.floor || getFloorForAssignment(area.schedule || currentAssignment),
+      laundryType: area.laundryType || "",
+      time: "",
+      sourceSheet: "admin",
+      active: true,
+      createdAt: serverTimestamp(),
+      updatedAt: serverTimestamp()
+    };
+  }
+
+  /* =========================
+     26 - ADD / DELETE CHECKED TASKS TO ALL AREAS
+  ========================== */
+
+  async function addCheckedTasksToAllAreas() {
+    const checkedTasks = getCheckedTaskNames("bulkTaskCheck");
+    if (checkedTasks.length === 0) {
+      alert("Select tasks.");
+      return;
+    }
+
+    const areas = allAreasForAssignment.filter(function(area) {
+      return area.category === selectedCategory && (isWeeklyCategory(selectedCategory)
+        ? String(area.scheduleDay || "").trim().toLowerCase() === currentWorkDayName.toLowerCase()
+        : isAreaForCurrentDay(area));
+    });
+
+    if (areas.length === 0) {
+      alert("No rooms found.");
+      return;
+    }
+
+    const ok = confirm("Add checked tasks to all " + areas.length + " areas? Duplicates will be skipped.");
+    if (!ok) return;
+
+    showLoading();
+    let addedCount = 0;
+
+    for (let a = 0; a < areas.length; a++) {
+      const area = areas[a];
+
+      for (let t = 0; t < checkedTasks.length; t++) {
+        const taskName = checkedTasks[t];
+        const exists = allSubTasks.some(function(task) {
+          return task.workId === area.workId && String(task.taskName || "").trim().toLowerCase() === taskName.toLowerCase();
+        });
+
+        if (!exists) {
+          await addDoc(collection(db, "tasks"), getTaskCreateData(area, taskName));
+          addedCount++;
+        }
+      }
+    }
+
+    await loadAdminTasks();
+    drawAdminAreaButtons(selectedCategory);
+    hideLoading();
+    alert("Added " + addedCount + " missing tasks.");
+  }
+
+  async function deleteCheckedTasksFromAllAreas() {
+    const checkedTasks = getCheckedTaskNames("bulkTaskCheck");
+    if (checkedTasks.length === 0) {
+      alert("Select tasks.");
+      return;
+    }
+
+    const checkedLower = checkedTasks.map(function(taskName) {
+      return String(taskName || "").trim().toLowerCase();
+    });
+
+    const areas = allAreasForAssignment.filter(function(area) {
+      return area.category === selectedCategory && (isWeeklyCategory(selectedCategory)
+        ? String(area.scheduleDay || "").trim().toLowerCase() === currentWorkDayName.toLowerCase()
+        : isAreaForCurrentDay(area));
+    });
+
+    const areaWorkIds = areas.map(function(area) { return area.workId; });
+
+    const tasksToDelete = allSubTasks.filter(function(task) {
+      return areaWorkIds.includes(task.workId) && checkedLower.includes(String(task.taskName || "").trim().toLowerCase());
+    });
+
+    if (tasksToDelete.length === 0) {
+      alert("No matching tasks found.");
+      return;
+    }
+
+    const ok = confirm("Delete " + tasksToDelete.length + " matching tasks?");
+    if (!ok) return;
+
+    showLoading();
+
+    for (let i = 0; i < tasksToDelete.length; i++) {
+      await deleteDoc(doc(db, "tasks", tasksToDelete[i].id));
+    }
+
+    await loadAdminTasks();
+    drawAdminAreaButtons(selectedCategory);
+    hideLoading();
+    alert("Deleted " + tasksToDelete.length + " tasks.");
+  }
+
+  /* =========================
+     27 - ADD / DELETE CHECKED TASKS TO SINGLE AREA
+  ========================== */
+
+  async function addCheckedTasksToSingleArea() {
+    const checkedTasks = getCheckedTaskNames("singleTaskCheck");
+    if (checkedTasks.length === 0) {
+      alert("Select tasks.");
+      return;
+    }
+
+    const saved = await ensureCurrentAreaSaved();
+    if (!saved) return;
+
+    showLoading();
+    let addedCount = 0;
+
+    for (let i = 0; i < checkedTasks.length; i++) {
+      const taskName = checkedTasks[i];
+      const exists = allSubTasks.some(function(task) {
+        return task.workId === selectedAreaWorkId && String(task.taskName || "").trim().toLowerCase() === taskName.toLowerCase();
+      });
+
+      if (!exists) {
+        await addDoc(collection(db, "tasks"), getTaskCreateData({
+          workId: selectedAreaWorkId,
+          areaId: selectedAreaWorkId,
+          areaName: selectedArea,
+          category: selectedCategory,
+          scheduleDay: selectedAreaScheduleDay,
+          day: selectedAreaScheduleDay,
+          schedule: currentAssignment,
+          modeType: getModeTypeForAssignment(currentAssignment),
+          floor: getFloorForAssignment(currentAssignment)
+        }, taskName));
+        addedCount++;
+      }
+    }
+
+    await loadAdminTasks();
+    openAdminEditArea(selectedAreaDocId);
+    hideLoading();
+    document.getElementById("adminMessage").innerText = "Added " + addedCount + " missing tasks.";
+  }
+
+  async function deleteCheckedTasksFromSingleArea() {
+    const checkedTasks = getCheckedTaskNames("singleTaskCheck");
+    if (checkedTasks.length === 0) {
+      alert("Select tasks.");
+      return;
+    }
+
+    const checkedLower = checkedTasks.map(function(taskName) {
+      return String(taskName || "").trim().toLowerCase();
+    });
+
+    const tasksToDelete = currentAreaTasks.filter(function(task) {
+      return checkedLower.includes(String(task.taskName || "").trim().toLowerCase());
+    });
+
+    if (tasksToDelete.length === 0) {
+      alert("No matching tasks found.");
+      return;
+    }
+
+    const ok = confirm("Delete " + tasksToDelete.length + " matching tasks from this area?");
+    if (!ok) return;
+
+    showLoading();
+
+    for (let i = 0; i < tasksToDelete.length; i++) {
+      await deleteDoc(doc(db, "tasks", tasksToDelete[i].id));
+    }
+
+    await loadAdminTasks();
+    openAdminEditArea(selectedAreaDocId);
+    hideLoading();
+    document.getElementById("adminMessage").innerText = "Deleted " + tasksToDelete.length + " tasks.";
+  }
+
+  /* =========================
+     28 - AREA VIEW NUMBER LABEL
+  ========================== */
+
+  function setAdminAreaViewTag(category) {
+    const tag = document.getElementById("adminAreaViewTag");
+    if (category === "Common Area") tag.innerText = "ADMIN VIEW 3";
+    else if (category === "Weekly Room") tag.innerText = "ADMIN VIEW 4";
+    else if (category === "Daily Room") tag.innerText = "ADMIN VIEW 5";
+    else if (category === "Dehumidifier") tag.innerText = "ADMIN VIEW 6";
+    else if (category === "Weekly Laundry") tag.innerText = "ADMIN VIEW 4";
+    else if (category === "Daily Laundry") tag.innerText = "ADMIN VIEW 5";
+    else tag.innerText = "ADMIN VIEW 3";
+  }
+
+  /* =========================
+     29 - WEEKLY DATE PICKER VISIBILITY
+  ========================== */
+
+  function setAdminAreaDatePickerVisibility(category) {
+    const pickerBox = document.getElementById("adminAreaBigDatePickerBox");
+    const dateTitle = document.getElementById("adminAreaDateTitle");
+
+    if (isWeeklyCategory(category)) {
+      pickerBox.classList.remove("hidden");
+      dateTitle.classList.remove("hidden");
+    } else {
+      pickerBox.classList.add("hidden");
+      dateTitle.classList.add("hidden");
+    }
+  }
+
+  /* =========================
+     30 - OPEN EXISTING AREA EDITOR
+  ========================== */
+
+  function openAdminEditArea(areaId) {
+    const area = allAreas.find(function(item) { return item.id === areaId; });
+
+    if (!area) {
+      alert("Area not found.");
+      return;
+    }
+
+    selectedArea = area.areaName;
+    selectedAreaDocId = area.id;
+    selectedAreaWorkId = area.workId;
+    selectedAreaScheduleDay = isWeeklyCategory(area.category) ? area.scheduleDay : "daily";
+    selectedCategory = area.category;
+    currentAreaTasks = getTasksForWorkId(area.workId);
+
+    document.getElementById("adminEditTitle").innerText = area.areaName;
+    document.getElementById("adminEditAreaInput").value = area.areaName;
+    document.getElementById("adminEditAssignmentInput").value = getAreaAssignment(area) || currentAssignment;
+    document.getElementById("adminEditCategoryInput").value = area.category;
+    document.getElementById("adminAreaScheduleInput").value = selectedAreaScheduleDay;
+    document.getElementById("adminMessage").innerText = "";
+
+    updateAssignmentTitles();
+    setAreaScheduleBoxVisibility();
+    setAdminSingleTaskBoxVisibility(selectedCategory);
+    closeAdminSubTaskEditor();
+    drawAdminSubTaskButtons();
+    showAdminView("adminEditView");
+  }
+
+  /* =========================
+     31 - OPEN NEW AREA EDITOR
+  ========================== */
+
+  function openNewAdminArea() {
+    selectedArea = "";
+    selectedAreaDocId = "";
+    selectedAreaWorkId = "";
+    currentAreaTasks = [];
+    selectedAreaScheduleDay = isWeeklyCategory(selectedCategory) ? currentWorkDayName : "daily";
+
+    document.getElementById("adminEditTitle").innerText = "New Area";
+    document.getElementById("adminEditAreaInput").value = "";
+    document.getElementById("adminEditAssignmentInput").value = currentAssignment;
+    document.getElementById("adminEditCategoryInput").value = selectedCategory;
+    document.getElementById("adminAreaScheduleInput").value = selectedAreaScheduleDay;
+    document.getElementById("adminMessage").innerText = "";
+
+    updateAssignmentTitles();
+    setAreaScheduleBoxVisibility();
+    setAdminSingleTaskBoxVisibility(selectedCategory);
+    closeAdminSubTaskEditor();
+    drawAdminSubTaskButtons();
+    showAdminView("adminEditView");
+  }
+
+  /* =========================
+     32 - AREA SCHEDULE DAY
+  ========================== */
+
+  function setAreaScheduleBoxVisibility() {
+    const box = document.getElementById("adminAreaScheduleBox");
+    const deleteButton = document.getElementById("deleteAreaButton");
+
+    if (isWeeklyCategory(selectedCategory)) {
+      box.classList.remove("hidden");
+      deleteButton.innerText = "DELETE " + String(selectedAreaScheduleDay || "DAY").toUpperCase();
+    } else {
+      box.classList.add("hidden");
+      deleteButton.innerText = "DELETE AREA";
+    }
+  }
+
+  function changeAdminAreaScheduleDay() {
+    selectedAreaScheduleDay = document.getElementById("adminAreaScheduleInput").value;
+    closeAdminSubTaskEditor();
+    drawAdminSubTaskButtons();
+  }
+
+  /* =========================
+     33 - DRAW SUB TASK BUTTONS
+  ========================== */
+
+  function drawAdminSubTaskButtons() {
+    const box = document.getElementById("adminSubtaskButtons");
+    box.innerHTML = "";
+
+    currentAreaTasks.forEach(function(task, index) {
+      const btn = document.createElement("button");
+      btn.className = "red";
+      btn.innerHTML =
+        '<div class="room-number">' + escapeHtml(task.taskName || "Sub Task") + '</div>' +
+        '<div class="room-counter">' + escapeHtml(selectedAreaScheduleDay || "daily") + '</div>';
+
+      btn.onclick = function() {
+        openAdminSubTaskEditor(index);
+      };
+
+      box.appendChild(btn);
+    });
+
+    if (box.innerHTML === "") {
+      const empty = document.createElement("h3");
+      empty.innerText = "No sub tasks yet.";
+      box.appendChild(empty);
+    }
+  }
+
+  /* =========================
+     34 - OPEN SUB TASK EDITOR
+  ========================== */
+
+  function openAdminSubTaskEditor(index) {
+    const task = currentAreaTasks[index];
+    if (!task) return;
+
+    currentEditingTaskIndex = index;
+    currentEditingTaskId = task.id || "";
+    originalEditingTaskName = task.taskName || "";
+
+    document.getElementById("adminSubtaskViewTag").innerText = "ADMIN VIEW 7-1";
+    document.getElementById("adminSubtaskEditorTitle").innerText = "Edit Sub Task";
+    document.getElementById("adminTaskNameInput").value = task.taskName || "";
+    document.getElementById("adminTaskScheduleInput").value = selectedAreaScheduleDay || "daily";
+
+    setSaveAllWeeklyButtonVisibility();
+    setTaskScheduleBoxVisibility();
+    updateAssignmentTitles();
+    document.getElementById("adminSubtaskEditor").classList.remove("hidden");
+  }
+
+  /* =========================
+     35 - OPEN NEW SUB TASK
+  ========================== */
+
+  function openNewAdminSubTask() {
+    currentEditingTaskIndex = -1;
+    currentEditingTaskId = "";
+    originalEditingTaskName = "";
+
+    document.getElementById("adminSubtaskViewTag").innerText = "ADMIN VIEW 7-1";
+    document.getElementById("adminSubtaskEditorTitle").innerText = "New Sub Task";
+    document.getElementById("adminTaskNameInput").value = "";
+    document.getElementById("adminTaskScheduleInput").value = selectedAreaScheduleDay || "daily";
+
+    setSaveAllWeeklyButtonVisibility();
+    setTaskScheduleBoxVisibility();
+    updateAssignmentTitles();
+    document.getElementById("adminSubtaskEditor").classList.remove("hidden");
+  }
+
+  /* =========================
+     36 - CLOSE SUB TASK EDITOR
+  ========================== */
+
+  function closeAdminSubTaskEditor() {
+    currentEditingTaskIndex = -1;
+    currentEditingTaskId = "";
+    originalEditingTaskName = "";
+    document.getElementById("adminSubtaskEditor").classList.add("hidden");
+  }
+
+  /* =========================
+     37 - SAVE ALL WEEKLY BUTTON VISIBILITY
+  ========================== */
+
+  function setSaveAllWeeklyButtonVisibility() {
+    const btn = document.getElementById("saveAllWeeklyButton");
+    if (isWeeklyCategory(selectedCategory)) btn.classList.remove("hidden");
+    else btn.classList.add("hidden");
+  }
+
+  function setTaskScheduleBoxVisibility() {
+    const box = document.getElementById("adminTaskScheduleBox");
+    if (isWeeklyCategory(selectedCategory)) box.classList.remove("hidden");
+    else box.classList.add("hidden");
+  }
+
+  /* =========================
+     38 - SAVE AREA ONLY
+  ========================== */
+
+  async function ensureCurrentAreaSaved() {
+    const areaName = document.getElementById("adminEditAreaInput").value.trim();
+    const assignment = document.getElementById("adminEditAssignmentInput").value.trim();
+    const category = document.getElementById("adminEditCategoryInput").value.trim();
+    const scheduleDay = isWeeklyCategory(category)
+      ? document.getElementById("adminAreaScheduleInput").value.trim()
+      : "daily";
+
+    if (!areaName || !assignment || !category) {
+      alert("Fill area and assignment.");
+      return false;
+    }
+
+    if (isWeeklyCategory(category) && !scheduleDay) {
+      alert("Select schedule day.");
+      return false;
+    }
+
+    const newWorkId = buildWorkId(areaName, category, scheduleDay, assignment);
+    const oldWorkId = selectedAreaWorkId;
+
+    const data = getAreaUpdateData(areaName, assignment, category, scheduleDay, newWorkId);
+
+    if (selectedAreaDocId) {
+      await updateDoc(doc(db, "areas", selectedAreaDocId), data);
+
+      if (oldWorkId && oldWorkId !== newWorkId) {
+        const tasksToMove = allSubTasks.filter(function(task) {
+          return task.workId === oldWorkId;
+        });
+
+        for (let i = 0; i < tasksToMove.length; i++) {
+          await updateDoc(doc(db, "tasks", tasksToMove[i].id), {
+            areaId: newWorkId,
+            workId: newWorkId,
+            areaName: areaName,
+            areaSearch: String(areaName || "").toLowerCase(),
+            category: category,
+            categoryKey: makeId(category),
+            day: scheduleDay,
+            schedule: assignment,
+            modeType: getModeTypeForAssignment(assignment),
+            floor: getFloorForAssignment(assignment),
+            updatedAt: serverTimestamp()
+          });
+        }
+      }
+    } else {
+      const newDoc = await addDoc(collection(db, "areas"), {
+        ...data,
+        createdAt: serverTimestamp()
+      });
+      selectedAreaDocId = newDoc.id;
+    }
+
+    selectedArea = areaName;
+    currentAssignment = assignment;
+    selectedCategory = category;
+    selectedAreaScheduleDay = scheduleDay;
+    selectedAreaWorkId = newWorkId;
+    document.getElementById("adminAssignmentSelect").value = assignment;
+    return true;
+  }
+
+  async function saveAdminAreaOnly() {
+    showLoading();
+    const saved = await ensureCurrentAreaSaved();
+    if (!saved) {
+      hideLoading();
+      return;
+    }
+
+    await loadAdminTasks();
+    openAdminEditArea(selectedAreaDocId);
+    hideLoading();
+    document.getElementById("adminMessage").innerText = "Saved.";
+  }
+
+  /* =========================
+     39 - SAVE SUB TASK
+  ========================== */
+
+  async function saveAdminSubTask() {
+    const taskName = document.getElementById("adminTaskNameInput").value.trim();
+
+    if (!taskName) {
+      alert("Fill task name.");
+      return;
+    }
+
+    showLoading();
+
+    const saved = await ensureCurrentAreaSaved();
+    if (!saved) {
+      hideLoading();
+      return;
+    }
+
+    if (currentEditingTaskId) {
+      await updateDoc(doc(db, "tasks", currentEditingTaskId), {
+        areaId: selectedAreaWorkId,
+        workId: selectedAreaWorkId,
+        areaName: selectedArea,
+        areaSearch: String(selectedArea || "").toLowerCase(),
+        taskName: taskName,
+        taskSearch: String(taskName || "").toLowerCase(),
+        category: selectedCategory,
+        categoryKey: makeId(selectedCategory),
+        day: selectedAreaScheduleDay,
+        schedule: currentAssignment,
+        modeType: getModeTypeForAssignment(currentAssignment),
+        floor: getFloorForAssignment(currentAssignment),
+        active: true,
+        updatedAt: serverTimestamp()
+      });
+    } else {
+      const exists = allSubTasks.some(function(task) {
+        return task.workId === selectedAreaWorkId && String(task.taskName || "").trim().toLowerCase() === taskName.toLowerCase();
+      });
+
+      if (!exists) {
+        await addDoc(collection(db, "tasks"), getTaskCreateData({
+          workId: selectedAreaWorkId,
+          areaId: selectedAreaWorkId,
+          areaName: selectedArea,
+          category: selectedCategory,
+          scheduleDay: selectedAreaScheduleDay,
+          day: selectedAreaScheduleDay,
+          schedule: currentAssignment,
+          modeType: getModeTypeForAssignment(currentAssignment),
+          floor: getFloorForAssignment(currentAssignment)
+        }, taskName));
+      }
+    }
+
+    await loadAdminTasks();
+    openAdminEditArea(selectedAreaDocId);
+    hideLoading();
+    document.getElementById("adminMessage").innerText = "Saved.";
+  }
+
+  /* =========================
+     40 - SAVE SUB TASK TO ALL WEEKLY ROOMS
+  ========================== */
+
+  async function saveAdminSubTaskToAllWeeklyRooms() {
+    const assignment = document.getElementById("adminEditAssignmentInput").value.trim();
+    const category = document.getElementById("adminEditCategoryInput").value.trim();
+    const taskName = document.getElementById("adminTaskNameInput").value.trim();
+    const schedule = document.getElementById("adminTaskScheduleInput").value.trim();
+
+    if (!assignment || !category || !taskName || !schedule) {
+      alert("Fill assignment, task name, and schedule day.");
+      return;
+    }
+
+    const areas = allAreas.filter(function(area) {
+      return getAreaAssignment(area) === assignment &&
+        area.category === category &&
+        String(area.scheduleDay || "").trim().toLowerCase() === schedule.toLowerCase();
+    });
+
+    if (areas.length === 0) {
+      alert("No weekly rooms found for this day.");
+      return;
+    }
+
+    const ok = confirm("Save this sub task to all " + areas.length + " weekly rooms for " + schedule + "?");
+    if (!ok) return;
+
+    showLoading();
+
+    for (let i = 0; i < areas.length; i++) {
+      const area = areas[i];
+
+      let existingTask = null;
+
+      if (originalEditingTaskName) {
+        existingTask = allSubTasks.find(function(task) {
+          return task.workId === area.workId &&
+            String(task.taskName || "").trim().toLowerCase() === originalEditingTaskName.toLowerCase();
+        });
+      }
+
+      if (!existingTask) {
+        existingTask = allSubTasks.find(function(task) {
+          return task.workId === area.workId &&
+            String(task.taskName || "").trim().toLowerCase() === taskName.toLowerCase();
+        });
+      }
+
+      if (existingTask) {
+        await updateDoc(doc(db, "tasks", existingTask.id), {
+          taskName: taskName,
+          taskSearch: String(taskName || "").toLowerCase(),
+          active: true,
+          updatedAt: serverTimestamp()
+        });
+      } else {
+        await addDoc(collection(db, "tasks"), getTaskCreateData(area, taskName));
+      }
+    }
+
+    await loadAdminTasks();
+    if (selectedAreaDocId) openAdminEditArea(selectedAreaDocId);
+    hideLoading();
+    document.getElementById("adminMessage").innerText = "Saved to all rooms for " + schedule + ".";
+  }
+
+  /* =========================
+     41 - DELETE SUB TASK
+  ========================== */
+
+  async function deleteAdminSubTask() {
+    if (!currentEditingTaskId) {
+      closeAdminSubTaskEditor();
+      return;
+    }
+
+    const ok = confirm("Delete this sub task?");
+    if (!ok) return;
+
+    showLoading();
+    await deleteDoc(doc(db, "tasks", currentEditingTaskId));
+    await loadAdminTasks();
+    if (selectedAreaDocId) openAdminEditArea(selectedAreaDocId);
+    else showAdminView("adminAreaView");
+    hideLoading();
+  }
+
+  /* =========================
+     42 - DELETE WHOLE AREA / DAY
+  ========================== */
+
+  async function deleteAdminArea() {
+    if (!selectedAreaDocId) {
+      backToAdminAreas();
+      return;
+    }
+
+    if (isWeeklyCategory(selectedCategory)) {
+      const choice = prompt(
+        "Delete room " + selectedArea + "?\n\n" +
+        "Type 1 = delete room " + selectedArea + " from " + selectedAreaScheduleDay + " only\n" +
+        "Type 2 = delete room " + selectedArea + " from every day in selected schedule only\n" +
+        "Leave blank = cancel"
+      );
+
+      if (choice !== "1" && choice !== "2") return;
+
+      if (choice === "1") {
+        const okSingle = confirm(
+          "Delete room " + selectedArea +
+          " from " + selectedAreaScheduleDay + " only?"
+        );
+
+        if (!okSingle) return;
+
+        showLoading();
+
+        const tasksToDelete = getTasksForWorkId(selectedAreaWorkId);
+
+        for (let i = 0; i < tasksToDelete.length; i++) {
+          await deleteDoc(doc(db, "tasks", tasksToDelete[i].id));
+        }
+
+        await deleteDoc(doc(db, "areas", selectedAreaDocId));
+      }
+
+      if (choice === "2") {
+        const okAll = confirm(
+          "Delete room " + selectedArea +
+          " from every " + selectedCategory +
+          " day in " + currentAssignment + "?"
+        );
+
+        if (!okAll) return;
+
+        showLoading();
+
+        const matchingAreas = allAreas.filter(function(area) {
+          return area.category === selectedCategory &&
+            getAreaAssignment(area) === currentAssignment &&
+            String(area.areaName || "").trim().toLowerCase() === String(selectedArea || "").trim().toLowerCase();
+        });
+
+        for (let a = 0; a < matchingAreas.length; a++) {
+          const area = matchingAreas[a];
+          const tasksToDelete = getTasksForWorkId(area.workId);
+
+          for (let t = 0; t < tasksToDelete.length; t++) {
+            await deleteDoc(doc(db, "tasks", tasksToDelete[t].id));
+          }
+
+          await deleteDoc(doc(db, "areas", area.id));
+        }
+      }
+
+      await loadAdminTasks();
+      drawAdminAreaButtons(selectedCategory);
+      showAdminView("adminAreaView");
+      hideLoading();
+      return;
+    }
+
+    const ok = confirm("Delete this whole area and all sub tasks?");
+    if (!ok) return;
+
+    showLoading();
+
+    const tasksToDelete = getTasksForWorkId(selectedAreaWorkId);
+
+    for (let i = 0; i < tasksToDelete.length; i++) {
+      await deleteDoc(doc(db, "tasks", tasksToDelete[i].id));
+    }
+
+    await deleteDoc(doc(db, "areas", selectedAreaDocId));
+    await loadAdminTasks();
+    drawAdminAreaButtons(selectedCategory);
+    showAdminView("adminAreaView");
+    hideLoading();
+  }
+
+  /* =========================
+     43 - BACK BUTTONS
+  ========================== */
+
+  async function backToAdminAreas() {
+    await loadAdminTasks();
+    drawAdminAreaButtons(selectedCategory);
+    showAdminView("adminAreaView");
+  }
+
+  function backToAdminCategories() {
+    selectedCategory = "";
+    drawAdminCategories();
+    showAdminView("adminView2");
+  }
+
+  /* =========================
+     44 - OPEN EMPLOYEES
+  ========================== */
+
+  async function openEmployees() {
+    showLoading();
+
+    const snap = await getDocs(collection(db, "employees"));
+    const employees = snap.docs.map(function(empDoc) {
+      return { id: empDoc.id, ...empDoc.data() };
+    });
+
+    const box = document.getElementById("employeeList");
+    box.innerHTML = "";
+
+    employees.forEach(function(emp) {
+      const btn = document.createElement("button");
+      const name = ((emp.firstName || "") + " " + (emp.lastName || "")).trim() || emp.employeeName || emp.name || "Employee";
+
+      btn.innerHTML =
+        '<div class="room-number">' + escapeHtml(name) + '</div>' +
+        '<div class="room-counter">PIN: ' + escapeHtml(emp.pin || "") + '</div>';
+
+      btn.onclick = function() { openEmployeeEditor(emp); };
+      box.appendChild(btn);
+    });
+
+    if (box.innerHTML === "") {
+      const empty = document.createElement("h3");
+      empty.innerText = "No employees found.";
+      box.appendChild(empty);
+    }
+
+    hideLoading();
+    updateAssignmentTitles();
+    showAdminView("adminEmployeesView");
+  }
+
+  /* =========================
+     45 - OPEN NEW EMPLOYEE
+  ========================== */
+
+  function openNewEmployee() {
+    currentEmployeeId = "";
+    document.getElementById("employeeEditTitle").innerText = "New Employee";
+    document.getElementById("empFirstName").value = "";
+    document.getElementById("empLastName").value = "";
+    document.getElementById("empPin").value = "";
+    document.getElementById("empAssignment").value = "";
+    document.getElementById("empDefaultSchedule").value = "";
+    document.getElementById("empRole").value = "";
+    document.getElementById("empActive").value = "";
+    document.getElementById("employeeMessage").innerText = "";
+    updateAssignmentTitles();
+    showAdminView("adminEmployeeEditView");
+  }
+
+  /* =========================
+     46 - OPEN EXISTING EMPLOYEE
+  ========================== */
+
+  function openEmployeeEditor(emp) {
+    currentEmployeeId = emp.id;
+    const name = ((emp.firstName || "") + " " + (emp.lastName || "")).trim() || emp.employeeName || emp.name || "Employee";
+
+    document.getElementById("employeeEditTitle").innerText = name;
+    document.getElementById("empFirstName").value = emp.firstName || "";
+    document.getElementById("empLastName").value = emp.lastName || "";
+    document.getElementById("empPin").value = emp.pin || "";
+    document.getElementById("empAssignment").value = emp.assignment || "";
+    document.getElementById("empDefaultSchedule").value = emp.defaultSchedule || emp.default_schedule || "";
+    document.getElementById("empRole").value = emp.role || "";
+    document.getElementById("empActive").value = emp.active === false ? "false" : "true";
+    document.getElementById("employeeMessage").innerText = "";
+
+    updateAssignmentTitles();
+    showAdminView("adminEmployeeEditView");
+  }
+
+  /* =========================
+     47 - SAVE EMPLOYEE
+  ========================== */
+
+  async function saveEmployee() {
+    const firstName = document.getElementById("empFirstName").value.trim();
+    const lastName = document.getElementById("empLastName").value.trim();
+    const pin = document.getElementById("empPin").value.trim();
+    const assignment = document.getElementById("empAssignment").value;
+    const defaultSchedule = document.getElementById("empDefaultSchedule").value;
+    const role = document.getElementById("empRole").value;
+    const activeValue = document.getElementById("empActive").value;
+
+    if (!firstName || !pin || !assignment || !role || !activeValue) {
+      alert("Fill first name, PIN, assignment, role, and active.");
+      return;
+    }
+
+    const active = activeValue === "true";
+    showLoading();
+
+    const data = {
+      firstName: firstName,
+      lastName: lastName,
+      pin: pin,
+      assignment: assignment,
+      defaultSchedule: defaultSchedule,
+      role: role,
+      active: active,
+      updatedAt: serverTimestamp()
+    };
+
+    if (currentEmployeeId) {
+      await updateDoc(doc(db, "employees", currentEmployeeId), data);
+    } else {
+      data.createdAt = serverTimestamp();
+      const newDoc = await addDoc(collection(db, "employees"), data);
+      currentEmployeeId = newDoc.id;
+    }
+
+    hideLoading();
+    document.getElementById("employeeMessage").innerText = "Saved.";
+  }
+
+  /* =========================
+     48 - DELETE EMPLOYEE
+  ========================== */
+
+  async function deleteEmployee() {
+    if (!currentEmployeeId) {
+      openEmployees();
+      return;
+    }
+
+    const ok = confirm("Delete this employee?");
+    if (!ok) return;
+
+    showLoading();
+    await deleteDoc(doc(db, "employees", currentEmployeeId));
+    hideLoading();
+    openEmployees();
+  }
+
+  /* =========================
+     48B - REASSIGNMENT
+  ========================== */
+
+  async function openReassignment() {
+    reassignWorkDateISO = currentWorkDateISO;
+    updateReassignmentDateDisplay();
+    document.getElementById("reassignFrom").value = currentAssignment;
+    document.getElementById("reassignTo").value = "";
+    document.getElementById("reassignCategory").value = "Common Area";
+    document.getElementById("reassignDatePicker").value = reassignWorkDateISO;
+    document.getElementById("reassignmentAreaList").innerHTML = "";
+    setReassignmentDateVisibility();
+    showAdminView("adminReassignmentView");
+  }
+
+  function setReassignmentDateVisibility() {
+    const category = document.getElementById("reassignCategory").value;
+    const box = document.getElementById("reassignDateBox");
+    if (isWeeklyCategory(category)) box.classList.remove("hidden");
+    else box.classList.add("hidden");
+  }
+
+  async function changeReassignmentCategory() {
+    setReassignmentDateVisibility();
+    document.getElementById("reassignmentAreaList").innerHTML = "";
+  }
+
+  async function changeReassignmentDate() {
+    const picker = document.getElementById("reassignDatePicker");
+    if (!picker.value) return;
+    reassignWorkDateISO = picker.value;
+    updateReassignmentDateDisplay();
+    await loadReassignmentAreas();
+  }
+
+  async function loadReassignmentAreas() {
+    const fromAssignment = document.getElementById("reassignFrom").value;
+    const category = document.getElementById("reassignCategory").value;
+
+    if (!fromAssignment || !category) {
+      showAppMessage("Select from and category.");
+      return;
+    }
+
+    updateReassignmentDateDisplay();
+    setReassignmentDateVisibility();
+    showLoading();
+
+    const areas = allAreas.filter(function(area) {
+      return getAreaAssignment(area) === fromAssignment &&
+        area.category === category &&
+        (isWeeklyCategory(category) ? isAreaForReassignDay(area) : true);
+    });
+
+    const box = document.getElementById("reassignmentAreaList");
+    box.innerHTML = "";
+
+    areas.forEach(function(area) {
+      const count = getTasksForWorkId(area.workId).length;
+      const btn = document.createElement("button");
+      btn.className = "yellow";
+      btn.innerHTML =
+        '<div class="room-number">' + escapeHtml(area.areaName) + '</div>' +
+        '<div class="room-counter">' + count + ' TASKS</div>';
+      btn.onclick = function() { moveReassignmentArea(area.id); };
+      box.appendChild(btn);
+    });
+
+    if (box.innerHTML === "") {
+      const empty = document.createElement("h3");
+      empty.innerText = isWeeklyCategory(category) ? "No areas found for " + reassignWorkDayName + "." : "No areas found.";
+      box.appendChild(empty);
+    }
+
+    hideLoading();
+  }
+
+  async function moveReassignmentArea(areaId) {
+    const area = allAreas.find(function(item) { return item.id === areaId; });
+    const toAssignment = document.getElementById("reassignTo").value;
+    const fromAssignment = document.getElementById("reassignFrom").value;
+    const category = document.getElementById("reassignCategory").value;
+
+    if (!area || !fromAssignment || !toAssignment || !category) {
+      showAppMessage("Select from, to, and category.");
+      return;
+    }
+
+    if (fromAssignment === toAssignment) {
+      showAppMessage("This assignment is already on the schedule. Choose another assignment.");
+      return;
+    }
+
+    const duplicate = allAreas.find(function(item) {
+      return item.id !== area.id &&
+        getAreaAssignment(item) === toAssignment &&
+        item.category === area.category &&
+        String(item.areaName || "").trim().toLowerCase() === String(area.areaName || "").trim().toLowerCase() &&
+        String(item.scheduleDay || "").trim().toLowerCase() === String(area.scheduleDay || "").trim().toLowerCase();
+    });
+
+    if (duplicate) {
+      showAppMessage("Cannot duplicate assignments. This area already exists in " + toAssignment + ".");
+      return;
+    }
+
+    const ok = confirm("Move " + area.areaName + " to " + toAssignment + "?");
+    if (!ok) return;
+
+    showLoading();
+
+    const oldWorkId = area.workId;
+    const newWorkId = buildWorkId(area.areaName, area.category, area.scheduleDay, toAssignment);
+
+    await updateDoc(doc(db, "areas", area.id), {
+      areaId: newWorkId,
+      workId: newWorkId,
+      schedule: toAssignment,
+      modeType: getModeTypeForAssignment(toAssignment),
+      modeLabel: toAssignment,
+      floor: getFloorForAssignment(toAssignment),
+      updatedAt: serverTimestamp()
+    });
+
+    const tasksToMove = getTasksForWorkId(oldWorkId);
+
+    for (let i = 0; i < tasksToMove.length; i++) {
+      await updateDoc(doc(db, "tasks", tasksToMove[i].id), {
+        areaId: newWorkId,
+        workId: newWorkId,
+        schedule: toAssignment,
+        modeType: getModeTypeForAssignment(toAssignment),
+        modeLabel: toAssignment,
+        floor: getFloorForAssignment(toAssignment),
+        updatedAt: serverTimestamp()
+      });
+    }
+
+    await loadAdminTasks();
+    hideLoading();
+    showAppMessage("Moved.");
+    await loadReassignmentAreas();
+  }
+
+  async function checkAssignmentCounts() {
+    updateReassignmentDateDisplay();
+    showLoading();
+
+    const assignments = getActiveAssignments();
+    const resultBox = document.getElementById("workloadResults");
+    resultBox.innerHTML = "";
+
+    document.getElementById("workloadDayTitle").innerText = "Weekly counts use " + reassignWorkDayName;
+
+    assignments.forEach(function(assignment) {
+      function countAreas(categoryName, weeklyMode) {
+        return allAreas.filter(function(area) {
+          if (getAreaAssignment(area) !== assignment) return false;
+          if (area.category !== categoryName) return false;
+          if (weeklyMode) {
+            return String(area.scheduleDay || "").trim().toLowerCase() === reassignWorkDayName.toLowerCase();
+          }
+          return true;
+        }).length;
+      }
+
+      const counts = [
+        ["Common Area", countAreas("Common Area", false)],
+        ["Weekly Room", countAreas("Weekly Room", true)],
+        ["Daily Room", countAreas("Daily Room", false)],
+        ["Dehumidifier", countAreas("Dehumidifier", false)],
+        ["Weekly Laundry", countAreas("Weekly Laundry", true)],
+        ["Daily Laundry", countAreas("Daily Laundry", false)]
+      ];
+
+      const total = counts.reduce(function(sum, item) { return sum + item[1]; }, 0);
+      const card = document.createElement("div");
+      card.className = "workload-card";
+
+      let html = "<h3>" + escapeHtml(assignment) + "</h3>";
+
+      counts.forEach(function(item) {
+        html +=
+          '<div class="workload-row">' +
+          '<span>' + escapeHtml(item[0]) + '</span>' +
+          '<span>' + item[1] + '</span>' +
+          '</div>';
+      });
+
+      html += '<div class="workload-total">TOTAL: ' + total + '</div>';
+      card.innerHTML = html;
+      resultBox.appendChild(card);
+    });
+
+    hideLoading();
+    showAdminView("adminWorkloadView");
+  }
+
+  function backToReassignment() {
+    showAdminView("adminReassignmentView");
+  }
+
+  /* =========================
+     49 - LOGOUT
+  ========================== */
+
+  function logout() {
+    sessionStorage.clear();
+    window.location.href = "index.html";
+  }
+
+  /* =========================
+     50 - HTML ESCAPE HELPER
+  ========================== */
+
+  function escapeHtml(value) {
+    return String(value)
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
+
+  /* =========================
+     51 - SCHEDULE HELPER
+  ========================== */
+
+  function getScheduleForSubTask(category) {
+    if (isWeeklyCategory(category)) {
+      const selectedDay = document.getElementById("adminTaskScheduleInput").value;
+      if (!selectedDay) {
+        alert("Select schedule day.");
+        throw new Error("Missing schedule day");
+      }
+      return selectedDay;
+    }
+    return "daily";
+  }
+
+  /* =========================
+     52 - WINDOW FUNCTIONS - DATE / ASSIGNMENT
+  ========================== */
+
+  window.changeAdminWorkDateFromBigPicker = changeAdminWorkDateFromBigPicker;
+  window.changeAdminAssignment = changeAdminAssignment;
+  window.searchAdminAreas = searchAdminAreas;
+  window.changeAdminAreaScheduleDay = changeAdminAreaScheduleDay;
+  window.closeAppMessage = closeAppMessage;
+  window.toggleHousekeepingMode = toggleHousekeepingMode;
+
+  /* =========================
+     53 - WINDOW FUNCTIONS - ADMIN TASKS
+  ========================== */
+
+  window.openNewAdminArea = openNewAdminArea;
+  window.openNewAdminSubTask = openNewAdminSubTask;
+  window.openAdminSubTaskEditor = openAdminSubTaskEditor;
+  window.closeAdminSubTaskEditor = closeAdminSubTaskEditor;
+  window.saveAdminAreaOnly = saveAdminAreaOnly;
+  window.saveAdminSubTask = saveAdminSubTask;
+  window.saveAdminSubTaskToAllWeeklyRooms = saveAdminSubTaskToAllWeeklyRooms;
+  window.deleteAdminSubTask = deleteAdminSubTask;
+  window.deleteAdminArea = deleteAdminArea;
+  window.backToAdminAreas = backToAdminAreas;
+  window.backToAdminCategories = backToAdminCategories;
+  window.addCheckedTasksToAllAreas = addCheckedTasksToAllAreas;
+  window.deleteCheckedTasksFromAllAreas = deleteCheckedTasksFromAllAreas;
+  window.addCheckedTasksToSingleArea = addCheckedTasksToSingleArea;
+  window.deleteCheckedTasksFromSingleArea = deleteCheckedTasksFromSingleArea;
+
+  /* =========================
+     53B - WINDOW FUNCTIONS - REASSIGNMENT
+  ========================== */
+
+  window.openReassignment = openReassignment;
+  window.loadReassignmentAreas = loadReassignmentAreas;
+  window.moveReassignmentArea = moveReassignmentArea;
+  window.changeReassignmentCategory = changeReassignmentCategory;
+  window.changeReassignmentDate = changeReassignmentDate;
+  window.checkAssignmentCounts = checkAssignmentCounts;
+  window.backToReassignment = backToReassignment;
+
+  /* =========================
+     54 - WINDOW FUNCTIONS - EMPLOYEES
+  ========================== */
+
+  window.openEmployees = openEmployees;
+  window.openNewEmployee = openNewEmployee;
+  window.saveEmployee = saveEmployee;
+  window.deleteEmployee = deleteEmployee;
+
+  /* =========================
+     55 - WINDOW FUNCTIONS - LOGOUT
+  ========================== */
+
+  window.logout = logout;
+
+</script>
+
+</body>
+</html>
 <head>
   <!-- =========================
        01 - HEAD
