@@ -1245,65 +1245,7 @@ select.appendChild(blankOption);
 
  v
 
-  async function saveAreaStatus(taskResults) {
-    const statusSummary = getStatusSummary(taskResults);
-    const statusId = makeStatusId(currentAreaId);
-    const statusRef = doc(db, "task_area_status", statusId);
-
-    const firstTask = currentTaskList[0] || {};
-
-    const statusDoc = {
-      statusId: statusId,
-      workDateISO: currentWorkDateISO,
-      workDate: currentWorkDateDisplay,
-      weekday: currentWorkDayName,
-      employeeId: String(employeeId || ""),
-      employeeName: employeeName,
-      schedule: currentAssignment,
-      modeType: getModeTypeForAssignment(currentAssignment),
-      areaId: currentAreaId,
-      areaName: currentAreaName,
-      category: selectedCategory,
-      floor: firstTask.floor || "",
-      status: statusSummary.status,
-      completedCount: statusSummary.completedCount,
-      incompleteCount: statusSummary.incompleteCount,
-      totalCount: statusSummary.totalCount,
-      tasks: taskResults,
-      updatedAt: serverTimestamp()
-    };
-
-    await setDoc(statusRef, statusDoc, { merge: true });
-
-    const historyId = makeHistoryId(currentAreaId);
-    const historyRef = doc(db, "task_history", historyId);
-
-    await setDoc(historyRef, {
-      historyId: historyId,
-      employeeName: employeeName,
-      mode: getModeTypeForAssignment(currentAssignment),
-      area_id: currentAreaId,
-      area_type: selectedCategory,
-      task_name: "AREA SAVE",
-      status: statusSummary.status,
-      completed_date: currentWorkDateISO,
-      completed_time: getTimeNow(),
-      timestamp: Date.now(),
-      schedule: currentAssignment,
-      floor: firstTask.floor || "",
-      reason: getReasonText(),
-      note: document.getElementById("note").value || "",
-      work_id: statusId,
-      areaName: currentAreaName,
-      completedCount: statusSummary.completedCount,
-      incompleteCount: statusSummary.incompleteCount,
-      totalCount: statusSummary.totalCount,
-      taskResults: Object.keys(taskResults).map(function(key) { return taskResults[key]; }),
-      updatedAt: serverTimestamp()
-    }, { merge: true });
-
-    progressData[currentAreaId] = statusDoc;
-  }
+v
 
   function getStatusSummary(taskResults) {
     let completedCount = 0;
