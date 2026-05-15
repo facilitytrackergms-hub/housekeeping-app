@@ -736,6 +736,11 @@
     });
 
     select.innerHTML = "";
+    const blankOption = document.createElement("option");
+blankOption.value = "";
+blankOption.innerText = "Choose schedule";
+blankOption.selected = true;
+select.appendChild(blankOption);
 
     schedules.forEach(function(schedule) {
       const value = schedule.scheduleId || schedule.name || schedule.id;
@@ -751,10 +756,14 @@
     });
   }
 
-  function showCoverScheduleDropdown() {
-    document.getElementById("coverScheduleSelect").classList.remove("hidden");
-    document.getElementById("coverScheduleButton").classList.add("hidden");
-  }
+ function showCoverScheduleDropdown() {
+  const select = document.getElementById("coverScheduleSelect");
+
+  select.value = "";
+  select.classList.remove("hidden");
+
+  document.getElementById("coverScheduleButton").classList.add("hidden");
+}
 
   async function changeCoverSchedule() {
     const select = document.getElementById("coverScheduleSelect");
