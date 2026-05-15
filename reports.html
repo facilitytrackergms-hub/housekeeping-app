@@ -280,6 +280,9 @@
           <option value="">All</option>
           <option value="Completed">Completed</option>
           <option value="Incomplete">Incomplete</option>
+          <option value="Open">Open</option>
+          <option value="Needs Follow-Up">Needs Follow-Up</option>
+          <option value="Resolved">Resolved</option>
         </select>
       </div>
 
@@ -469,17 +472,30 @@
     showLoading();
 
     try {
-      const reportQuery = query(
+      const taskQuery = query(
         collection(db, "task_history"),
         where("completed_date", ">=", fromDate),
         where("completed_date", "<=", toDate)
       );
 
-      const snap = await getDocs(reportQuery);
+      const issueQuery = query(
+        collection(db, "issue_logs"),
+        where("createdDate", ">=", fromDate),
+        where("createdDate", "<=", toDate)
+      );
 
-      loadedRows = snap.docs.map(function(docSnap) {
+      const taskSnap = await getDocs(taskQuery);
+      const issueSnap = await getDocs(issueQuery);
+
+      const taskRows = taskSnap.docs.map(function(docSnap) {
         return normalizeHistoryRow(docSnap.id, docSnap.data());
       });
+
+      const issueRows = issueSnap.docs.map(function(docSnap) {
+        return normalizeIssueRow(docSnap.id, docSnap.data());
+      });
+
+      loadedRows = taskRows.concat(issueRows);
 
       applyFiltersAndDraw();
     } catch (error) {
@@ -494,6 +510,7 @@
   function normalizeHistoryRow(id, row) {
     return {
       id: id,
+      rowType: "Task",
       completed_date: row.completed_date || "",
       completed_time: row.completed_time || "",
       employeeName: row.employeeName || row.employee_name || "",
@@ -512,6 +529,37 @@
     };
   }
 
+  function normalizeIssueRow(id, row) {
+    return {
+      id: id,
+      rowType: "Issue",
+      completed_date: row.createdDate || row.workDateISO || "",
+      completed_time: row.createdTime || "",
+      employeeName: row.employeeName || "",
+      schedule: row.schedule || "",
+      floor: row.floor || "",
+      areaName: row.areaName || "",
+      area_id: row.areaId || "",
+      area_type: row.category || "",
+      status: row.status || "Open",
+      reason: row.issueReason || "",
+      note: row.issueNote || row.followUpNote || "",
+      completedCount: 0,
+      incompleteCount: 1,
+      totalCount: 1,
+      issueId: row.issueId || id,
+      needsFollowUp: row.needsFollowUp === true,
+      followUpNote: row.followUpNote || "",
+      resolvedBy: row.resolvedBy || "",
+      resolvedDate: row.resolvedDate || "",
+      photoCount: Number(row.photoCount || 0),
+      taskResults: [{
+        taskName: row.taskName || "",
+        status: "Incomplete"
+      }]
+    };
+  }
+
   /* 14 - FILTER AND DRAW */
   function applyFiltersAndDraw() {
     const employee = document.getElementById("employeeFilter").value.toLowerCase();
@@ -523,11 +571,14 @@
     const reportType = document.getElementById("reportType").value;
 
     filteredRows = loadedRows.filter(function(row) {
+      if (reportType === "detail" && row.rowType !== "Task") return false;
+      if (reportType === "issues" && row.rowType !== "Issue" && String(row.status || "").toLowerCase() !== "incomplete") return false;
+      if (reportType === "summary" && row.rowType !== "Task") return false;
+
       if (employee && String(row.employeeName || "").toLowerCase() !== employee) return false;
       if (floor && String(row.floor || "").toLowerCase() !== floor) return false;
       if (schedule && String(row.schedule || "").toLowerCase() !== schedule) return false;
       if (status && String(row.status || "").toLowerCase() !== status) return false;
-      if (reportType === "issues" && String(row.status || "").toLowerCase() !== "incomplete") return false;
 
       if (area) {
         const areaText = (String(row.areaName || "") + " " + String(row.area_id || "")).toLowerCase();
@@ -537,6 +588,8 @@
       if (text) {
         const taskText = row.taskResults.map(function(task) { return task.taskName || ""; }).join(" ");
         const fullText = [
+          row.rowType,
+          row.issueId,
           row.employeeName,
           row.schedule,
           row.floor,
@@ -545,6 +598,8 @@
           row.status,
           row.reason,
           row.note,
+          row.followUpNote,
+          row.resolvedBy,
           taskText
         ].join(" ").toLowerCase();
 
@@ -570,17 +625,20 @@
     const box = document.getElementById("summaryBox");
     box.innerHTML = "";
 
-    const total = filteredRows.length;
-    const completed = filteredRows.filter(function(row) { return row.status === "Completed"; }).length;
-    const incomplete = filteredRows.filter(function(row) { return row.status === "Incomplete"; }).length;
-    const totalTasks = filteredRows.reduce(function(sum, row) { return sum + row.totalCount; }, 0);
-    const issueTasks = filteredRows.reduce(function(sum, row) { return sum + row.incompleteCount; }, 0);
+    const taskRows = filteredRows.filter(function(row) { return row.rowType === "Task"; });
+    const issueRows = filteredRows.filter(function(row) { return row.rowType === "Issue"; });
 
-    addSummaryCard(box, total, "Saved Areas");
+    const total = filteredRows.length;
+    const completed = taskRows.filter(function(row) { return row.status === "Completed"; }).length;
+    const incomplete = taskRows.filter(function(row) { return row.status === "Incomplete"; }).length;
+    const openIssues = issueRows.filter(function(row) { return String(row.status || "").toLowerCase() === "open"; }).length;
+    const resolvedIssues = issueRows.filter(function(row) { return String(row.status || "").toLowerCase() === "resolved"; }).length;
+
+    addSummaryCard(box, total, "Records");
     addSummaryCard(box, completed, "Completed Areas");
-    addSummaryCard(box, incomplete, "Issue Areas");
-    addSummaryCard(box, totalTasks, "Total Tasks");
-    addSummaryCard(box, issueTasks, "Issue Tasks");
+    addSummaryCard(box, incomplete, "Task Issues");
+    addSummaryCard(box, openIssues, "Open Issues");
+    addSummaryCard(box, resolvedIssues, "Resolved Issues");
 
     box.classList.remove("hidden");
   }
@@ -616,8 +674,8 @@
     filteredRows.forEach(function(row) {
       const tr = document.createElement("tr");
       const taskList = buildTaskList(row);
-      const reasonText = [row.reason, row.note].filter(Boolean).join(" - ");
-      const statusClass = row.status === "Completed" ? "status-completed" : "status-incomplete";
+      const reasonText = buildReasonText(row);
+      const statusClass = row.status === "Completed" || row.status === "Resolved" ? "status-completed" : "status-incomplete";
 
       tr.innerHTML =
         '<td>' + escapeHtml(row.completed_date) + '</td>' +
@@ -629,7 +687,7 @@
         '<td>' + escapeHtml(row.area_type) + '</td>' +
         '<td class="' + statusClass + '">' + escapeHtml(row.status) + '</td>' +
         '<td>' + escapeHtml(row.completedCount + '/' + row.totalCount) + '</td>' +
-        '<td>' + escapeHtml(row.incompleteCount) + '</td>' +
+        '<td>' + escapeHtml(getIssueCountText(row)) + '</td>' +
         '<td class="small-text">' + escapeHtml(reasonText) + '</td>' +
         '<td class="small-text">' + taskList + '</td>';
 
@@ -648,6 +706,31 @@
     }).join("<br>");
   }
 
+  function buildReasonText(row) {
+    const parts = [];
+
+    if (row.rowType === "Issue") {
+      if (row.issueId) parts.push("Issue: " + row.issueId);
+      if (row.reason) parts.push(row.reason);
+      if (row.note) parts.push(row.note);
+      if (row.needsFollowUp) parts.push("Needs follow-up");
+      if (row.followUpNote) parts.push("Follow-up: " + row.followUpNote);
+      if (row.resolvedBy) parts.push("Resolved by: " + row.resolvedBy);
+      if (row.resolvedDate) parts.push("Resolved date: " + row.resolvedDate);
+      return parts.join(" | ");
+    }
+
+    return [row.reason, row.note].filter(Boolean).join(" - ");
+  }
+
+  function getIssueCountText(row) {
+    if (row.rowType === "Issue") {
+      return "1" + (row.photoCount ? " / " + row.photoCount + " photos" : "");
+    }
+
+    return row.incompleteCount;
+  }
+
   /* 17 - HELPERS */
   function formatFloor(floor) {
     if (floor === "1stfloor") return "1st Floor";
@@ -661,7 +744,9 @@
     const toDate = document.getElementById("toDate").value;
     const employee = document.getElementById("employeeFilter").value || "All Employees";
     const status = document.getElementById("statusFilter").value || "All Status";
-    document.getElementById("printSubtitle").innerText = fromDate + " to " + toDate + " | " + employee + " | " + status;
+    const reportType = document.getElementById("reportType").value;
+    const label = reportType === "issues" ? "Issues" : reportType === "summary" ? "Summary" : "Detailed";
+    document.getElementById("printSubtitle").innerText = label + " | " + fromDate + " to " + toDate + " | " + employee + " | " + status;
   }
 
   function showMessage(message) {
