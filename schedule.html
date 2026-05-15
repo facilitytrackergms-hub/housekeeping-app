@@ -467,6 +467,7 @@
     doc,
     getDoc,
     setDoc,
+    deleteDoc,
     serverTimestamp,
     addDoc
   } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
@@ -1197,10 +1198,21 @@ select.appendChild(blankOption);
       return;
     }
 
+    loadCurrentTaskList(areaId, areaName);
+
+    if (isTaskListFullyCompleted(currentTaskList)) {
+      const undoChoice = await showCustomModal(areaName, "Undo completed room?", "YES", "CANCEL", "undo", "cancel");
+
+      if (undoChoice === "undo") {
+        await undoCurrentAreaCompletion();
+      }
+
+      return;
+    }
+
     const choice = await showCustomChoice(areaName, "", "SAVE", "TASKS");
 
     if (choice === "save") {
-      loadCurrentTaskList(areaId, areaName);
       await saveCurrentAreaComplete();
       return;
     }
@@ -1315,6 +1327,13 @@ select.appendChild(blankOption);
   /* 13 - CHECKLIST ACTIONS */
 
   async function confirmCheckAllTasks() {
+    if (areAllTaskButtonsDone()) {
+      const undoConfirmed = await showCustomConfirm("Undo all tasks?");
+      if (!undoConfirmed) return;
+      uncheckAllTasks();
+      return;
+    }
+
     const confirmed = await showCustomConfirm("All tasks done?");
     if (!confirmed) return;
     checkAllTasks();
@@ -1334,6 +1353,28 @@ select.appendChild(blankOption);
     document.getElementById("reasonBox").classList.add("hidden");
     document.getElementById("reason").value = "";
     document.getElementById("note").value = "";
+  }
+
+  function uncheckAllTasks() {
+    currentTaskList.forEach(function(task, index) {
+      const btn = document.getElementById("task_" + index);
+      if (!btn) return;
+
+      btn.dataset.done = "false";
+      btn.classList.remove("green");
+      btn.classList.add("red");
+    });
+
+    updateChecklistColors();
+  }
+
+  function areAllTaskButtonsDone() {
+    if (currentTaskList.length === 0) return false;
+
+    return currentTaskList.every(function(task, index) {
+      const btn = document.getElementById("task_" + index);
+      return btn && btn.dataset.done === "true";
+    });
   }
 
   function toggleTaskButton(index) {
@@ -1387,6 +1428,31 @@ select.appendChild(blankOption);
 
 
   /* 14 - LOW WRITE SAVE */
+
+  function isTaskListFullyCompleted(taskList) {
+    if (!taskList || taskList.length === 0) return false;
+
+    const counts = getTaskCounts(taskList);
+
+    return counts.completed >= taskList.length && counts.incomplete === 0;
+  }
+
+  async function undoCurrentAreaCompletion() {
+    showLoading();
+
+    const statusId = makeStatusId(currentAreaId);
+    const statusRef = doc(db, "task_area_status", statusId);
+
+    await deleteDoc(statusRef);
+
+    delete progressData[currentAreaId];
+
+    await loadAssignmentTasks();
+
+    hideLoading();
+    drawAreaButtons(selectedCategory);
+    showView(3);
+  }
 
   async function saveCurrentAreaComplete() {
     showLoading();
