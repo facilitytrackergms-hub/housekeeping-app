@@ -72,13 +72,18 @@
       font-weight: bold;
     }
 
-    input, select {
+    input, select, textarea {
       width: 100%;
       font-size: 18px;
       padding: 10px;
       margin: 6px 0 10px;
       border-radius: 12px;
       border: 1px solid #ccc;
+    }
+
+    textarea {
+      min-height: 70px;
+      resize: vertical;
     }
 
     button {
@@ -270,6 +275,33 @@
       text-align: center;
       font-size: 16px;
       font-weight: bold;
+    }
+
+    .issue-card {
+      border: 1px solid #ccc;
+      border-radius: 14px;
+      padding: 10px;
+      margin: 8px 0;
+      background: #fafafa;
+    }
+
+    .issue-card h3 {
+      text-align: left;
+      margin: 0 0 6px;
+      font-size: 18px;
+    }
+
+    .issue-line {
+      font-size: 14px;
+      font-weight: bold;
+      margin: 3px 0;
+      color: #333;
+    }
+
+    .issue-note {
+      font-size: 14px;
+      margin: 6px 0;
+      line-height: 1.25;
     }
 
     /* =========================
@@ -581,6 +613,36 @@
   </div>
 
   <!-- =========================
+       09B - ADMIN VIEW 8B - ISSUES
+  ========================== -->
+
+  <div id="adminIssuesView" class="hidden">
+
+    <div class="view-center">
+      <div class="view-tag">ADMIN VIEW 8B - ISSUES</div>
+    </div>
+
+    <div class="assignment-title" id="adminIssuesAssignmentTitle"></div>
+    <h2>Issues</h2>
+
+    <label>Status</label>
+    <select id="issueStatusFilter" onchange="drawIssueList()">
+      <option value="Open">Open</option>
+      <option value="Needs Follow-Up">Needs Follow-Up</option>
+      <option value="Resolved">Resolved</option>
+      <option value="All">All</option>
+    </select>
+
+    <label>Search</label>
+    <input id="issueSearchInput" placeholder="Room, employee, reason" oninput="drawIssueList()">
+
+    <div id="issueList"></div>
+
+    <button class="back" onclick="backToAdminCategories()">BACK</button>
+
+  </div>
+
+  <!-- =========================
        10 - ADMIN VIEW 9 - EDIT EMPLOYEE
   ========================== -->
 
@@ -822,6 +884,7 @@
   let allAreasForAssignment = [];
   let allAreasForDay = [];
   let allSubTasks = [];
+  let allIssues = [];
   let currentAreaTasks = [];
   let currentEmployeeId = "";
   let currentEditingTaskId = "";
@@ -987,6 +1050,7 @@
       "adminAreaView",
       "adminEditView",
       "adminEmployeesView",
+      "adminIssuesView",
       "adminEmployeeEditView",
       "adminReassignmentView",
       "adminWorkloadView"
@@ -1005,6 +1069,7 @@
       "adminEditAssignmentTitle",
       "adminSubtaskAssignmentTitle",
       "adminEmployeesAssignmentTitle",
+      "adminIssuesAssignmentTitle",
       "adminEmployeeEditAssignmentTitle"
     ].forEach(function(id) {
       const el = document.getElementById(id);
@@ -1263,8 +1328,8 @@
     box.innerHTML = "";
 
     const buttons = currentAssignment === "Laundry"
-      ? ["Weekly Laundry", "Daily Laundry", "Reports", "Reassignment", "Employees", "Logout"]
-      : ["Common Area", "Weekly Room", "Daily Room", "Dehumidifier", "Reports", "Reassignment", "Employees", "Logout"];
+      ? ["Weekly Laundry", "Daily Laundry", "Issues", "Reports", "Reassignment", "Employees", "Logout"]
+      : ["Common Area", "Weekly Room", "Daily Room", "Dehumidifier", "Issues", "Reports", "Reassignment", "Employees", "Logout"];
 
     buttons.forEach(function(item) {
       const btn = document.createElement("button");
@@ -1278,6 +1343,8 @@
 
         if (item === "Employees") {
           btn.onclick = openEmployees;
+        } else if (item === "Issues") {
+          btn.onclick = openIssues;
         } else if (item === "Reports") {
           btn.onclick = function() { window.location.href = "reports.html"; };
         } else if (item === "Reassignment") {
@@ -2221,6 +2288,169 @@
   }
 
   /* =========================
+     44B - OPEN ISSUES
+  ========================== */
+
+  async function openIssues() {
+    showLoading();
+
+    const snap = await getDocs(collection(db, "issue_logs"));
+
+    allIssues = snap.docs.map(function(issueDoc) {
+      return {
+        id: issueDoc.id,
+        ...issueDoc.data()
+      };
+    });
+
+    allIssues = allIssues.sort(function(a, b) {
+      const aValue = String(a.createdDate || "") + " " + String(a.createdTime || "");
+      const bValue = String(b.createdDate || "") + " " + String(b.createdTime || "");
+      return bValue.localeCompare(aValue);
+    });
+
+    document.getElementById("issueStatusFilter").value = "Open";
+    document.getElementById("issueSearchInput").value = "";
+
+    drawIssueList();
+
+    hideLoading();
+    updateAssignmentTitles();
+    showAdminView("adminIssuesView");
+  }
+
+  function drawIssueList() {
+    const box = document.getElementById("issueList");
+    const statusFilter = document.getElementById("issueStatusFilter").value;
+    const searchText = String(document.getElementById("issueSearchInput").value || "").trim().toLowerCase();
+
+    box.innerHTML = "";
+
+    let issues = allIssues.filter(function(issue) {
+      if (statusFilter !== "All" && String(issue.status || "Open") !== statusFilter) return false;
+
+      if (searchText) {
+        const combined = [
+          issue.areaName,
+          issue.employeeName,
+          issue.category,
+          issue.taskName,
+          issue.issueReason,
+          issue.issueNote,
+          issue.status
+        ].join(" ").toLowerCase();
+
+        if (!combined.includes(searchText)) return false;
+      }
+
+      return true;
+    });
+
+    if (issues.length === 0) {
+      const empty = document.createElement("h3");
+      empty.innerText = "No issues found.";
+      box.appendChild(empty);
+      return;
+    }
+
+    issues.forEach(function(issue) {
+      const card = document.createElement("div");
+      card.className = "issue-card";
+
+      const title = (issue.areaName || "Area") + " - " + (issue.taskName || "Task");
+      const status = issue.status || "Open";
+      const photos = Number(issue.photoCount || 0);
+
+      card.innerHTML =
+        '<h3>' + escapeHtml(title) + '</h3>' +
+        '<div class="issue-line">Status: ' + escapeHtml(status) + '</div>' +
+        '<div class="issue-line">Employee: ' + escapeHtml(issue.employeeName || "") + '</div>' +
+        '<div class="issue-line">Date: ' + escapeHtml(issue.createdDate || "") + ' ' + escapeHtml(issue.createdTime || "") + '</div>' +
+        '<div class="issue-line">Category: ' + escapeHtml(issue.category || "") + '</div>' +
+        '<div class="issue-line">Reason: ' + escapeHtml(issue.issueReason || "") + '</div>' +
+        '<div class="issue-line">Photos: ' + photos + '</div>' +
+        '<div class="issue-note">' + escapeHtml(issue.issueNote || "") + '</div>' +
+        '<label>Follow-Up Note</label>' +
+        '<textarea id="followup_' + issue.id + '">' + escapeHtml(issue.followUpNote || "") + '</textarea>' +
+        '<div class="button-row-three">' +
+          '<button class="yellow" onclick="markIssueFollowUp(\'' + issue.id + '\')">FOLLOW UP</button>' +
+          '<button class="green" onclick="resolveIssue(\'' + issue.id + '\')">RESOLVE</button>' +
+          '<button class="red" onclick="deleteIssueLog(\'' + issue.id + '\')">DELETE</button>' +
+        '</div>';
+
+      box.appendChild(card);
+    });
+  }
+
+  async function markIssueFollowUp(issueId) {
+    const noteBox = document.getElementById("followup_" + issueId);
+    const noteText = noteBox ? noteBox.value.trim() : "";
+
+    showLoading();
+
+    await updateDoc(doc(db, "issue_logs", issueId), {
+      status: "Needs Follow-Up",
+      needsFollowUp: true,
+      followUpNote: noteText,
+      lastUpdated: getDateTimeNow(),
+      updatedAt: serverTimestamp()
+    });
+
+    await openIssues();
+    hideLoading();
+  }
+
+  async function resolveIssue(issueId) {
+    const noteBox = document.getElementById("followup_" + issueId);
+    const noteText = noteBox ? noteBox.value.trim() : "";
+
+    showLoading();
+
+    await updateDoc(doc(db, "issue_logs", issueId), {
+      status: "Resolved",
+      needsFollowUp: false,
+      followUpNote: noteText,
+      resolvedBy: sessionData.name || sessionData.employeeName || "Admin",
+      resolvedDate: getTodayISO(),
+      lastUpdated: getDateTimeNow(),
+      updatedAt: serverTimestamp()
+    });
+
+    await openIssues();
+    hideLoading();
+  }
+
+  async function deleteIssueLog(issueId) {
+    const ok = confirm("Delete this issue?");
+    if (!ok) return;
+
+    showLoading();
+
+    await updateDoc(doc(db, "issue_logs", issueId), {
+      status: "Deleted",
+      needsFollowUp: false,
+      lastUpdated: getDateTimeNow(),
+      updatedAt: serverTimestamp()
+    });
+
+    await openIssues();
+    hideLoading();
+  }
+
+  function getDateTimeNow() {
+    const now = new Date();
+    const yyyy = now.getFullYear();
+    const mm = String(now.getMonth() + 1).padStart(2, "0");
+    const dd = String(now.getDate()).padStart(2, "0");
+    const time = now.toLocaleTimeString([], {
+      hour: "numeric",
+      minute: "2-digit"
+    });
+
+    return yyyy + "-" + mm + "-" + dd + " " + time;
+  }
+
+  /* =========================
      45 - OPEN NEW EMPLOYEE
   ========================== */
 
@@ -2612,6 +2842,11 @@
   ========================== */
 
   window.openEmployees = openEmployees;
+  window.openIssues = openIssues;
+  window.drawIssueList = drawIssueList;
+  window.markIssueFollowUp = markIssueFollowUp;
+  window.resolveIssue = resolveIssue;
+  window.deleteIssueLog = deleteIssueLog;
   window.openNewEmployee = openNewEmployee;
   window.saveEmployee = saveEmployee;
   window.deleteEmployee = deleteEmployee;
