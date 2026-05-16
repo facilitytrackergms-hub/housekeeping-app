@@ -3707,23 +3707,23 @@
     });
 
     card.innerHTML =
-      '<h3>01 - ROOM ' + escapeHtml(currentRoomReportNumber) + '</h3>' +
+      '<h3>01 - Room ' + escapeHtml(currentRoomReportNumber) + '</h3>' +
       '<div class="room-report-line">Resident Status: ' + escapeHtml(residentStatus) + '</div>' +
-      '<div class="room-report-section-title">02 - LAUNDRY SCHEDULE</div>' +
+      '<div class="room-report-section-title">02 - Laundry Schedule</div>' +
       laundryScheduleHtml +
-      '<div class="room-report-section-title">03 - LAST LAUNDRY EXECUTED</div>' +
+      '<div class="room-report-section-title">03 - Last Laundry Executed</div>' +
       '<div class="room-report-line">' + escapeHtml(formatStatusSummary(lastLaundry)) + '</div>' +
-      '<div class="room-report-section-title">04 - HOUSEKEEPING SCHEDULE</div>' +
+      '<div class="room-report-section-title">04 - Housekeeping Schedule</div>' +
       housekeepingScheduleHtml +
-      '<div class="room-report-section-title">07 - LAST HOUSEKEEPING EXECUTED</div>' +
+      '<div class="room-report-section-title">05 - Last Housekeeping Executed</div>' +
       '<div class="room-report-line">' + escapeHtml(formatStatusSummary(lastHousekeeping)) + '</div>' +
-      '<div class="room-report-section-title">08 - DEHUMIDIFIER</div>' +
+      '<div class="room-report-section-title">06 - Dehumidifier</div>' +
       dehumidifierScheduleHtml +
-      '<div class="room-report-section-title">09 - LAST DEHUMIDIFIER EXECUTED</div>' +
+      '<div class="room-report-section-title">07 - Last Dehumidifier Executed</div>' +
       buildDehumidifierExecutedHtml(hasDehumidifierSetup, lastDehumidifierAm, lastDehumidifierPm) +
-      '<div class="room-report-section-title">10 - OPEN ISSUES</div>' +
+      '<div class="room-report-section-title">08 - Open Issues</div>' +
       buildOpenIssuesHtml(openIssues) +
-      '<div class="room-report-section-title">11 - SELECTED DATE - ' + escapeHtml(formatDateWithWeekday(selectedDate)) + '</div>' +
+      '<div class="room-report-section-title">09 - Selected Date - ' + escapeHtml(formatDateWithWeekday(selectedDate)) + '</div>' +
       buildSelectedDateHtml(selectedDateStatuses, selectedDateIssues);
 
     box.appendChild(card);
@@ -3811,8 +3811,7 @@
       return schedules.includes(getAreaAssignment(area)) && String(area.category || "") !== "Dehumidifier";
     });
 
-    let sectionNumber = title === "MODE 2" ? "05 - " : title === "MODE 3" ? "06 - " : "";
-    let html = '<div class="room-report-section-title">' + escapeHtml(sectionNumber + title) + '</div>';
+    let html = '<div class="room-report-section-title">' + escapeHtml(title) + '</div>';
 
     if (areas.length === 0) {
       html += '<div class="room-report-line">No setup.</div>';
