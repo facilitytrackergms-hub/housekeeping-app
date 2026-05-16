@@ -2369,17 +2369,16 @@ async function saveReasonIfNeeded(reasonText) {
     return occupancy;
   }
 
-  function getResidentStatusText(value) {
-    const text = String(value || "").trim();
-    if (!text) return "";
+function getResidentStatusText(value) {
+  const text = String(value || "").trim();
+  if (!text) return "";
 
-    const lower = text.toLowerCase();
-    if (lower === "assisted") return "Assisted";
-    if (lower === "depending") return "Depending";
-    if (lower === "hospice") return "Hospice";
-    return text;
-  }
-
+  const lower = text.toLowerCase();
+  if (lower === "assisted") return "ASSISTED";
+  if (lower === "depending") return "DEPENDING";
+  if (lower === "hospice") return "HOSPICE";
+  return text.toUpperCase();
+}
   function getOccupancyText(setting) {
     if (!setting || Object.keys(setting).length === 0) return "";
     return setting.isOccupied === false ? "VACANT" : "OCCUPIED";
