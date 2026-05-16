@@ -240,6 +240,24 @@
       margin: 0;
     }
 
+    .admin-area-action-row {
+      margin: 8px 0 8px;
+    }
+
+    .admin-area-action-row button {
+      min-height: 44px;
+      font-size: 14px;
+      padding: 9px 6px;
+    }
+
+    #adminBulkTaskBox {
+      margin-top: 6px;
+    }
+
+    #adminAreaButtons {
+      margin-top: 8px;
+    }
+
     .button-row-three {
       display: grid;
       grid-template-columns: 1fr 1fr 1fr;
@@ -620,9 +638,15 @@
       oninput="searchAdminAreas()"
     >
 
-    <button id="adminAddAreaButton" class="green" onclick="openNewAdminArea()">
-      ADD NEW AREA
-    </button>
+    <div class="button-row admin-area-action-row">
+      <button id="adminAddAreaButton" class="green" onclick="openNewAdminArea()">
+        ADD NEW AREA
+      </button>
+
+      <button id="adminBulkTaskToggleButton" class="yellow hidden" onclick="toggleAdminBulkTaskBox()">
+        TASK TOOLS
+      </button>
+    </div>
 
     <div id="adminBulkTaskBox" class="task-card hidden">
       <h3>Default Tasks</h3>
@@ -1250,6 +1274,7 @@
   let selectedAreaWorkId = "";
   let selectedAreaScheduleDay = "";
   let adminAreaSearchTerm = "";
+  let adminBulkTaskOpen = false;
 
   let allAreas = [];
   let allAreasForAssignment = [];
@@ -1912,6 +1937,7 @@
           btn.onclick = function() {
             selectedCategory = item;
             adminAreaSearchTerm = "";
+            adminBulkTaskOpen = false;
             document.getElementById("adminAreaSearchInput").value = "";
             drawAdminAreaButtons(item);
             showAdminView("adminAreaView");
@@ -2025,13 +2051,31 @@
 
   function setAdminBulkTaskBoxVisibility(category) {
     const box = document.getElementById("adminBulkTaskBox");
+    const toggleButton = document.getElementById("adminBulkTaskToggleButton");
+    const allowed = ["Weekly Room", "Daily Room", "Weekly Laundry", "Daily Laundry"].includes(category);
 
-    if (["Weekly Room", "Daily Room", "Weekly Laundry", "Daily Laundry"].includes(category)) {
-      drawTaskCheckboxes("adminBulkTaskChecks", getDefaultTasksForSelectedCategory(), "bulkTaskCheck");
-      box.classList.remove("hidden");
-    } else {
-      box.classList.add("hidden");
+    if (!allowed) {
+      adminBulkTaskOpen = false;
+      if (box) box.classList.add("hidden");
+      if (toggleButton) toggleButton.classList.add("hidden");
+      return;
     }
+
+    drawTaskCheckboxes("adminBulkTaskChecks", getDefaultTasksForSelectedCategory(), "bulkTaskCheck");
+
+    if (toggleButton) {
+      toggleButton.innerText = adminBulkTaskOpen ? "HIDE TASKS" : "TASK TOOLS";
+      toggleButton.classList.remove("hidden");
+    }
+
+    if (box) {
+      box.classList.toggle("hidden", !adminBulkTaskOpen);
+    }
+  }
+
+  function toggleAdminBulkTaskBox() {
+    adminBulkTaskOpen = !adminBulkTaskOpen;
+    setAdminBulkTaskBoxVisibility(selectedCategory);
   }
 
   function setAdminSingleTaskBoxVisibility(category) {
@@ -4298,6 +4342,7 @@
   window.backToAdminCategories = backToAdminCategories;
   window.addCheckedTasksToAllAreas = addCheckedTasksToAllAreas;
   window.deleteCheckedTasksFromAllAreas = deleteCheckedTasksFromAllAreas;
+  window.toggleAdminBulkTaskBox = toggleAdminBulkTaskBox;
   window.addCheckedTasksToSingleArea = addCheckedTasksToSingleArea;
   window.deleteCheckedTasksFromSingleArea = deleteCheckedTasksFromSingleArea;
 
