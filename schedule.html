@@ -2191,9 +2191,9 @@ async function saveReasonIfNeeded(reasonText) {
     occupiedButton.classList.remove("yellow", "red", "green", "room-setting-blue");
     occupiedButton.classList.add(isVacant ? "red" : "room-setting-blue");
 
-    setResidentStatusButtonState(assistedButton, residentStatus === "Assisted");
-    setResidentStatusButtonState(dependingButton, residentStatus === "Depending");
-    setResidentStatusButtonState(hospiceButton, residentStatus === "Hospice");
+    setResidentStatusButtonState(assistedButton, !isVacant && residentStatus === "Assisted");
+    setResidentStatusButtonState(dependingButton, !isVacant && residentStatus === "Depending");
+    setResidentStatusButtonState(hospiceButton, !isVacant && residentStatus === "Hospice");
 
     updateDehumidifierLeadButton(dehumidifierButton, roomKey);
 
