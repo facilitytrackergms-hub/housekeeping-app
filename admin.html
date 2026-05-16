@@ -3675,12 +3675,10 @@
     const residentStatus = getRoomResidentStatus();
     const activeSettingsHtml = buildRoomActiveSettingsHtml();
     const lastHousekeeping = getLastRoomStatus(function(record) {
-      return ["Weekly Room", "Daily Room"].includes(String(record.category || ""));
+      return isHousekeepingStatus(record);
     });
     const lastLaundry = getLastRoomStatus(function(record) {
-      const category = String(record.category || "");
-      const schedule = String(record.schedule || "");
-      return category.includes("Laundry") || schedule === "Laundry";
+      return isLaundryStatus(record);
     });
     const lastDehumidifierAm = getLastRoomStatus(function(record) {
       return isDehumidifierStatus(record) && getDehumidifierPeriod(record) === "AM";
@@ -3688,10 +3686,6 @@
     const lastDehumidifierPm = getLastRoomStatus(function(record) {
       return isDehumidifierStatus(record) && getDehumidifierPeriod(record) === "PM";
     });
-    const lastDehumidifierAny = getLastRoomStatus(function(record) {
-      return isDehumidifierStatus(record);
-    });
-
     const openIssues = currentRoomReportIssues.filter(function(issue) {
       const status = String(issue.status || "Open");
       return status === "Open" || status === "Needs Follow-Up";
@@ -3705,15 +3699,9 @@
       return getRecordDateISO(issue) === selectedDate;
     });
 
-    let dehumidifierHtml = "";
-    if (lastDehumidifierAm || lastDehumidifierPm) {
-      dehumidifierHtml =
-        '<div class="room-report-line">Last Dehumidifier AM: ' + escapeHtml(formatStatusSummary(lastDehumidifierAm)) + '</div>' +
-        '<div class="room-report-line">Last Dehumidifier PM: ' + escapeHtml(formatStatusSummary(lastDehumidifierPm)) + '</div>';
-    } else {
-      dehumidifierHtml =
-        '<div class="room-report-line">Last Dehumidifier: ' + escapeHtml(formatStatusSummary(lastDehumidifierAny)) + '</div>';
-    }
+    const dehumidifierHtml =
+      '<div class="room-report-line">Dehumidifier AM: ' + escapeHtml(formatStatusSummary(lastDehumidifierAm)) + '</div>' +
+      '<div class="room-report-line">Dehumidifier PM: ' + escapeHtml(formatStatusSummary(lastDehumidifierPm)) + '</div>';
 
     card.innerHTML =
       '<h3>Room ' + escapeHtml(currentRoomReportNumber) + '</h3>' +
@@ -3721,8 +3709,8 @@
       '<div class="room-report-section-title">Active Room Settings</div>' +
       activeSettingsHtml +
       '<div class="room-report-section-title">Last Executed</div>' +
-      '<div class="room-report-line">Last Housekeeping: ' + escapeHtml(formatStatusSummary(lastHousekeeping)) + '</div>' +
-      '<div class="room-report-line">Last Laundry: ' + escapeHtml(formatStatusSummary(lastLaundry)) + '</div>' +
+      '<div class="room-report-line">Housekeeping: ' + escapeHtml(formatStatusSummary(lastHousekeeping)) + '</div>' +
+      '<div class="room-report-line">Laundry: ' + escapeHtml(formatStatusSummary(lastLaundry)) + '</div>' +
       dehumidifierHtml +
       '<div class="room-report-section-title">Open Issues</div>' +
       buildOpenIssuesHtml(openIssues) +
@@ -3781,26 +3769,57 @@
 
     let html = "";
 
-    currentRoomReportAreas.forEach(function(area) {
-      const tasks = getTasksForWorkId(area.workId);
-      const category = area.category || "Area";
-      const schedule = getAreaAssignment(area) || "";
-      const day = area.scheduleDay || area.day || "daily";
-      const laundryType = area.laundryType ? " - " + area.laundryType : "";
+    html += buildRoomModeSettingsGroup("MODE 2", ["HK1", "HK2"]);
+    html += buildRoomModeSettingsGroup("MODE 3", ["1stfloor", "2ndFloor", "3rdFloor"]);
+    html += buildRoomModeSettingsGroup("LAUNDRY", ["Laundry"]);
 
-      html +=
-        '<div class="room-report-line">' +
-        escapeHtml(category + ': ' + schedule + ' - ' + day + laundryType + ' - ' + tasks.length + ' task(s)') +
-        '</div>';
+    return html || '<div class="room-report-line">No active setup found for this room.</div>';
+  }
+
+  function buildRoomModeSettingsGroup(title, schedules) {
+    const areas = currentRoomReportAreas.filter(function(area) {
+      return schedules.includes(getAreaAssignment(area));
+    });
+
+    let html =
+      '<div class="room-report-section-title">' + escapeHtml(title) + '</div>';
+
+    if (areas.length === 0) {
+      html += '<div class="room-report-line">No setup.</div>';
+      return html;
+    }
+
+    areas.forEach(function(area) {
+      html += '<div class="room-report-line">' + escapeHtml(formatRoomSettingLine(area)) + '</div>';
     });
 
     return html;
+  }
+
+  function formatRoomSettingLine(area) {
+    const tasks = getTasksForWorkId(area.workId);
+    const category = area.category || "Area";
+    const schedule = getAreaAssignment(area) || "";
+    const day = area.scheduleDay || area.day || "daily";
+    const laundryType = area.laundryType ? " - " + area.laundryType : "";
+
+    return category + ": " + schedule + " - " + day + laundryType + " - " + tasks.length + " task(s)";
   }
 
   function getLastRoomStatus(filterFunction) {
     return currentRoomReportStatuses.find(function(record) {
       return filterFunction(record);
     }) || null;
+  }
+
+  function isHousekeepingStatus(record) {
+    return ["Weekly Room", "Daily Room"].includes(String(record.category || ""));
+  }
+
+  function isLaundryStatus(record) {
+    const category = String(record.category || "");
+    const schedule = String(record.schedule || "");
+    return category.includes("Laundry") || schedule === "Laundry";
   }
 
   function isDehumidifierStatus(record) {
@@ -3838,8 +3857,23 @@
     const statusLabel = incomplete > 0 ? "Not Done / Issue" : "Done";
     const countText = total > 0 ? " - " + completed + "/" + total : "";
     const employeeText = record.employeeName ? " - " + record.employeeName : "";
+    const taskText = getRecordTaskLabel(record);
 
-    return getRecordDateTimeText(record) + " - " + statusLabel + countText + employeeText;
+    return taskText + " - " + getRecordDateTimeText(record) + " - " + statusLabel + countText + employeeText;
+  }
+
+  function getRecordTaskLabel(record) {
+    const category = String(record.category || "").trim();
+    const taskName = String(record.taskName || "").trim();
+    const period = getDehumidifierPeriod(record);
+
+    if (category === "Dehumidifier" && period) {
+      return "Dehumidifier " + period;
+    }
+
+    if (category) return category;
+    if (taskName) return taskName;
+    return "Task";
   }
 
   function buildOpenIssuesHtml(openIssues) {
@@ -3872,7 +3906,7 @@
     let html = "";
 
     statuses.forEach(function(record) {
-      html += '<div class="room-report-line">' + escapeHtml((record.category || "Status") + ': ' + formatStatusSummary(record)) + '</div>';
+      html += '<div class="room-report-line">' + escapeHtml(formatStatusSummary(record)) + '</div>';
     });
 
     issues.forEach(function(issue) {
@@ -3891,12 +3925,24 @@
   }
 
   function getRecordDateISO(record) {
-    return String(record.workDateISO || record.completedDate || record.createdDate || record.date || "").slice(0, 10);
+    const directDate = String(record.workDateISO || record.completedDate || record.createdDate || record.date || "").slice(0, 10);
+
+    if (directDate) return directDate;
+
+    const millis = getTimestampMillis(record);
+    if (!millis) return "";
+
+    const date = new Date(millis);
+    const yyyy = date.getFullYear();
+    const mm = String(date.getMonth() + 1).padStart(2, "0");
+    const dd = String(date.getDate()).padStart(2, "0");
+
+    return yyyy + "-" + mm + "-" + dd;
   }
 
   function getRecordDateTimeText(record) {
     const dateText = getRecordDateISO(record) || "No date";
-    const timeText = String(
+    const directTime = String(
       record.completedTime ||
       record.savedTime ||
       record.createdTime ||
@@ -3906,10 +3952,39 @@
       ""
     ).trim();
 
-    return timeText ? dateText + " " + timeText : dateText;
+    if (directTime) return dateText + " - " + directTime;
+
+    const millis = getTimestampMillis(record);
+    if (!millis) return dateText;
+
+    const timeText = new Date(millis).toLocaleTimeString([], {
+      hour: "numeric",
+      minute: "2-digit"
+    });
+
+    return dateText + " - " + timeText;
+  }
+
+  function getTimestampMillis(record) {
+    if (record.updatedAt && typeof record.updatedAt.toMillis === "function") {
+      return record.updatedAt.toMillis();
+    }
+
+    if (record.createdAt && typeof record.createdAt.toMillis === "function") {
+      return record.createdAt.toMillis();
+    }
+
+    if (record.completedAt && typeof record.completedAt.toMillis === "function") {
+      return record.completedAt.toMillis();
+    }
+
+    return 0;
   }
 
   function getRecordSortValue(record) {
+    const millis = getTimestampMillis(record);
+    if (millis) return millis;
+
     const dateText = getRecordDateISO(record);
     const timeText = String(
       record.completedTime ||
@@ -3923,14 +3998,6 @@
 
     const parsed = Date.parse((dateText || "1900-01-01") + " " + timeText);
     if (!Number.isNaN(parsed)) return parsed;
-
-    if (record.updatedAt && typeof record.updatedAt.toMillis === "function") {
-      return record.updatedAt.toMillis();
-    }
-
-    if (record.createdAt && typeof record.createdAt.toMillis === "function") {
-      return record.createdAt.toMillis();
-    }
 
     return 0;
   }
