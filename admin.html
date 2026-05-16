@@ -3673,7 +3673,13 @@
     card.className = "room-report-card";
 
     const residentStatus = getRoomResidentStatus();
-    const activeSettingsHtml = buildRoomActiveSettingsHtml();
+    const laundryScheduleHtml = buildRoomScheduleSettingsHtml("laundry");
+    const housekeepingScheduleHtml = buildRoomScheduleSettingsHtml("housekeeping");
+    const dehumidifierScheduleHtml = buildRoomScheduleSettingsHtml("dehumidifier");
+    const hasDehumidifierSetup = currentRoomReportAreas.some(function(area) {
+      return String(area.category || "") === "Dehumidifier";
+    });
+
     const lastHousekeeping = getLastRoomStatus(function(record) {
       return isHousekeepingStatus(record);
     });
@@ -3686,6 +3692,7 @@
     const lastDehumidifierPm = getLastRoomStatus(function(record) {
       return isDehumidifierStatus(record) && getDehumidifierPeriod(record) === "PM";
     });
+
     const openIssues = currentRoomReportIssues.filter(function(issue) {
       const status = String(issue.status || "Open");
       return status === "Open" || status === "Needs Follow-Up";
@@ -3699,22 +3706,24 @@
       return getRecordDateISO(issue) === selectedDate;
     });
 
-    const dehumidifierHtml =
-      '<div class="room-report-line">Dehumidifier AM: ' + escapeHtml(formatStatusSummary(lastDehumidifierAm)) + '</div>' +
-      '<div class="room-report-line">Dehumidifier PM: ' + escapeHtml(formatStatusSummary(lastDehumidifierPm)) + '</div>';
-
     card.innerHTML =
       '<h3>Room ' + escapeHtml(currentRoomReportNumber) + '</h3>' +
       '<div class="room-report-line">Resident Status: ' + escapeHtml(residentStatus) + '</div>' +
-      '<div class="room-report-section-title">Active Room Settings</div>' +
-      activeSettingsHtml +
-      '<div class="room-report-section-title">Last Executed</div>' +
-      '<div class="room-report-line">Housekeeping: ' + escapeHtml(formatStatusSummary(lastHousekeeping)) + '</div>' +
-      '<div class="room-report-line">Laundry: ' + escapeHtml(formatStatusSummary(lastLaundry)) + '</div>' +
-      dehumidifierHtml +
+      '<div class="room-report-section-title">Laundry Schedule</div>' +
+      laundryScheduleHtml +
+      '<div class="room-report-section-title">Last Laundry Executed</div>' +
+      '<div class="room-report-line">' + escapeHtml(formatStatusSummary(lastLaundry)) + '</div>' +
+      '<div class="room-report-section-title">Housekeeping Schedule</div>' +
+      housekeepingScheduleHtml +
+      '<div class="room-report-section-title">Last Housekeeping Executed</div>' +
+      '<div class="room-report-line">' + escapeHtml(formatStatusSummary(lastHousekeeping)) + '</div>' +
+      '<div class="room-report-section-title">Dehumidifier</div>' +
+      dehumidifierScheduleHtml +
+      '<div class="room-report-section-title">Last Dehumidifier Executed</div>' +
+      buildDehumidifierExecutedHtml(hasDehumidifierSetup, lastDehumidifierAm, lastDehumidifierPm) +
       '<div class="room-report-section-title">Open Issues</div>' +
       buildOpenIssuesHtml(openIssues) +
-      '<div class="room-report-section-title">Selected Date - ' + escapeHtml(selectedDate) + '</div>' +
+      '<div class="room-report-section-title">Selected Date - ' + escapeHtml(formatDateWithWeekday(selectedDate)) + '</div>' +
       buildSelectedDateHtml(selectedDateStatuses, selectedDateIssues);
 
     box.appendChild(card);
@@ -3767,33 +3776,72 @@
       return '<div class="room-report-line">No active setup found for this room.</div>';
     }
 
-    let html = "";
+    return buildRoomScheduleSettingsHtml("housekeeping") +
+      buildRoomScheduleSettingsHtml("laundry") +
+      buildRoomScheduleSettingsHtml("dehumidifier");
+  }
 
+  function buildRoomScheduleSettingsHtml(type) {
+    if (type === "laundry") {
+      return buildRoomSettingsForAreas(
+        currentRoomReportAreas.filter(function(area) {
+          return getAreaAssignment(area) === "Laundry" || String(area.category || "").includes("Laundry");
+        }),
+        "No laundry schedule found."
+      );
+    }
+
+    if (type === "dehumidifier") {
+      return buildRoomSettingsForAreas(
+        currentRoomReportAreas.filter(function(area) {
+          return String(area.category || "") === "Dehumidifier";
+        }),
+        "No dehumidifier found."
+      );
+    }
+
+    let html = "";
     html += buildRoomModeSettingsGroup("MODE 2", ["HK1", "HK2"]);
     html += buildRoomModeSettingsGroup("MODE 3", ["1stfloor", "2ndFloor", "3rdFloor"]);
-    html += buildRoomModeSettingsGroup("LAUNDRY", ["Laundry"]);
-
-    return html || '<div class="room-report-line">No active setup found for this room.</div>';
+    return html || '<div class="room-report-line">No housekeeping schedule found.</div>';
   }
 
   function buildRoomModeSettingsGroup(title, schedules) {
     const areas = currentRoomReportAreas.filter(function(area) {
-      return schedules.includes(getAreaAssignment(area));
+      return schedules.includes(getAreaAssignment(area)) && String(area.category || "") !== "Dehumidifier";
     });
 
-    let html =
-      '<div class="room-report-section-title">' + escapeHtml(title) + '</div>';
+    let html = '<div class="room-report-section-title">' + escapeHtml(title) + '</div>';
 
     if (areas.length === 0) {
       html += '<div class="room-report-line">No setup.</div>';
       return html;
     }
 
+    return html + buildRoomSettingsForAreas(areas, "No setup.");
+  }
+
+  function buildRoomSettingsForAreas(areas, emptyText) {
+    if (!areas || areas.length === 0) {
+      return '<div class="room-report-line">' + escapeHtml(emptyText || "No setup.") + '</div>';
+    }
+
+    let html = "";
+
     areas.forEach(function(area) {
       html += '<div class="room-report-line">' + escapeHtml(formatRoomSettingLine(area)) + '</div>';
     });
 
     return html;
+  }
+
+  function buildDehumidifierExecutedHtml(hasDehumidifierSetup, lastDehumidifierAm, lastDehumidifierPm) {
+    if (!hasDehumidifierSetup) {
+      return '<div class="room-report-line">No dehumidifier found.</div>';
+    }
+
+    return '<div class="room-report-line">AM: ' + escapeHtml(formatStatusSummary(lastDehumidifierAm)) + '</div>' +
+      '<div class="room-report-line">PM: ' + escapeHtml(formatStatusSummary(lastDehumidifierPm)) + '</div>';
   }
 
   function formatRoomSettingLine(area) {
@@ -3940,8 +3988,16 @@
     return yyyy + "-" + mm + "-" + dd;
   }
 
+  function formatDateWithWeekday(isoDate) {
+    const cleanDate = String(isoDate || "").slice(0, 10);
+
+    if (!cleanDate) return "No date";
+
+    return getWeekdayName(cleanDate) + " " + cleanDate;
+  }
+
   function getRecordDateTimeText(record) {
-    const dateText = getRecordDateISO(record) || "No date";
+    const dateText = formatDateWithWeekday(getRecordDateISO(record));
     const directTime = String(
       record.completedTime ||
       record.savedTime ||
