@@ -4351,8 +4351,15 @@
     });
   }
 
+  function getActiveHousekeepingAssignments() {
+    return getActiveAssignments().filter(function(assignment) {
+      return assignment !== "Laundry";
+    });
+  }
+
   function findTargetRoomForDehumidifier(roomValue) {
     const roomKey = getRoomKey(roomValue);
+    const activeAssignments = getActiveHousekeepingAssignments();
     const preferredCategories = ["Daily Room", "Weekly Room", "Common Area"];
 
     for (let i = 0; i < preferredCategories.length; i++) {
@@ -4360,6 +4367,7 @@
 
       const exact = allAreas.find(function(area) {
         return area.category === categoryName &&
+          activeAssignments.includes(getAreaAssignment(area)) &&
           getRoomKey(area.areaName) === roomKey &&
           isAreaForCurrentDay(area);
       });
@@ -4372,6 +4380,7 @@
 
       const fallback = allAreas.find(function(area) {
         return area.category === categoryName &&
+          activeAssignments.includes(getAreaAssignment(area)) &&
           getRoomKey(area.areaName) === roomKey;
       });
 
@@ -4380,6 +4389,7 @@
 
     return allAreas.find(function(area) {
       return area.category !== "Dehumidifier" &&
+        activeAssignments.includes(getAreaAssignment(area)) &&
         getRoomKey(area.areaName) === roomKey;
     });
   }
@@ -4414,9 +4424,12 @@
       return;
     }
 
+    const activeAssignments = getActiveHousekeepingAssignments();
+
     const duplicate = allAreas.find(function(area) {
       return area.id !== fromArea.id &&
         area.category === "Dehumidifier" &&
+        activeAssignments.includes(getAreaAssignment(area)) &&
         getRoomKey(area.areaName) === getRoomKey(cleanToRoom);
     });
 
@@ -4431,6 +4444,14 @@
     const targetScheduleDay = "daily";
     const oldRoomName = fromArea.areaName;
     const newRoomName = targetArea.areaName;
+
+    const ok = confirm("Are you sure you want to move dehumi " + oldRoomName + " to " + newRoomName + "?");
+    if (!ok) {
+      dehumidifierReassignStep = "";
+      dehumidifierFromAreaId = "";
+      drawAdminAreaButtons("Dehumidifier");
+      return;
+    }
 
     showLoading();
 
