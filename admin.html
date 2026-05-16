@@ -328,6 +328,40 @@
       padding-right: 2px;
     }
 
+
+
+    .weekday-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+      margin: 6px 0 6px;
+    }
+
+    .weekday-row button {
+      min-height: 36px;
+      font-size: 13px;
+      padding: 7px 3px;
+      margin: 0;
+      border-radius: 10px;
+      background: #e6e6e6;
+      color: #111;
+      border: 1px solid #bbb;
+    }
+
+    .weekday-row button.active-day {
+      background: #0d47a1;
+      color: white;
+      border-color: #0d47a1;
+    }
+
+    .reassign-showing-label {
+      text-align: center;
+      font-size: 15px;
+      font-weight: 900;
+      margin: 6px 0 8px;
+      color: #111;
+    }
+
     .laundry-room-list {
       max-height: 260px;
       overflow-y: auto;
@@ -985,13 +1019,29 @@
     </select>
 
     <div id="reassignDateBox" class="hidden">
-      <h3 id="reassignDateTitle"></h3>
+      <h3>From Day</h3>
 
-      <input
-        type="date"
-        id="reassignDatePicker"
-        onchange="changeReassignmentDate()"
-      >
+      <div id="reassignFromDayButtons" class="weekday-row">
+        <button type="button" onclick="setReassignmentFromWeekday('Monday')">Mon</button>
+        <button type="button" onclick="setReassignmentFromWeekday('Tuesday')">Tue</button>
+        <button type="button" onclick="setReassignmentFromWeekday('Wednesday')">Wed</button>
+        <button type="button" onclick="setReassignmentFromWeekday('Thursday')">Thu</button>
+        <button type="button" onclick="setReassignmentFromWeekday('Friday')">Fri</button>
+        <button type="button" onclick="setReassignmentFromWeekday('Saturday')">Sat</button>
+        <button type="button" onclick="setReassignmentFromWeekday('Sunday')">Sun</button>
+      </div>
+
+      <h3>To Day</h3>
+
+      <div id="reassignToDayButtons" class="weekday-row">
+        <button type="button" onclick="setReassignmentToWeekday('Monday')">Mon</button>
+        <button type="button" onclick="setReassignmentToWeekday('Tuesday')">Tue</button>
+        <button type="button" onclick="setReassignmentToWeekday('Wednesday')">Wed</button>
+        <button type="button" onclick="setReassignmentToWeekday('Thursday')">Thu</button>
+        <button type="button" onclick="setReassignmentToWeekday('Friday')">Fri</button>
+        <button type="button" onclick="setReassignmentToWeekday('Saturday')">Sat</button>
+        <button type="button" onclick="setReassignmentToWeekday('Sunday')">Sun</button>
+      </div>
     </div>
 
    <div class="button-row">
@@ -1005,6 +1055,8 @@
   </button>
 
 </div>
+
+    <div id="reassignShowingLabel" class="reassign-showing-label"></div>
 
     <div id="reassignmentAreaList" class="rooms-grid"></div>
 
@@ -1184,6 +1236,7 @@
   let currentWorkDayName = "";
   let reassignWorkDateISO = getTodayISO();
   let reassignWorkDayName = "";
+  let reassignTargetDayName = "";
 
   let housekeepingMode = "two";
   let selectedCategory = "";
@@ -1530,9 +1583,58 @@
   }
 
   function updateReassignmentDateDisplay() {
-    reassignWorkDayName = getWeekdayName(reassignWorkDateISO);
-    const title = document.getElementById("reassignDateTitle");
-    if (title) title.innerText = reassignWorkDayName;
+    const label = document.getElementById("reassignShowingLabel");
+    const fromAssignment = document.getElementById("reassignFrom")?.value || "";
+    const toAssignment = document.getElementById("reassignTo")?.value || "";
+    const category = document.getElementById("reassignCategory")?.value || "";
+
+    if (label) {
+      if (category && isWeeklyCategory(category) && reassignWorkDayName) {
+        label.innerText =
+          "Showing " + fromAssignment + " - " + category + " for " + reassignWorkDayName +
+          (toAssignment && reassignTargetDayName ? " → Move to " + toAssignment + " - " + reassignTargetDayName : "");
+      } else if (category) {
+        label.innerText = "Showing " + fromAssignment + " - " + category;
+      } else {
+        label.innerText = "";
+      }
+    }
+
+    updateReassignmentDayButtons();
+  }
+
+  function setReassignmentFromWeekday(dayName) {
+    reassignWorkDayName = dayName;
+    updateReassignmentDateDisplay();
+    document.getElementById("reassignmentAreaList").innerHTML = "";
+  }
+
+  function setReassignmentToWeekday(dayName) {
+    reassignTargetDayName = dayName;
+    updateReassignmentDateDisplay();
+    document.getElementById("reassignmentAreaList").innerHTML = "";
+  }
+
+  function updateReassignmentDayButtons() {
+    const dayMap = {
+      Mon: "Monday",
+      Tue: "Tuesday",
+      Wed: "Wednesday",
+      Thu: "Thursday",
+      Fri: "Friday",
+      Sat: "Saturday",
+      Sun: "Sunday"
+    };
+
+    Array.from(document.querySelectorAll("#reassignFromDayButtons button")).forEach(function(button) {
+      const fullDay = dayMap[button.innerText] || button.innerText;
+      button.classList.toggle("active-day", fullDay === reassignWorkDayName);
+    });
+
+    Array.from(document.querySelectorAll("#reassignToDayButtons button")).forEach(function(button) {
+      const fullDay = dayMap[button.innerText] || button.innerText;
+      button.classList.toggle("active-day", fullDay === reassignTargetDayName);
+    });
   }
 
   async function changeAdminWorkDateFromBigPicker() {
@@ -3673,9 +3775,10 @@
 
   async function openReassignment() {
     reassignWorkDateISO = currentWorkDateISO;
+    reassignWorkDayName = getWeekdayName(reassignWorkDateISO);
+    reassignTargetDayName = reassignWorkDayName;
     updateReassignmentDateDisplay();
     updateReassignmentDropdownOptions(true);
-    document.getElementById("reassignDatePicker").value = reassignWorkDateISO;
     document.getElementById("reassignmentAreaList").innerHTML = "";
     setReassignmentDateVisibility();
     showAdminView("adminReassignmentView");
@@ -3684,19 +3787,34 @@
   function setReassignmentDateVisibility() {
     const category = document.getElementById("reassignCategory").value;
     const box = document.getElementById("reassignDateBox");
-    if (category && isWeeklyCategory(category)) box.classList.remove("hidden");
-    else box.classList.add("hidden");
+    if (category && isWeeklyCategory(category)) {
+      if (!reassignWorkDayName) reassignWorkDayName = getWeekdayName(currentWorkDateISO);
+      if (!reassignTargetDayName) reassignTargetDayName = reassignWorkDayName;
+      box.classList.remove("hidden");
+    } else {
+      box.classList.add("hidden");
+    }
+    updateReassignmentDateDisplay();
   }
 
   async function changeReassignmentCategory() {
+    const category = document.getElementById("reassignCategory").value;
+    if (category && isWeeklyCategory(category) && !reassignWorkDayName) {
+      reassignWorkDayName = getWeekdayName(currentWorkDateISO);
+    }
+    if (category && isWeeklyCategory(category) && !reassignTargetDayName) {
+      reassignTargetDayName = reassignWorkDayName;
+    }
+    if (!category || !isWeeklyCategory(category)) {
+      reassignWorkDayName = "";
+      reassignTargetDayName = "";
+    }
+    updateReassignmentDateDisplay();
     setReassignmentDateVisibility();
     document.getElementById("reassignmentAreaList").innerHTML = "";
   }
 
   async function changeReassignmentDate() {
-    const picker = document.getElementById("reassignDatePicker");
-    if (!picker.value) return;
-    reassignWorkDateISO = picker.value;
     updateReassignmentDateDisplay();
     await loadReassignmentAreas();
   }
@@ -3708,6 +3826,11 @@
 
     if (!fromAssignment || !category) {
       showAppMessage("Select from and category.");
+      return;
+    }
+
+    if (isWeeklyCategory(category) && (!reassignWorkDayName || !reassignTargetDayName)) {
+      showAppMessage("Select from day and to day.");
       return;
     }
 
@@ -3745,7 +3868,7 @@
       btn.className = "yellow";
       btn.innerHTML =
         '<div class="room-number">' + escapeHtml(area.areaName) + '</div>' +
-        '<div class="room-counter">' + count + ' TASKS</div>';
+        '<div class="room-counter">' + escapeHtml(getAreaAssignment(area)) + ' • ' + count + ' TASKS</div>';
       btn.onclick = function() { moveReassignmentArea(area.id); };
       box.appendChild(btn);
     });
@@ -3764,9 +3887,15 @@
     const toAssignment = document.getElementById("reassignTo").value;
     const fromAssignment = document.getElementById("reassignFrom").value;
     const category = document.getElementById("reassignCategory").value;
+    const targetScheduleDay = isWeeklyCategory(category) ? reassignTargetDayName : (area ? area.scheduleDay : "daily");
 
     if (!area || !fromAssignment || !toAssignment || !category) {
       showAppMessage("Select from, to, and category.");
+      return;
+    }
+
+    if (isWeeklyCategory(category) && (!reassignWorkDayName || !reassignTargetDayName)) {
+      showAppMessage("Select from day and to day.");
       return;
     }
 
@@ -3775,8 +3904,9 @@
       return;
     }
 
-    if (fromAssignment === toAssignment) {
-      showAppMessage("This assignment is already on the schedule. Choose another assignment.");
+    if (fromAssignment === toAssignment &&
+        String(area.scheduleDay || "").trim().toLowerCase() === String(targetScheduleDay || "").trim().toLowerCase()) {
+      showAppMessage("This area is already on that schedule and day.");
       return;
     }
 
@@ -3785,21 +3915,25 @@
         getAreaAssignment(item) === toAssignment &&
         item.category === area.category &&
         String(item.areaName || "").trim().toLowerCase() === String(area.areaName || "").trim().toLowerCase() &&
-        String(item.scheduleDay || "").trim().toLowerCase() === String(area.scheduleDay || "").trim().toLowerCase();
+        String(item.scheduleDay || "").trim().toLowerCase() === String(targetScheduleDay || "").trim().toLowerCase();
     });
 
     if (duplicate) {
-      showAppMessage("Cannot duplicate assignments. This area already exists in " + toAssignment + ".");
+      showAppMessage("Cannot duplicate assignments. This area already exists in " + toAssignment + " for " + targetScheduleDay + ".");
       return;
     }
 
-    const ok = confirm("Move " + area.areaName + " to " + toAssignment + "?");
+    const moveText = isWeeklyCategory(category)
+      ? "Move " + area.areaName + " from " + fromAssignment + " - " + reassignWorkDayName + " to " + toAssignment + " - " + targetScheduleDay + "?"
+      : "Move " + area.areaName + " to " + toAssignment + "?";
+
+    const ok = confirm(moveText);
     if (!ok) return;
 
     showLoading();
 
     const oldWorkId = area.workId;
-    const newWorkId = buildWorkId(area.areaName, area.category, area.scheduleDay, toAssignment);
+    const newWorkId = buildWorkId(area.areaName, area.category, targetScheduleDay, toAssignment);
 
     await updateDoc(doc(db, "areas", area.id), {
       areaId: newWorkId,
@@ -3808,6 +3942,8 @@
       modeType: getModeTypeForAssignment(toAssignment),
       modeLabel: toAssignment,
       floor: getFloorForAssignment(toAssignment),
+      day: targetScheduleDay,
+      scheduleDay: targetScheduleDay,
       updatedAt: serverTimestamp()
     });
 
@@ -3821,6 +3957,7 @@
         modeType: getModeTypeForAssignment(toAssignment),
         modeLabel: toAssignment,
         floor: getFloorForAssignment(toAssignment),
+        day: targetScheduleDay,
         updatedAt: serverTimestamp()
       });
     }
@@ -4024,7 +4161,7 @@
     const resultBox = document.getElementById("workloadResults");
     resultBox.innerHTML = "";
 
-    document.getElementById("workloadDayTitle").innerText = "Weekly counts use " + reassignWorkDayName;
+    document.getElementById("workloadDayTitle").innerText = "Weekly counts use from day: " + reassignWorkDayName;
 
     assignments.forEach(function(assignment) {
       function countAreas(categoryName, weeklyMode) {
@@ -4154,6 +4291,8 @@
   window.moveReassignmentArea = moveReassignmentArea;
   window.changeReassignmentCategory = changeReassignmentCategory;
   window.changeReassignmentDate = changeReassignmentDate;
+  window.setReassignmentFromWeekday = setReassignmentFromWeekday;
+  window.setReassignmentToWeekday = setReassignmentToWeekday;
   window.checkAssignmentCounts = checkAssignmentCounts;
   window.backToReassignment = backToReassignment;
   window.openLaundryScheduleEditor = openLaundryScheduleEditor;
