@@ -319,8 +319,6 @@
 
     .room-status-chip {
       min-height: 16px;
-      border-radius: 8px;
-      background: rgba(255,255,255,0.92);
       color: #111;
       font-size: 8px;
       font-weight: 900;
@@ -330,6 +328,7 @@
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
+      text-shadow: 0 1px 1px rgba(255,255,255,0.70);
     }
 
     .room-status-chip.blank {
@@ -522,7 +521,7 @@
           <button id="residentDependingButton" class="yellow" onclick="setCurrentResidentStatus('Depending')">DEPENDING</button>
           <button id="residentHospiceButton" class="yellow" onclick="setCurrentResidentStatus('Hospice')">HOSPICE</button>
         </div>
-        <button id="leadDehumidifierButton" class="yellow lead-wide-button" onclick="goToAdminDehumidifierView()">DEHUM</button>
+        <button id="leadDehumidifierButton" class="red lead-wide-button" onclick="goToAdminDehumidifierView()">ADD DEHUM</button>
       </div>
 
       <button id="changeDehumidifierLocationButton" class="yellow hidden" onclick="goToAdminDehumidifierView()">CHANGE LOCATION</button>
@@ -2119,9 +2118,19 @@ async function saveReasonIfNeeded(reasonText) {
     setResidentStatusButtonState(dependingButton, residentStatus === "Depending");
     setResidentStatusButtonState(hospiceButton, residentStatus === "Hospice");
 
-    dehumidifierButton.classList.toggle("hidden", !hasDehumidifierForRoom(roomKey));
+    updateDehumidifierLeadButton(dehumidifierButton, roomKey);
 
     controls.classList.remove("hidden");
+  }
+
+  function updateDehumidifierLeadButton(button, roomKey) {
+    const hasDehum = hasDehumidifierForRoom(roomKey);
+
+    button.classList.remove("hidden");
+    button.innerText = hasDehum ? "DEHUM" : "ADD DEHUM";
+    button.classList.toggle("green", hasDehum);
+    button.classList.toggle("red", !hasDehum);
+    button.classList.remove("yellow");
   }
 
   function setResidentStatusButtonState(button, isActive) {
