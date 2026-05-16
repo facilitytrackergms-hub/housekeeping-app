@@ -340,7 +340,7 @@
       display: grid;
       grid-template-columns: 1fr 1fr;
       gap: 6px;
-      margin: 2px 0 8px;
+      margin: 6px 0 8px;
     }
 
     .lead-room-controls button {
@@ -348,6 +348,17 @@
       font-size: 12px;
       padding: 10px 3px;
       border-radius: 10px;
+    }
+
+    .resident-status-buttons {
+      grid-column: 1 / -1;
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 6px;
+    }
+
+    .lead-wide-button {
+      grid-column: 1 / -1;
     }
 
     #message {
@@ -506,8 +517,12 @@
       <div id="leadRoomControls" class="lead-room-controls hidden">
         <button id="dailyWeeklyToggleButton" class="yellow" onclick="toggleCurrentRoomDaily()">DAILY</button>
         <button id="occupiedVacantToggleButton" class="yellow" onclick="toggleCurrentRoomOccupied()">OCCUPIED</button>
-        <button id="residentStatusToggleButton" class="yellow" onclick="toggleCurrentResidentStatus()">ASSISTED</button>
-        <button id="leadDehumidifierButton" class="yellow" onclick="goToAdminDehumidifierView()">DEHUM</button>
+        <div class="resident-status-buttons">
+          <button id="residentAssistedButton" class="yellow" onclick="setCurrentResidentStatus('Assisted')">ASSISTED</button>
+          <button id="residentDependingButton" class="yellow" onclick="setCurrentResidentStatus('Depending')">DEPENDING</button>
+          <button id="residentHospiceButton" class="yellow" onclick="setCurrentResidentStatus('Hospice')">HOSPICE</button>
+        </div>
+        <button id="leadDehumidifierButton" class="yellow lead-wide-button" onclick="goToAdminDehumidifierView()">DEHUM</button>
       </div>
 
       <button id="changeDehumidifierLocationButton" class="yellow hidden" onclick="goToAdminDehumidifierView()">CHANGE LOCATION</button>
@@ -2009,7 +2024,7 @@ async function saveReasonIfNeeded(reasonText) {
 
 
   async function toggleCurrentRoomDaily() {
-    if (!isLeadHousekeeper) return;
+    if (!canManageRoomSettings()) return;
 
     const roomKey = getCurrentRoomKey();
     if (!roomKey) return;
@@ -2021,7 +2036,7 @@ async function saveReasonIfNeeded(reasonText) {
   }
 
   async function toggleCurrentRoomOccupied() {
-    if (!isLeadHousekeeper) return;
+    if (!canManageRoomSettings()) return;
 
     const roomKey = getCurrentRoomKey();
     if (!roomKey) return;
@@ -2032,16 +2047,13 @@ async function saveReasonIfNeeded(reasonText) {
     await saveCurrentRoomSetting({ isOccupied: nextValue });
   }
 
-  async function toggleCurrentResidentStatus() {
-    if (!isLeadHousekeeper) return;
+  async function setCurrentResidentStatus(statusValue) {
+    if (!canManageRoomSettings()) return;
 
     const roomKey = getCurrentRoomKey();
     if (!roomKey) return;
 
-    const setting = getCurrentRoomSetting();
-    const nextStatus = getNextResidentStatus(setting.residentStatus || "Assisted");
-
-    await saveCurrentRoomSetting({ residentStatus: nextStatus });
+    await saveCurrentRoomSetting({ residentStatus: statusValue });
   }
 
   async function saveCurrentRoomSetting(changes) {
@@ -2084,25 +2096,41 @@ async function saveReasonIfNeeded(reasonText) {
     const controls = document.getElementById("leadRoomControls");
     const dailyButton = document.getElementById("dailyWeeklyToggleButton");
     const occupiedButton = document.getElementById("occupiedVacantToggleButton");
-    const residentButton = document.getElementById("residentStatusToggleButton");
+    const assistedButton = document.getElementById("residentAssistedButton");
+    const dependingButton = document.getElementById("residentDependingButton");
+    const hospiceButton = document.getElementById("residentHospiceButton");
     const dehumidifierButton = document.getElementById("leadDehumidifierButton");
 
-    if (!controls || !dailyButton || !occupiedButton || !residentButton || !dehumidifierButton) return;
+    if (!controls || !dailyButton || !occupiedButton || !assistedButton || !dependingButton || !hospiceButton || !dehumidifierButton) return;
 
-    if (!isLeadHousekeeper || !isSharedRoomCategory(selectedCategory)) {
+    if (!canManageRoomSettings()) {
       controls.classList.add("hidden");
       return;
     }
 
     const setting = getCurrentRoomSetting();
     const roomKey = getCurrentRoomKey();
+    const residentStatus = getResidentStatusText(setting.residentStatus || "");
 
     dailyButton.innerText = setting.isDaily === true ? "DAILY" : "WEEKLY";
     occupiedButton.innerText = setting.isOccupied === false ? "VACANT" : "OCCUPIED";
-    residentButton.innerText = getResidentStatusText(setting.residentStatus || "Assisted").toUpperCase();
+
+    setResidentStatusButtonState(assistedButton, residentStatus === "Assisted");
+    setResidentStatusButtonState(dependingButton, residentStatus === "Depending");
+    setResidentStatusButtonState(hospiceButton, residentStatus === "Hospice");
+
     dehumidifierButton.classList.toggle("hidden", !hasDehumidifierForRoom(roomKey));
 
     controls.classList.remove("hidden");
+  }
+
+  function setResidentStatusButtonState(button, isActive) {
+    button.classList.toggle("green", isActive);
+    button.classList.toggle("yellow", !isActive);
+  }
+
+  function canManageRoomSettings() {
+    return isSharedRoomCategory(selectedCategory);
   }
 
   function getCurrentRoomSetting() {
@@ -2395,7 +2423,7 @@ async function saveReasonIfNeeded(reasonText) {
   window.goToAdminDehumidifierView = goToAdminDehumidifierView;
   window.toggleCurrentRoomDaily = toggleCurrentRoomDaily;
   window.toggleCurrentRoomOccupied = toggleCurrentRoomOccupied;
-  window.toggleCurrentResidentStatus = toggleCurrentResidentStatus;
+  window.setCurrentResidentStatus = setCurrentResidentStatus;
 
 </script>
 
