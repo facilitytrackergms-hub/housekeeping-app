@@ -944,8 +944,11 @@ select.appendChild(blankOption);
   document.getElementById("modeLabel").innerText =
     modeText + " • " + currentAssignment;
 
-  document.getElementById("workDateTitle").innerText = selectedWeeklyDayName || currentWorkDayName;
-  document.getElementById("areaDateTitle").innerText = selectedWeeklyDayName || currentWorkDayName;
+  const topDayText = selectedWeeklyDayName || currentWorkDayName;
+  const topTitleText = topDayText + " - " + assignmentText;
+
+  document.getElementById("workDateTitle").innerText = topTitleText;
+  document.getElementById("areaDateTitle").innerText = topTitleText;
   updateMiniHeader();
   drawWeekdayButtons();
 }
