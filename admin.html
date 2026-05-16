@@ -2106,16 +2106,36 @@
     showAdminView("adminAreaView");
   }
 
-  function updateAdminAreaDayButtons() {
-    const dayMap = {
-      Mon: "Monday",
-      Tue: "Tuesday",
-      Wed: "Wednesday",
-      Thu: "Thursday",
-      Fri: "Friday",
-      Sat: "Saturday",
-      Sun: "Sunday"
+function updateAdminAreaDayButtons() {
+  const dayMap = {
+    Mon: "Monday",
+    Tue: "Tuesday",
+    Wed: "Wednesday",
+    Thu: "Thursday",
+    Fri: "Friday",
+    Sat: "Saturday",
+    Sun: "Sunday"
+  };
+
+  Object.keys(dayMap).forEach(function(shortDay) {
+    const fullDay = dayMap[shortDay];
+    const button = document.getElementById("adminDayBtn" + shortDay);
+
+    if (!button) return;
+
+    button.classList.remove("active-day");
+
+    if (currentWorkDayName === fullDay) {
+      button.classList.add("active-day");
+    }
+
+    button.onclick = function() {
+      currentWorkDayName = fullDay;
+      updateAdminAreaDayButtons();
+      renderAdminAreas();
     };
+  });
+}
 
     Array.from(document.querySelectorAll("#adminAreaWeekdayButtons button")).forEach(function(button) {
       const fullDay = dayMap[button.innerText] || button.innerText;
@@ -2949,19 +2969,21 @@
      29 - WEEKLY DATE PICKER VISIBILITY
   ========================== */
 
-  function setAdminAreaDatePickerVisibility(category) {
-    const pickerBox = document.getElementById("adminAreaBigDatePickerBox");
-    const dateTitle = document.getElementById("adminAreaDateTitle");
+function setAdminAreaDatePickerVisibility(category) {
+  const pickerBox = document.getElementById("adminAreaBigDatePickerBox");
+  const dateTitle = document.getElementById("adminAreaDateTitle");
 
-    if (isWeeklyCategory(category)) {
-      pickerBox.classList.remove("hidden");
-      dateTitle.classList.remove("hidden");
-      updateAdminAreaDayButtons();
-    } else {
-      pickerBox.classList.add("hidden");
-      dateTitle.classList.add("hidden");
-    }
+  if (isWeeklyCategory(category)) {
+    pickerBox.classList.remove("hidden");
+    dateTitle.classList.remove("hidden");
+    updateAdminAreaDayButtons();
+
+    renderAdminAreas();
+  } else {
+    pickerBox.classList.add("hidden");
+    dateTitle.classList.add("hidden");
   }
+}
 
   /* =========================
      30 - OPEN EXISTING AREA EDITOR
