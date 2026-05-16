@@ -549,6 +549,14 @@
       font-size: 18px;
     }
 
+    .room-report-main-title {
+      text-align: center !important;
+      font-size: 21px !important;
+      font-weight: 900;
+      margin: 2px 0 8px !important;
+      color: #111;
+    }
+
     .room-report-line {
       font-size: 14px;
       font-weight: bold;
@@ -941,7 +949,18 @@
       <div class="view-tag">ADMIN VIEW 7R - ROOM REPORT</div>
     </div>
 
-    <h2 id="roomReportTitle">Room Report</h2>
+    <div class="admin-room-search-box">
+      <input
+        id="roomReportSearchInput"
+        inputmode="numeric"
+        maxlength="3"
+        pattern="[0-9]*"
+        oninput="limitRoomInput(this)"
+        onkeydown="handleRoomReportSearchKey(event)"
+        placeholder="Room report"
+      >
+      <button type="button" onclick="openRoomReportFromReportSearch()">SEARCH</button>
+    </div>
 
     <label>Date</label>
     <input
@@ -3558,6 +3577,25 @@
     await openRoomReport(roomNumber);
   }
 
+  function handleRoomReportSearchKey(event) {
+    if (event && event.key === "Enter") {
+      event.preventDefault();
+      openRoomReportFromReportSearch();
+    }
+  }
+
+  async function openRoomReportFromReportSearch() {
+    const input = document.getElementById("roomReportSearchInput");
+    const roomNumber = String(input ? input.value : "").replace(/\D/g, "").slice(0, 3);
+
+    if (!roomNumber) {
+      showAppMessage("Enter room number.");
+      return;
+    }
+
+    await openRoomReport(roomNumber);
+  }
+
   async function openRoomReport(roomNumber) {
     currentRoomReportNumber = String(roomNumber || "").replace(/\D/g, "").slice(0, 3);
 
@@ -3572,7 +3610,12 @@
 
     currentRoomReportAreas = getRoomReportAreas(currentRoomReportNumber);
 
-    document.getElementById("roomReportTitle").innerText = "Room " + currentRoomReportNumber + " Report";
+    const mainSearchInput = document.getElementById("adminRoomSearchInput");
+    const reportSearchInput = document.getElementById("roomReportSearchInput");
+
+    if (mainSearchInput) mainSearchInput.value = currentRoomReportNumber;
+    if (reportSearchInput) reportSearchInput.value = currentRoomReportNumber;
+
     document.getElementById("roomReportDatePicker").value = currentWorkDateISO;
 
     await loadRoomReportSummary();
@@ -3707,7 +3750,7 @@
     });
 
     card.innerHTML =
-      '<h3>01 - Room ' + escapeHtml(currentRoomReportNumber) + '</h3>' +
+      '<h3 class="room-report-main-title">01 - ROOM ' + escapeHtml(currentRoomReportNumber) + '</h3>' +
       '<div class="room-report-line">Resident Status: ' + escapeHtml(residentStatus) + '</div>' +
       '<div class="room-report-section-title">02 - Laundry Schedule</div>' +
       laundryScheduleHtml +
@@ -3850,8 +3893,13 @@
     const schedule = getAreaAssignment(area) || "";
     const day = area.scheduleDay || area.day || "daily";
     const laundryType = area.laundryType ? " - " + area.laundryType : "";
+    const taskText = tasks.length === 1 ? "1 task" : tasks.length + " tasks";
 
-    return category + ": " + schedule + " - " + day + laundryType + " - " + tasks.length + " task(s)";
+    if (String(category || "").includes("Laundry") || schedule === "Laundry") {
+      return category + ": " + day + laundryType + " - " + taskText;
+    }
+
+    return category + ": " + schedule + " - " + day + laundryType + " - " + taskText;
   }
 
   function getLastRoomStatus(filterFunction) {
@@ -5717,6 +5765,8 @@
   window.changeAdminWorkDateFromBigPicker = changeAdminWorkDateFromBigPicker;
   window.handleAdminRoomSearchKey = handleAdminRoomSearchKey;
   window.openAdminRoomReportFromSearch = openAdminRoomReportFromSearch;
+  window.handleRoomReportSearchKey = handleRoomReportSearchKey;
+  window.openRoomReportFromReportSearch = openRoomReportFromReportSearch;
   window.changeRoomReportDate = changeRoomReportDate;
   window.setAdminAreaWeekday = setAdminAreaWeekday;
   window.changeAdminAssignment = changeAdminAssignment;
