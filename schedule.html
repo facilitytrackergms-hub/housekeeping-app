@@ -521,9 +521,9 @@
           <button id="residentDependingButton" class="yellow" onclick="setCurrentResidentStatus('Depending')">DEPENDING</button>
           <button id="residentHospiceButton" class="yellow" onclick="setCurrentResidentStatus('Hospice')">HOSPICE</button>
         </div>
-        <button id="leadDehumidifierButton" class="red lead-wide-button" onclick="goToAdminDehumidifierView()">ADD DEHUM</button>
       </div>
 
+      <button id="leadDehumidifierButton" class="red hidden" onclick="goToAdminDehumidifierView()">ADD DEHUM</button>
       <button id="changeDehumidifierLocationButton" class="yellow hidden" onclick="goToAdminDehumidifierView()">CHANGE LOCATION</button>
       <button class="green" onclick="saveTaskChecklist()">SAVE</button>
     </div>
@@ -2104,6 +2104,7 @@ async function saveReasonIfNeeded(reasonText) {
 
     if (!canManageRoomSettings()) {
       controls.classList.add("hidden");
+      dehumidifierButton.classList.add("hidden");
       return;
     }
 
