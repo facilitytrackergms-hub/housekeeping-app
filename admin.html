@@ -555,8 +555,7 @@
       left: 0;
       width: 100%;
       height: 100%;
-      background: radial-gradient(circle at top, rgba(25,118,210,0.30), rgba(0,0,0,0.58));
-      backdrop-filter: blur(3px);
+      background: rgba(0,0,0,0.35);
       display: flex;
       justify-content: center;
       align-items: center;
@@ -567,32 +566,16 @@
     .app-message-card {
       width: 100%;
       max-width: 360px;
-      background: linear-gradient(180deg, #ffffff, #f7fbff);
-      border: 1px solid rgba(25,118,210,0.18);
-      border-radius: 22px;
+      background: white;
+      border-radius: 18px;
       padding: 18px;
-      box-shadow: 0 18px 45px rgba(0,0,0,0.32);
+      box-shadow: 0 6px 28px rgba(0,0,0,0.25);
       text-align: center;
-      animation: appPopupIn 0.16s ease-out;
-    }
-
-    @keyframes appPopupIn {
-      from {
-        transform: translateY(10px) scale(0.96);
-        opacity: 0;
-      }
-
-      to {
-        transform: translateY(0) scale(1);
-        opacity: 1;
-      }
     }
 
     .app-message-card h3 {
       margin: 0 0 10px;
       font-size: 21px;
-      color: #0d47a1;
-      font-weight: 900;
     }
 
     .app-message-card p {
@@ -600,33 +583,10 @@
       font-size: 17px;
       font-weight: bold;
       line-height: 1.3;
-      color: #111;
-    }
-
-    .app-message-card input {
-      border: 2px solid #0d47a1;
-      text-align: center;
-      font-weight: 900;
-      font-size: 22px;
-      letter-spacing: 2px;
-      margin-bottom: 10px;
-    }
-
-    .app-message-actions {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 8px;
-      margin-top: 4px;
-    }
-
-    .app-message-actions.two-actions {
-      grid-template-columns: 1fr 1fr;
     }
 
     .app-message-card button {
-      margin-top: 0;
-      min-height: 44px;
-      border-radius: 14px;
+      margin-top: 4px;
     }
 
   </style>
@@ -1284,10 +1244,7 @@
     <h3 id="appMessageTitle">Message</h3>
     <p id="appMessageText"></p>
     <input id="appMessageInput" class="hidden" inputmode="numeric" maxlength="3" pattern="[0-9]*" oninput="limitRoomInput(this)" placeholder="Room number">
-    <div id="appMessageActions" class="app-message-actions">
-      <button id="appMessageCancelButton" class="back hidden" onclick="cancelAppMessage()">CANCEL</button>
-      <button id="appMessageOkButton" class="green" onclick="confirmAppMessage()">OK</button>
-    </div>
+    <button class="green" onclick="confirmAppMessage()">OK</button>
   </div>
 </div>
 
@@ -1359,7 +1316,6 @@
   let dehumidifierReassignStep = "";
   let dehumidifierFromAreaId = "";
   let appMessageInputCallback = null;
-  let appMessageConfirmCallback = null;
 
   let housekeepingMode = "two";
   let selectedCategory = "";
@@ -1624,21 +1580,9 @@
      16B - CUSTOM MESSAGE FUNCTIONS
   ========================== */
 
-  function resetAppMessageButtons(showCancel) {
-    const actions = document.getElementById("appMessageActions");
-    const cancelButton = document.getElementById("appMessageCancelButton");
-    const okButton = document.getElementById("appMessageOkButton");
-
-    if (actions) actions.classList.toggle("two-actions", !!showCancel);
-    if (cancelButton) cancelButton.classList.toggle("hidden", !showCancel);
-    if (okButton) okButton.innerText = "OK";
-  }
-
   function showAppMessage(message, title) {
     const input = document.getElementById("appMessageInput");
     appMessageInputCallback = null;
-    appMessageConfirmCallback = null;
-    resetAppMessageButtons(false);
     if (input) {
       input.value = "";
       input.classList.add("hidden");
@@ -1651,8 +1595,6 @@
   function showAppInputMessage(message, callback, title) {
     const input = document.getElementById("appMessageInput");
     appMessageInputCallback = callback;
-    appMessageConfirmCallback = null;
-    resetAppMessageButtons(false);
     document.getElementById("appMessageTitle").innerText = title || "Notice";
     document.getElementById("appMessageText").innerText = message;
     if (input) {
@@ -1660,20 +1602,6 @@
       input.classList.remove("hidden");
       setTimeout(function() { input.focus(); }, 50);
     }
-    document.getElementById("appMessageBox").classList.remove("hidden");
-  }
-
-  function showAppConfirmMessage(message, callback, title) {
-    const input = document.getElementById("appMessageInput");
-    appMessageInputCallback = null;
-    appMessageConfirmCallback = callback;
-    resetAppMessageButtons(true);
-    if (input) {
-      input.value = "";
-      input.classList.add("hidden");
-    }
-    document.getElementById("appMessageTitle").innerText = title || "Confirm");
-    document.getElementById("appMessageText").innerText = message;
     document.getElementById("appMessageBox").classList.remove("hidden");
   }
 
@@ -1689,34 +1617,12 @@
       return;
     }
 
-    if (appMessageConfirmCallback) {
-      const callback = appMessageConfirmCallback;
-      appMessageConfirmCallback = null;
-      closeAppMessage();
-      callback(true);
-      return;
-    }
-
-    closeAppMessage();
-  }
-
-  function cancelAppMessage() {
-    if (appMessageConfirmCallback) {
-      const callback = appMessageConfirmCallback;
-      appMessageConfirmCallback = null;
-      closeAppMessage();
-      callback(false);
-      return;
-    }
-
     closeAppMessage();
   }
 
   function closeAppMessage() {
     const input = document.getElementById("appMessageInput");
     appMessageInputCallback = null;
-    appMessageConfirmCallback = null;
-    resetAppMessageButtons(false);
     if (input) {
       input.value = "";
       input.classList.add("hidden");
@@ -4445,15 +4351,8 @@
     });
   }
 
-  function getActiveHousekeepingAssignments() {
-    return getActiveAssignments().filter(function(assignment) {
-      return assignment !== "Laundry";
-    });
-  }
-
   function findTargetRoomForDehumidifier(roomValue) {
     const roomKey = getRoomKey(roomValue);
-    const activeAssignments = getActiveHousekeepingAssignments();
     const preferredCategories = ["Daily Room", "Weekly Room", "Common Area"];
 
     for (let i = 0; i < preferredCategories.length; i++) {
@@ -4461,7 +4360,6 @@
 
       const exact = allAreas.find(function(area) {
         return area.category === categoryName &&
-          activeAssignments.includes(getAreaAssignment(area)) &&
           getRoomKey(area.areaName) === roomKey &&
           isAreaForCurrentDay(area);
       });
@@ -4474,7 +4372,6 @@
 
       const fallback = allAreas.find(function(area) {
         return area.category === categoryName &&
-          activeAssignments.includes(getAreaAssignment(area)) &&
           getRoomKey(area.areaName) === roomKey;
       });
 
@@ -4483,7 +4380,6 @@
 
     return allAreas.find(function(area) {
       return area.category !== "Dehumidifier" &&
-        activeAssignments.includes(getAreaAssignment(area)) &&
         getRoomKey(area.areaName) === roomKey;
     });
   }
@@ -4518,12 +4414,9 @@
       return;
     }
 
-    const activeAssignments = getActiveHousekeepingAssignments();
-
     const duplicate = allAreas.find(function(area) {
       return area.id !== fromArea.id &&
         area.category === "Dehumidifier" &&
-        activeAssignments.includes(getAreaAssignment(area)) &&
         getRoomKey(area.areaName) === getRoomKey(cleanToRoom);
     });
 
@@ -4539,20 +4432,31 @@
     const oldRoomName = fromArea.areaName;
     const newRoomName = targetArea.areaName;
 
-    showAppConfirmMessage("Are you sure you want to move dehumi " + oldRoomName + " to " + newRoomName + "?", async function(ok) {
-      if (!ok) {
-        dehumidifierReassignStep = "";
-        dehumidifierFromAreaId = "";
-        drawAdminAreaButtons("Dehumidifier");
-        return;
-      }
+    showLoading();
 
-      showLoading();
+    const oldWorkId = fromArea.workId;
+    const newWorkId = buildWorkId(newRoomName, "Dehumidifier", targetScheduleDay, targetAssignment);
 
-      const oldWorkId = fromArea.workId;
-      const newWorkId = buildWorkId(newRoomName, "Dehumidifier", targetScheduleDay, targetAssignment);
+    await updateDoc(doc(db, "areas", fromArea.id), {
+      areaId: newWorkId,
+      workId: newWorkId,
+      areaName: newRoomName,
+      areaSearch: String(newRoomName || "").toLowerCase(),
+      category: "Dehumidifier",
+      categoryKey: makeId("Dehumidifier"),
+      schedule: targetAssignment,
+      modeType: getModeTypeForAssignment(targetAssignment),
+      modeLabel: targetAssignment,
+      floor: targetArea.floor || getFloorForAssignment(targetAssignment),
+      day: targetScheduleDay,
+      scheduleDay: targetScheduleDay,
+      updatedAt: serverTimestamp()
+    });
 
-      await updateDoc(doc(db, "areas", fromArea.id), {
+    const tasksToMove = getTasksForWorkId(oldWorkId);
+
+    for (let i = 0; i < tasksToMove.length; i++) {
+      await updateDoc(doc(db, "tasks", tasksToMove[i].id), {
         areaId: newWorkId,
         workId: newWorkId,
         areaName: newRoomName,
@@ -4564,38 +4468,18 @@
         modeLabel: targetAssignment,
         floor: targetArea.floor || getFloorForAssignment(targetAssignment),
         day: targetScheduleDay,
-        scheduleDay: targetScheduleDay,
         updatedAt: serverTimestamp()
       });
+    }
 
-      const tasksToMove = getTasksForWorkId(oldWorkId);
+    dehumidifierReassignStep = "";
+    dehumidifierFromAreaId = "";
 
-      for (let i = 0; i < tasksToMove.length; i++) {
-        await updateDoc(doc(db, "tasks", tasksToMove[i].id), {
-          areaId: newWorkId,
-          workId: newWorkId,
-          areaName: newRoomName,
-          areaSearch: String(newRoomName || "").toLowerCase(),
-          category: "Dehumidifier",
-          categoryKey: makeId("Dehumidifier"),
-          schedule: targetAssignment,
-          modeType: getModeTypeForAssignment(targetAssignment),
-          modeLabel: targetAssignment,
-          floor: targetArea.floor || getFloorForAssignment(targetAssignment),
-          day: targetScheduleDay,
-          updatedAt: serverTimestamp()
-        });
-      }
+    await loadAdminTasks();
+    drawAdminAreaButtons("Dehumidifier");
 
-      dehumidifierReassignStep = "";
-      dehumidifierFromAreaId = "";
-
-      await loadAdminTasks();
-      drawAdminAreaButtons("Dehumidifier");
-
-      hideLoading();
-      showAppMessage("Dehumi " + oldRoomName + " has been moved to " + newRoomName + ".");
-    });
+    hideLoading();
+    showAppMessage("Dehumi " + oldRoomName + " has been moved to " + newRoomName + ".");
   }
 
   async function saveDehumidifierRoomReassignment() {
@@ -4995,7 +4879,6 @@
   window.changeAdminAreaScheduleDay = changeAdminAreaScheduleDay;
   window.closeAppMessage = closeAppMessage;
   window.confirmAppMessage = confirmAppMessage;
-  window.cancelAppMessage = cancelAppMessage;
   window.toggleHousekeepingMode = toggleHousekeepingMode;
   window.setHousekeepingMode = setHousekeepingMode;
 
