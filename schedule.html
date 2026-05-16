@@ -308,28 +308,24 @@
       min-height: 76px !important;
     }
 
-    .room-status-strip {
-      position: absolute;
-      top: 50%;
-      left: 5px;
-      right: 5px;
-      transform: translateY(-50%);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      z-index: 2;
-      pointer-events: none;
-    }
-
-    .room-status-list {
-      display: flex;
-      flex-direction: column;
-      justify-content: center;
-      gap: 2px;
-      width: 42px;
-      min-width: 0;
-    }
-
+.room-status-strip {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: 58px 1fr 58px;
+  align-items: center;
+  z-index: 2;
+  pointer-events: none;
+  padding: 0 6px;
+}
+.room-status-list {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 3px;
+  width: 58px;
+  min-width: 0;
+}
     .room-status-list.left {
       align-items: flex-start;
       text-align: left;
@@ -339,20 +335,30 @@
       align-items: flex-end;
       text-align: right;
     }
+.room-status-list.right {
+  align-items: flex-end;
+  text-align: right;
+}
 
-    .room-status-chip {
-      color: #000;
-      font-size: 8px;
-      font-weight: 900;
-      line-height: 9px;
-      letter-spacing: 0;
-      max-width: 42px;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      text-shadow: none;
-    }
+.room-status-list.left {
+  grid-column: 1;
+}
 
+.room-status-list.right {
+  grid-column: 3;
+}
+.room-status-chip {
+  color: #000;
+  font-size: 8px;
+  font-weight: 900;
+  line-height: 9px;
+  letter-spacing: -0.3px;
+  max-width: 58px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: clip;
+  text-shadow: none;
+}
     .room-status-chip.blank {
       display: none;
     }
