@@ -1491,14 +1491,13 @@ select.appendChild(blankOption);
     button.classList.toggle("hidden", selectedCategory !== "Dehumidifier");
   }
 
-  function goToAdminDehumidifierView() {
-    sessionStorage.setItem("adminStartView", "Dehumidifier");
-    sessionStorage.setItem("adminOpenCategory", "Dehumidifier");
-    sessionStorage.setItem("adminDehumidifierFromRoom", currentAreaName || "");
-    sessionStorage.setItem("adminDehumidifierFromAreaId", currentAreaId || "");
-    window.location.href = "admin.html#dehumidifier";
-  }
-
+function goToAdminDehumidifierView() {
+  sessionStorage.removeItem("adminDehumidifierFromRoom");
+  sessionStorage.removeItem("adminDehumidifierFromAreaId");
+  sessionStorage.setItem("adminStartView", "Dehumidifier");
+  sessionStorage.setItem("adminOpenCategory", "Dehumidifier");
+  window.location.href = "admin.html#dehumidifier";
+}
   function loadCurrentTaskList(areaId, areaName) {
     currentAreaId = areaId;
     currentAreaName = areaName;
