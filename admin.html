@@ -3,7 +3,7 @@
 
 <head>
   <!-- =========================
-       01 - HEAD
+       01 - HEADf
   ========================== -->
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -3876,11 +3876,13 @@
     const category = document.getElementById("reassignCategory").value;
     const targetScheduleDay = isWeeklyCategory(category) ? reassignTargetDayName : (area ? area.scheduleDay : "daily");
 
-    if (!area || !fromAssignment || !toAssignment || !category) {
-      showAppMessage("Select from, to, and category.");
-      return;
-    }
+if (!area || !fromAssignment || !category) {
+  return;
+}
 
+if (!toAssignment) {
+  return;
+}
     if (isWeeklyCategory(category) && (!reassignWorkDayName || !reassignTargetDayName)) {
       showAppMessage("Select from day and to day.");
       return;
