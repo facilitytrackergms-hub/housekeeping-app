@@ -1573,6 +1573,11 @@
     currentAssignment = "";
     syncModeControls();
     await loadAdminTasks();
+
+    if (await openAdminDeepLinkIfNeeded()) {
+      return;
+    }
+
     drawAdminCategories();
     showAdminView("adminView2");
   }
@@ -1591,6 +1596,90 @@
     });
 
     hideLoading();
+  }
+
+  async function openAdminDeepLinkIfNeeded() {
+    const startView = sessionStorage.getItem("adminStartView") || "";
+    const openCategory = sessionStorage.getItem("adminOpenCategory") || "";
+    const fromRoom = sessionStorage.getItem("adminDehumidifierFromRoom") || "";
+    const fromAreaId = sessionStorage.getItem("adminDehumidifierFromAreaId") || "";
+    const hash = String(window.location.hash || "").toLowerCase();
+
+    const shouldOpenDehumidifier =
+      hash === "#dehumidifier" ||
+      startView === "Dehumidifier" ||
+      openCategory === "Dehumidifier";
+
+    if (!shouldOpenDehumidifier) {
+      return false;
+    }
+
+    sessionStorage.removeItem("adminStartView");
+    sessionStorage.removeItem("adminOpenCategory");
+    sessionStorage.removeItem("adminDehumidifierFromRoom");
+    sessionStorage.removeItem("adminDehumidifierFromAreaId");
+
+    selectedCategory = "Dehumidifier";
+    adminAreaSearchTerm = "";
+    adminBulkTaskOpen = false;
+    adminAreaManualDayName = "";
+
+    const searchInput = document.getElementById("adminAreaSearchInput");
+    if (searchInput) searchInput.value = "";
+
+    if (allAreas.length === 0 || allSubTasks.length === 0) {
+      await loadAllAdminData();
+    }
+
+    drawAdminAreaButtons("Dehumidifier");
+    showAdminView("adminAreaView");
+
+    if (fromRoom || fromAreaId) {
+      const fromArea = findDeepLinkDehumidifierFromRoom(fromRoom, fromAreaId);
+
+      if (fromArea) {
+        dehumidifierFromAreaId = fromArea.id;
+        dehumidifierReassignStep = "to";
+        drawAdminAreaButtons("Dehumidifier");
+        showDehumidifierMoveToInput();
+      } else {
+        dehumidifierReassignStep = "from";
+        dehumidifierFromAreaId = "";
+        showAppMessage("No dehumidifier found for room " + fromRoom + ".");
+      }
+    }
+
+    return true;
+  }
+
+  function findDeepLinkDehumidifierFromRoom(fromRoomValue, fromAreaIdValue) {
+    const activeAssignments = getActiveHousekeepingAssignments();
+    const cleanAreaId = String(fromAreaIdValue || "").trim();
+    const cleanRoom = String(fromRoomValue || "").trim();
+
+    if (cleanAreaId) {
+      const idMatch = allAreas.find(function(area) {
+        return area.category === "Dehumidifier" &&
+          activeAssignments.includes(getAreaAssignment(area)) &&
+          (String(area.id || "") === cleanAreaId ||
+           String(area.areaId || "") === cleanAreaId ||
+           String(area.workId || "") === cleanAreaId);
+      });
+
+      if (idMatch) return idMatch;
+    }
+
+    if (cleanRoom) {
+      const roomKey = getRoomKey(cleanRoom);
+
+      return allAreas.find(function(area) {
+        return area.category === "Dehumidifier" &&
+          activeAssignments.includes(getAreaAssignment(area)) &&
+          getRoomKey(area.areaName) === roomKey;
+      });
+    }
+
+    return null;
   }
 
   /* =========================
