@@ -569,7 +569,7 @@
   </div>
 
   <!-- =========================
-       08 - ADMIN VIEW 7 - EDIT AREA / TASKS
+       08 - ADMIN VIEW 7 - ADD / EDIT AREA
   ========================== -->
 
   <div id="adminEditView" class="hidden">
@@ -621,30 +621,55 @@
       </select>
     </div>
 
+    <div class="button-row">
+      <button class="green" onclick="saveAdminAreaOnly()">SAVE AREA</button>
+      <button id="openAreaTasksButton" onclick="openAdminAreaTasks()">TASKS</button>
+    </div>
+
+    <div class="button-row">
+      <button class="red" id="deleteAreaButton" onclick="deleteAdminArea()">DELETE AREA</button>
+      <button class="back" onclick="backToAdminAreas()">BACK</button>
+    </div>
+
+    <p id="adminMessage"></p>
+
+  </div>
+
+  <!-- =========================
+       08B - ADMIN VIEW 7-1 - AREA TASKS
+  ========================== -->
+
+  <div id="adminAreaTaskView" class="hidden">
+
+    <div class="view-center">
+      <div class="view-tag">ADMIN VIEW 7-1</div>
+    </div>
+
+    <div class="assignment-title" id="adminAreaTasksAssignmentTitle"></div>
+    <h2 id="adminAreaTasksTitle">Tasks</h2>
+
     <div id="adminSingleTaskBox" class="task-card hidden">
       <h3>Default Tasks</h3>
       <div id="adminSingleTaskChecks" class="check-grid"></div>
 
       <div class="button-row">
-        <button class="green" onclick="addCheckedTasksToSingleArea()">ADD TO ROOM</button>
-        <button class="red" onclick="deleteCheckedTasksFromSingleArea()">DELETE FROM ROOM</button>
+        <button class="green" onclick="addCheckedTasksToSingleArea()">ADD TO AREA</button>
+        <button class="red" onclick="deleteCheckedTasksFromSingleArea()">DELETE FROM AREA</button>
       </div>
     </div>
 
-    <h3>Sub Tasks</h3>
-
-    <button class="green" onclick="openNewAdminSubTask()">ADD NEW SUB TASK</button>
+    <button class="green" onclick="openNewAdminSubTask()">ADD TASK</button>
 
     <div id="adminSubtaskButtons" class="rooms-grid"></div>
 
     <div id="adminSubtaskEditor" class="task-card hidden">
 
       <div class="view-center">
-        <div class="view-tag" id="adminSubtaskViewTag">ADMIN VIEW 7-1</div>
+        <div class="view-tag" id="adminSubtaskViewTag">ADMIN VIEW 7-2</div>
       </div>
 
       <div class="assignment-title" id="adminSubtaskAssignmentTitle"></div>
-      <h3 id="adminSubtaskEditorTitle">Edit Sub Task</h3>
+      <h3 id="adminSubtaskEditorTitle">Edit Task</h3>
 
       <label>Task Name</label>
       <input id="adminTaskNameInput" list="taskNameOptions" placeholder="Type or choose task">
@@ -668,7 +693,7 @@
       </div>
 
       <div class="button-row">
-        <button class="green" onclick="saveAdminSubTask()">SAVE ROOM</button>
+        <button class="green" onclick="saveAdminSubTask()">SAVE TASK</button>
         <button id="saveAllWeeklyButton" class="yellow hidden" onclick="saveAdminSubTaskToAllWeeklyRooms()">SAVE ALL</button>
       </div>
 
@@ -679,13 +704,7 @@
 
     </div>
 
-    <div class="button-row-three">
-      <button class="green" onclick="saveAdminAreaOnly()">SAVE</button>
-      <button class="red" id="deleteAreaButton" onclick="deleteAdminArea()">DELETE AREA</button>
-      <button class="back" onclick="backToAdminAreas()">BACK</button>
-    </div>
-
-    <p id="adminMessage"></p>
+    <button class="back" onclick="backToAdminAreaEdit()">BACK</button>
 
   </div>
 
@@ -1281,6 +1300,7 @@
       "adminView2",
       "adminAreaView",
       "adminEditView",
+      "adminAreaTaskView",
       "adminEmployeesView",
       "adminIssuesView",
       "adminDailyStatusView",
@@ -1301,6 +1321,7 @@
     [
       "adminAreaAssignmentTitle",
       "adminEditAssignmentTitle",
+      "adminAreaTasksAssignmentTitle",
       "adminSubtaskAssignmentTitle",
       "adminEmployeesAssignmentTitle",
       "adminIssuesAssignmentTitle",
@@ -1669,7 +1690,7 @@
       const total = getTasksForWorkId(area.workId).length;
       const btn = document.createElement("button");
 
-      btn.className = total > 0 ? "yellow" : "red";
+      btn.className = total > 0 ? "" : "red";
       btn.innerHTML =
         '<div class="room-number">' + escapeHtml(area.areaName) + '</div>' +
         '<div class="room-counter">' + total + ' TASKS</div>';
@@ -1917,7 +1938,7 @@
     }
 
     await loadAdminTasks();
-    openAdminEditArea(selectedAreaDocId);
+    openAdminAreaTasks();
     hideLoading();
     document.getElementById("adminMessage").innerText = "Added " + addedCount + " missing tasks.";
   }
@@ -1952,7 +1973,7 @@
     }
 
     await loadAdminTasks();
-    openAdminEditArea(selectedAreaDocId);
+    openAdminAreaTasks();
     hideLoading();
     document.getElementById("adminMessage").innerText = "Deleted " + tasksToDelete.length + " tasks.";
   }
@@ -2020,6 +2041,7 @@
     setAdminSingleTaskBoxVisibility(selectedCategory);
     closeAdminSubTaskEditor();
     drawAdminSubTaskButtons();
+    document.getElementById("openAreaTasksButton").classList.remove("hidden");
     showAdminView("adminEditView");
   }
 
@@ -2046,6 +2068,7 @@
     setAdminSingleTaskBoxVisibility(selectedCategory);
     closeAdminSubTaskEditor();
     drawAdminSubTaskButtons();
+    document.getElementById("openAreaTasksButton").classList.add("hidden");
     showAdminView("adminEditView");
   }
 
@@ -2074,7 +2097,7 @@
   }
 
   /* =========================
-     33 - DRAW SUB TASK BUTTONS
+     33 - DRAW TASK BUTTONS
   ========================== */
 
   function drawAdminSubTaskButtons() {
@@ -2085,7 +2108,7 @@
       const btn = document.createElement("button");
       btn.className = "red";
       btn.innerHTML =
-        '<div class="room-number">' + escapeHtml(task.taskName || "Sub Task") + '</div>' +
+        '<div class="room-number">' + escapeHtml(task.taskName || "Task") + '</div>' +
         '<div class="room-counter">' + escapeHtml(selectedAreaScheduleDay || "daily") + '</div>';
 
       btn.onclick = function() {
@@ -2097,13 +2120,13 @@
 
     if (box.innerHTML === "") {
       const empty = document.createElement("h3");
-      empty.innerText = "No sub tasks yet.";
+      empty.innerText = "No tasks yet.";
       box.appendChild(empty);
     }
   }
 
   /* =========================
-     34 - OPEN SUB TASK EDITOR
+     34 - OPEN TASK EDITOR
   ========================== */
 
   function openAdminSubTaskEditor(index) {
@@ -2114,8 +2137,8 @@
     currentEditingTaskId = task.id || "";
     originalEditingTaskName = task.taskName || "";
 
-    document.getElementById("adminSubtaskViewTag").innerText = "ADMIN VIEW 7-1";
-    document.getElementById("adminSubtaskEditorTitle").innerText = "Edit Sub Task";
+    document.getElementById("adminSubtaskViewTag").innerText = "ADMIN VIEW 7-2";
+    document.getElementById("adminSubtaskEditorTitle").innerText = "Edit Task";
     document.getElementById("adminTaskNameInput").value = task.taskName || "";
     document.getElementById("adminTaskScheduleInput").value = selectedAreaScheduleDay || "daily";
 
@@ -2126,7 +2149,7 @@
   }
 
   /* =========================
-     35 - OPEN NEW SUB TASK
+     35 - OPEN NEW TASK
   ========================== */
 
   function openNewAdminSubTask() {
@@ -2134,8 +2157,8 @@
     currentEditingTaskId = "";
     originalEditingTaskName = "";
 
-    document.getElementById("adminSubtaskViewTag").innerText = "ADMIN VIEW 7-1";
-    document.getElementById("adminSubtaskEditorTitle").innerText = "New Sub Task";
+    document.getElementById("adminSubtaskViewTag").innerText = "ADMIN VIEW 7-2";
+    document.getElementById("adminSubtaskEditorTitle").innerText = "New Task";
     document.getElementById("adminTaskNameInput").value = "";
     document.getElementById("adminTaskScheduleInput").value = selectedAreaScheduleDay || "daily";
 
@@ -2146,7 +2169,7 @@
   }
 
   /* =========================
-     36 - CLOSE SUB TASK EDITOR
+     36 - CLOSE TASK EDITOR
   ========================== */
 
   function closeAdminSubTaskEditor() {
@@ -2154,6 +2177,37 @@
     currentEditingTaskId = "";
     originalEditingTaskName = "";
     document.getElementById("adminSubtaskEditor").classList.add("hidden");
+  }
+
+  function openAdminAreaTasks() {
+    if (!selectedAreaDocId) {
+      alert("Save area first.");
+      return;
+    }
+
+    const area = allAreas.find(function(item) { return item.id === selectedAreaDocId; });
+
+    if (area) {
+      selectedArea = area.areaName;
+      selectedAreaWorkId = area.workId;
+      selectedAreaScheduleDay = isWeeklyCategory(area.category) ? area.scheduleDay : "daily";
+      selectedCategory = area.category;
+      currentAreaTasks = getTasksForWorkId(area.workId);
+    }
+
+    document.getElementById("adminAreaTasksTitle").innerText = selectedArea + " Tasks";
+    document.getElementById("adminMessage").innerText = "";
+
+    updateAssignmentTitles();
+    setAdminSingleTaskBoxVisibility(selectedCategory);
+    closeAdminSubTaskEditor();
+    drawAdminSubTaskButtons();
+    showAdminView("adminAreaTaskView");
+  }
+
+  function backToAdminAreaEdit() {
+    closeAdminSubTaskEditor();
+    showAdminView("adminEditView");
   }
 
   /* =========================
@@ -2241,6 +2295,8 @@
   }
 
   async function saveAdminAreaOnly() {
+    const wasNewArea = !selectedAreaDocId;
+
     showLoading();
     const saved = await ensureCurrentAreaSaved();
     if (!saved) {
@@ -2251,11 +2307,20 @@
     await loadAdminTasks();
     openAdminEditArea(selectedAreaDocId);
     hideLoading();
+
+    if (wasNewArea) {
+      const addTasksNow = confirm("Area saved. Add tasks now?");
+      if (addTasksNow) {
+        openAdminAreaTasks();
+        return;
+      }
+    }
+
     document.getElementById("adminMessage").innerText = "Saved.";
   }
 
   /* =========================
-     39 - SAVE SUB TASK
+     39 - SAVE TASK
   ========================== */
 
   async function saveAdminSubTask() {
@@ -2312,13 +2377,13 @@
     }
 
     await loadAdminTasks();
-    openAdminEditArea(selectedAreaDocId);
+    openAdminAreaTasks();
     hideLoading();
     document.getElementById("adminMessage").innerText = "Saved.";
   }
 
   /* =========================
-     40 - SAVE SUB TASK TO ALL WEEKLY ROOMS
+     40 - SAVE TASK TO ALL WEEKLY ROOMS
   ========================== */
 
   async function saveAdminSubTaskToAllWeeklyRooms() {
@@ -2343,7 +2408,7 @@
       return;
     }
 
-    const ok = confirm("Save this sub task to all " + areas.length + " weekly rooms for " + schedule + "?");
+    const ok = confirm("Save this task to all " + areas.length + " weekly rooms for " + schedule + "?");
     if (!ok) return;
 
     showLoading();
@@ -2380,13 +2445,13 @@
     }
 
     await loadAdminTasks();
-    if (selectedAreaDocId) openAdminEditArea(selectedAreaDocId);
+    if (selectedAreaDocId) openAdminAreaTasks();
     hideLoading();
     document.getElementById("adminMessage").innerText = "Saved to all rooms for " + schedule + ".";
   }
 
   /* =========================
-     41 - DELETE SUB TASK
+     41 - DELETE TASK
   ========================== */
 
   async function deleteAdminSubTask() {
@@ -2395,13 +2460,13 @@
       return;
     }
 
-    const ok = confirm("Delete this sub task?");
+    const ok = confirm("Delete this task?");
     if (!ok) return;
 
     showLoading();
     await deleteDoc(doc(db, "tasks", currentEditingTaskId));
     await loadAdminTasks();
-    if (selectedAreaDocId) openAdminEditArea(selectedAreaDocId);
+    if (selectedAreaDocId) openAdminAreaTasks();
     else showAdminView("adminAreaView");
     hideLoading();
   }
@@ -2481,7 +2546,7 @@
       return;
     }
 
-    const ok = confirm("Delete this whole area and all sub tasks?");
+    const ok = confirm("Delete this whole area and all tasks?");
     if (!ok) return;
 
     showLoading();
@@ -3641,7 +3706,7 @@
      51 - SCHEDULE HELPER
   ========================== */
 
-  function getScheduleForSubTask(category) {
+  function getScheduleForTask(category) {
     if (isWeeklyCategory(category)) {
       const selectedDay = document.getElementById("adminTaskScheduleInput").value;
       if (!selectedDay) {
@@ -3670,6 +3735,8 @@
   ========================== */
 
   window.openNewAdminArea = openNewAdminArea;
+  window.openAdminAreaTasks = openAdminAreaTasks;
+  window.backToAdminAreaEdit = backToAdminAreaEdit;
   window.openNewAdminSubTask = openNewAdminSubTask;
   window.openAdminSubTaskEditor = openAdminSubTaskEditor;
   window.closeAdminSubTaskEditor = closeAdminSubTaskEditor;
