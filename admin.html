@@ -1021,6 +1021,10 @@
       </div>
     </div>
 
+    <div id="reassignShowingLabel" class="reassign-showing-label"></div>
+
+    <div id="reassignmentAreaList" class="rooms-grid"></div>
+
     <label>To</label>
     <select id="reassignTo" onchange="changeReassignmentTo()">
       <option value="">Select assignment</option>
@@ -1046,21 +1050,9 @@
       </div>
     </div>
 
-   <div class="button-row">
-
-  <button class="green" onclick="loadReassignmentAreas()">
-    LOAD
-  </button>
-
-  <button class="yellow" onclick="checkAssignmentCounts()">
-    CHECK COUNT
-  </button>
-
-</div>
-
-    <div id="reassignShowingLabel" class="reassign-showing-label"></div>
-
-    <div id="reassignmentAreaList" class="rooms-grid"></div>
+    <button class="yellow" onclick="checkAssignmentCounts()">
+      CHECK COUNT
+    </button>
 
     <button class="back" onclick="backToAdminCategories()">BACK</button>
 
@@ -1605,16 +1597,15 @@
     updateReassignmentDayButtons();
   }
 
-  function setReassignmentFromWeekday(dayName) {
+  async function setReassignmentFromWeekday(dayName) {
     reassignWorkDayName = dayName;
     updateReassignmentDateDisplay();
-    document.getElementById("reassignmentAreaList").innerHTML = "";
+    await loadReassignmentAreas();
   }
 
   function setReassignmentToWeekday(dayName) {
     reassignTargetDayName = dayName;
     updateReassignmentDateDisplay();
-    document.getElementById("reassignmentAreaList").innerHTML = "";
   }
 
   function updateReassignmentDayButtons() {
@@ -3805,19 +3796,18 @@
     updateReassignmentDateDisplay();
   }
 
-  function changeReassignmentFrom() {
-    document.getElementById("reassignmentAreaList").innerHTML = "";
+  async function changeReassignmentFrom() {
     updateReassignmentDateDisplay();
+    await loadReassignmentAreas();
   }
 
   function changeReassignmentTo() {
-    document.getElementById("reassignmentAreaList").innerHTML = "";
     updateReassignmentDateDisplay();
   }
 
   async function changeReassignmentCategory() {
     setReassignmentDateVisibility();
-    document.getElementById("reassignmentAreaList").innerHTML = "";
+    await loadReassignmentAreas();
   }
 
   async function changeReassignmentDate() {
@@ -3827,26 +3817,18 @@
 
   async function loadReassignmentAreas() {
     const fromAssignment = document.getElementById("reassignFrom").value;
-    const toAssignment = document.getElementById("reassignTo").value;
     const category = document.getElementById("reassignCategory").value;
+    const box = document.getElementById("reassignmentAreaList");
+
+    if (box) box.innerHTML = "";
 
     if (!fromAssignment || !category) {
-      showAppMessage("Select from and category.");
+      updateReassignmentDateDisplay();
       return;
     }
 
-    if (isWeeklyCategory(category) && (!reassignWorkDayName || !reassignTargetDayName)) {
-      showAppMessage("Select from day and to day.");
-      return;
-    }
-
-    if (fromAssignment === "Laundry" && toAssignment === "Laundry") {
-      openLaundryScheduleEditor(category);
-      return;
-    }
-
-    if (fromAssignment === "Laundry" && toAssignment && toAssignment !== "Laundry") {
-      showAppMessage("Laundry rooms stay inside Laundry. Use Laundry Schedule Edit.");
+    if (isWeeklyCategory(category) && !reassignWorkDayName) {
+      updateReassignmentDateDisplay();
       return;
     }
 
@@ -3865,7 +3847,6 @@
         (isWeeklyCategory(category) ? isAreaForReassignDay(area) : true);
     });
 
-    const box = document.getElementById("reassignmentAreaList");
     box.innerHTML = "";
 
     areas.forEach(function(area) {
