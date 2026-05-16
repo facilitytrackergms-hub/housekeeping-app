@@ -662,6 +662,10 @@
         ADD NEW AREA
       </button>
 
+      <button id="adminReassignDehumidifierButton" class="yellow hidden" onclick="openDehumidifierReassignment()">
+        REASSIGN DEHUMIDIFIER
+      </button>
+
       <button id="adminBulkTaskToggleButton" class="yellow hidden" onclick="toggleAdminBulkTaskBox()">
         TASK TOOLS
       </button>
@@ -1048,10 +1052,10 @@
 
     <div id="dehumidifierReassignmentBox" class="hidden">
       <label>From Room</label>
-      <input id="dehumidifierFromRoomInput" inputmode="numeric" placeholder="From room">
+      <input id="dehumidifierFromRoomInput" inputmode="numeric" maxlength="3" pattern="[0-9]*" oninput="limitRoomInput(this)" placeholder="From room">
 
       <label>To Room</label>
-      <input id="dehumidifierToRoomInput" inputmode="numeric" placeholder="To room">
+      <input id="dehumidifierToRoomInput" inputmode="numeric" maxlength="3" pattern="[0-9]*" oninput="limitRoomInput(this)" placeholder="To room">
     </div>
 
     <div id="genericReassignmentBox">
@@ -1533,6 +1537,7 @@
     await loadAdminModeOnly();
     currentAssignment = "";
     syncModeControls();
+    await loadAdminTasks();
     drawAdminCategories();
     showAdminView("adminView2");
   }
@@ -1794,17 +1799,6 @@
   async function changeAdminAssignment() {
     currentAssignment = document.getElementById("adminAssignmentSelect").value;
     selectedCategory = "";
-
-    if (!currentAssignment) {
-      allAreas = [];
-      allAreasForAssignment = [];
-      allAreasForDay = [];
-      allSubTasks = [];
-      drawAdminCategories();
-      showAdminView("adminView2");
-      return;
-    }
-
     await loadAdminTasks();
     showAdminView("adminView2");
   }
@@ -1820,17 +1814,6 @@
       currentWorkDayName = adminAreaManualDayName;
     }
     updateAssignmentTitles();
-
-    if (!currentAssignment) {
-      syncModeControls();
-      allAreas = [];
-      allAreasForAssignment = [];
-      allAreasForDay = [];
-      allSubTasks = [];
-      drawAdminCategories();
-      hideLoading();
-      return;
-    }
 
     const dateTitle = document.getElementById("adminAreaDateTitle");
     if (dateTitle) dateTitle.innerText = currentWorkDayName;
@@ -1863,13 +1846,18 @@
       return task.active !== false && task.active !== "No";
     });
 
-    allAreasForAssignment = allAreas.filter(function(area) {
-      return getAreaAssignment(area) === currentAssignment;
-    });
+    if (currentAssignment) {
+      allAreasForAssignment = allAreas.filter(function(area) {
+        return getAreaAssignment(area) === currentAssignment;
+      });
 
-    allAreasForDay = allAreasForAssignment.filter(function(area) {
-      return isAreaForCurrentDay(area);
-    });
+      allAreasForDay = allAreasForAssignment.filter(function(area) {
+        return isAreaForCurrentDay(area);
+      });
+    } else {
+      allAreasForAssignment = [];
+      allAreasForDay = [];
+    }
 
     updateTaskNameOptions();
     drawAdminCategories();
@@ -2016,13 +2004,16 @@
     const box = document.getElementById("adminCategoryButtons");
     box.innerHTML = "";
 
-    if (!currentAssignment) {
-      return;
-    }
+    const alwaysButtons = ["Dehumidifier", "Daily Status", "Issues", "Issue Reasons", "Reports", "Logout"];
+    let buttons = [];
 
-    const buttons = currentAssignment === "Laundry"
-      ? ["Weekly Laundry", "Daily Laundry", "Daily Status", "Issues", "Issue Reasons", "Reports", "Reassignment", "Logout"]
-      : ["Common Area", "Weekly Room", "Daily Room", "Dehumidifier", "Daily Status", "Issues", "Issue Reasons", "Reports", "Reassignment", "Logout"];
+    if (currentAssignment === "Laundry") {
+      buttons = ["Weekly Laundry", "Daily Laundry"].concat(alwaysButtons);
+    } else if (currentAssignment) {
+      buttons = ["Common Area", "Weekly Room", "Daily Room"].concat(alwaysButtons);
+    } else {
+      buttons = alwaysButtons;
+    }
 
     buttons.forEach(function(item) {
       const btn = document.createElement("button");
@@ -2044,23 +2035,37 @@
           btn.onclick = openDailyStatus;
         } else if (item === "Reports") {
           btn.onclick = function() { window.location.href = "reports.html"; };
-        } else if (item === "Reassignment") {
-          btn.onclick = openReassignment;
         } else {
           btn.onclick = function() {
-            selectedCategory = item;
-            adminAreaSearchTerm = "";
-            adminBulkTaskOpen = false;
-            adminAreaManualDayName = "";
-            document.getElementById("adminAreaSearchInput").value = "";
-            drawAdminAreaButtons(item);
-            showAdminView("adminAreaView");
+            openAdminCategory(item);
           };
         }
       }
 
       box.appendChild(btn);
     });
+  }
+
+  async function openAdminCategory(item) {
+    if (["Common Area", "Weekly Room", "Daily Room", "Weekly Laundry", "Daily Laundry"].includes(item) && !currentAssignment) {
+      showAppMessage("Choose schedule first.");
+      return;
+    }
+
+    selectedCategory = item;
+    adminAreaSearchTerm = "";
+    adminBulkTaskOpen = false;
+    adminAreaManualDayName = "";
+
+    const searchInput = document.getElementById("adminAreaSearchInput");
+    if (searchInput) searchInput.value = "";
+
+    if (allAreas.length === 0 || allSubTasks.length === 0) {
+      await loadAdminTasks();
+    }
+
+    drawAdminAreaButtons(item);
+    showAdminView("adminAreaView");
   }
 
   /* =========================
@@ -2077,6 +2082,7 @@
     setAdminAreaDatePickerVisibility(category);
     setAdminAreaSearchVisibility(category);
     setAdminBulkTaskBoxVisibility(category);
+    setDehumidifierReassignButtonVisibility(category);
 
     document.getElementById("adminAddAreaButton").innerText = "ADD NEW " + category.toUpperCase();
     document.getElementById("adminAreaDateTitle").innerText = currentWorkDayName;
@@ -2084,13 +2090,26 @@
 
     updateAssignmentTitles();
 
-    let areas = allAreasForAssignment.filter(function(area) {
-      if (area.category !== category) return false;
-      if (isWeeklyCategory(category)) {
-        return String(area.scheduleDay || "").trim().toLowerCase() === currentWorkDayName.toLowerCase();
-      }
-      return isAreaForCurrentDay(area);
-    });
+    const title = document.getElementById("adminAreaAssignmentTitle");
+    if (title && category === "Dehumidifier") {
+      title.innerText = "All Schedules";
+    }
+
+    let areas = [];
+
+    if (category === "Dehumidifier") {
+      areas = allAreas.filter(function(area) {
+        return area.category === "Dehumidifier";
+      });
+    } else {
+      areas = allAreasForAssignment.filter(function(area) {
+        if (area.category !== category) return false;
+        if (isWeeklyCategory(category)) {
+          return String(area.scheduleDay || "").trim().toLowerCase() === currentWorkDayName.toLowerCase();
+        }
+        return isAreaForCurrentDay(area);
+      });
+    }
 
     if (adminAreaSearchTerm) {
       areas = areas.filter(function(area) {
@@ -2098,14 +2117,21 @@
       });
     }
 
+    areas = areas.sort(function(a, b) {
+      return String(a.areaName || "").localeCompare(String(b.areaName || ""), undefined, { numeric: true });
+    });
+
     areas.forEach(function(area) {
       const total = getTasksForWorkId(area.workId).length;
       const btn = document.createElement("button");
+      const counterText = category === "Dehumidifier"
+        ? (getAreaAssignment(area) || "No Schedule") + " • " + total + " TASKS"
+        : total + " TASKS";
 
       btn.className = total > 0 ? "" : "red";
       btn.innerHTML =
         '<div class="room-number">' + escapeHtml(area.areaName) + '</div>' +
-        '<div class="room-counter">' + total + ' TASKS</div>';
+        '<div class="room-counter">' + escapeHtml(counterText) + '</div>';
 
       btn.onclick = function() {
         openAdminEditArea(area.id);
@@ -2121,6 +2147,21 @@
     }
   }
 
+  function setDehumidifierReassignButtonVisibility(category) {
+    const button = document.getElementById("adminReassignDehumidifierButton");
+    if (!button) return;
+    button.classList.toggle("hidden", category !== "Dehumidifier");
+  }
+
+  function openDehumidifierReassignment() {
+    openReassignment();
+    const categorySelect = document.getElementById("reassignCategory");
+    if (categorySelect) {
+      categorySelect.value = "Dehumidifier";
+    }
+    changeReassignmentCategory();
+  }
+
   /* =========================
      24 - SEARCH AREAS
   ========================== */
@@ -2132,7 +2173,7 @@
 
   function setAdminAreaSearchVisibility(category) {
     const searchBox = document.getElementById("adminAreaSearchInput");
-    if (category === "Weekly Room" || category === "Weekly Laundry") {
+    if (category === "Weekly Room" || category === "Weekly Laundry" || category === "Dehumidifier") {
       searchBox.classList.remove("hidden");
     } else {
       searchBox.classList.add("hidden");
@@ -4111,6 +4152,10 @@
     await moveReassignmentArea(selectedReassignmentAreaId);
   }
 
+  function limitRoomInput(input) {
+    input.value = String(input.value || "").replace(/\D/g, "").slice(0, 3);
+  }
+
   function getRoomKey(value) {
     const text = String(value || "").trim().toLowerCase();
     const digits = text.match(/\d+/g);
@@ -4201,7 +4246,7 @@
     });
 
     if (duplicate) {
-      showAppMessage("A dehumidifier already exists for room " + toRoom + ".");
+      showAppMessage("Room already have a dehumidifier.");
       return;
     }
 
@@ -4642,6 +4687,9 @@
   ========================== */
 
   window.openNewAdminArea = openNewAdminArea;
+  window.openAdminCategory = openAdminCategory;
+  window.openDehumidifierReassignment = openDehumidifierReassignment;
+  window.limitRoomInput = limitRoomInput;
   window.openAdminAreaTasks = openAdminAreaTasks;
   window.backToAdminAreaEdit = backToAdminAreaEdit;
   window.openNewAdminSubTask = openNewAdminSubTask;
