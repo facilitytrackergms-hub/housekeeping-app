@@ -1243,7 +1243,8 @@
   <div class="app-message-card">
     <h3 id="appMessageTitle">Message</h3>
     <p id="appMessageText"></p>
-    <button class="green" onclick="closeAppMessage()">OK</button>
+    <input id="appMessageInput" class="hidden" inputmode="numeric" maxlength="3" pattern="[0-9]*" oninput="limitRoomInput(this)" placeholder="Room number">
+    <button class="green" onclick="confirmAppMessage()">OK</button>
   </div>
 </div>
 
@@ -1314,6 +1315,7 @@
   let selectedReassignmentAreaId = "";
   let dehumidifierReassignStep = "";
   let dehumidifierFromAreaId = "";
+  let appMessageInputCallback = null;
 
   let housekeepingMode = "two";
   let selectedCategory = "";
@@ -1579,12 +1581,52 @@
   ========================== */
 
   function showAppMessage(message, title) {
+    const input = document.getElementById("appMessageInput");
+    appMessageInputCallback = null;
+    if (input) {
+      input.value = "";
+      input.classList.add("hidden");
+    }
     document.getElementById("appMessageTitle").innerText = title || "Notice";
     document.getElementById("appMessageText").innerText = message;
     document.getElementById("appMessageBox").classList.remove("hidden");
   }
 
+  function showAppInputMessage(message, callback, title) {
+    const input = document.getElementById("appMessageInput");
+    appMessageInputCallback = callback;
+    document.getElementById("appMessageTitle").innerText = title || "Notice";
+    document.getElementById("appMessageText").innerText = message;
+    if (input) {
+      input.value = "";
+      input.classList.remove("hidden");
+      setTimeout(function() { input.focus(); }, 50);
+    }
+    document.getElementById("appMessageBox").classList.remove("hidden");
+  }
+
+  function confirmAppMessage() {
+    const input = document.getElementById("appMessageInput");
+
+    if (appMessageInputCallback) {
+      const callback = appMessageInputCallback;
+      const value = input ? input.value.trim() : "";
+      appMessageInputCallback = null;
+      closeAppMessage();
+      callback(value);
+      return;
+    }
+
+    closeAppMessage();
+  }
+
   function closeAppMessage() {
+    const input = document.getElementById("appMessageInput");
+    appMessageInputCallback = null;
+    if (input) {
+      input.value = "";
+      input.classList.add("hidden");
+    }
     document.getElementById("appMessageBox").classList.add("hidden");
   }
 
@@ -2251,7 +2293,7 @@
     dehumidifierReassignStep = "from";
     dehumidifierFromAreaId = "";
     drawAdminAreaButtons("Dehumidifier");
-    showAppMessage("Choose From");
+    showAppMessage("Choose from what room.");
   }
 
   async function handleDehumidifierReassignRoomClick(areaId) {
@@ -2268,25 +2310,31 @@
       dehumidifierFromAreaId = area.id;
       dehumidifierReassignStep = "to";
       drawAdminAreaButtons("Dehumidifier");
-      showAppMessage("Choose To");
+      showDehumidifierMoveToInput();
       return;
     }
 
     if (dehumidifierReassignStep === "to") {
-      const fromArea = allAreas.find(function(item) {
-        return item.id === dehumidifierFromAreaId;
-      });
-
-      if (!fromArea) {
-        dehumidifierReassignStep = "";
-        dehumidifierFromAreaId = "";
-        drawAdminAreaButtons("Dehumidifier");
-        showAppMessage("Choose From again.");
-        return;
-      }
-
-      await moveDehumidifierToRoom(fromArea, area.areaName);
+      showDehumidifierMoveToInput();
     }
+  }
+
+  function showDehumidifierMoveToInput() {
+    const fromArea = allAreas.find(function(item) {
+      return item.id === dehumidifierFromAreaId;
+    });
+
+    if (!fromArea) {
+      dehumidifierReassignStep = "from";
+      dehumidifierFromAreaId = "";
+      drawAdminAreaButtons("Dehumidifier");
+      showAppMessage("Choose from what room.");
+      return;
+    }
+
+    showAppInputMessage("Move dehumi " + fromArea.areaName + " to what room?", async function(toRoom) {
+      await moveDehumidifierToRoom(fromArea, toRoom);
+    });
   }
 
   /* =========================
@@ -4337,29 +4385,39 @@
   }
 
   async function moveDehumidifierToRoom(fromArea, toRoomValue) {
-    if (!fromArea || !toRoomValue) {
-      showAppMessage("Choose From and To.");
+    const cleanToRoom = String(toRoomValue || "").replace(/\D/g, "").slice(0, 3);
+
+    if (!fromArea || !cleanToRoom) {
+      dehumidifierReassignStep = "to";
+      showDehumidifierMoveToInput();
       return;
     }
 
-    if (getRoomKey(fromArea.areaName) === getRoomKey(toRoomValue)) {
+    if (cleanToRoom.length !== 3) {
+      dehumidifierReassignStep = "to";
+      showAppMessage("Enter 3 digits.");
+      return;
+    }
+
+    if (getRoomKey(fromArea.areaName) === getRoomKey(cleanToRoom)) {
+      dehumidifierReassignStep = "to";
       showAppMessage("Choose a different room.");
       return;
     }
 
-    const targetArea = findTargetRoomForDehumidifier(toRoomValue);
+    const targetArea = findTargetRoomForDehumidifier(cleanToRoom);
 
     if (!targetArea) {
       dehumidifierReassignStep = "to";
       drawAdminAreaButtons("Dehumidifier");
-      showAppMessage("No destination room found for " + toRoomValue + ".");
+      showAppMessage("No destination room found for " + cleanToRoom + ".");
       return;
     }
 
     const duplicate = allAreas.find(function(area) {
       return area.id !== fromArea.id &&
         area.category === "Dehumidifier" &&
-        getRoomKey(area.areaName) === getRoomKey(toRoomValue);
+        getRoomKey(area.areaName) === getRoomKey(cleanToRoom);
     });
 
     if (duplicate) {
@@ -4820,6 +4878,7 @@
   window.searchAdminAreas = searchAdminAreas;
   window.changeAdminAreaScheduleDay = changeAdminAreaScheduleDay;
   window.closeAppMessage = closeAppMessage;
+  window.confirmAppMessage = confirmAppMessage;
   window.toggleHousekeepingMode = toggleHousekeepingMode;
   window.setHousekeepingMode = setHousekeepingMode;
 
