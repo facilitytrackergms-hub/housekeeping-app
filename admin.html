@@ -322,7 +322,14 @@
       margin: 0;
     }
 
+    .task-check-list {
+      max-height: 240px;
+      overflow-y: auto;
+      padding-right: 2px;
+    }
+
     #adminMessage,
+    #adminTaskMessage,
     #employeeMessage {
       text-align: center;
       font-size: 16px;
@@ -650,7 +657,7 @@
 
     <div id="adminSingleTaskBox" class="task-card hidden">
       <h3>Default Tasks</h3>
-      <div id="adminSingleTaskChecks" class="check-grid"></div>
+      <div id="adminSingleTaskChecks" class="check-grid task-check-list"></div>
 
       <div class="button-row">
         <button class="green" onclick="addCheckedTasksToSingleArea()">ADD TO AREA</button>
@@ -703,6 +710,8 @@
       </div>
 
     </div>
+
+    <p id="adminTaskMessage"></p>
 
     <button class="back" onclick="backToAdminAreaEdit()">BACK</button>
 
@@ -1735,6 +1744,22 @@
     return [];
   }
 
+  function getAllTaskNameSuggestions() {
+    return [...new Set(allSubTasks.map(function(task) {
+      return String(task.taskName || "").trim();
+    }).filter(function(name) {
+      return name !== "";
+    }))].sort(function(a, b) {
+      return a.localeCompare(b);
+    });
+  }
+
+  function getSuggestedTasksForSelectedCategory() {
+    const defaultTasks = getDefaultTasksForSelectedCategory();
+    const allNames = getAllTaskNameSuggestions();
+    return [...new Set(defaultTasks.concat(allNames))];
+  }
+
   function setAdminBulkTaskBoxVisibility(category) {
     const box = document.getElementById("adminBulkTaskBox");
 
@@ -1748,9 +1773,12 @@
 
   function setAdminSingleTaskBoxVisibility(category) {
     const box = document.getElementById("adminSingleTaskBox");
+    const title = box.querySelector("h3");
+    const taskList = getSuggestedTasksForSelectedCategory();
 
-    if (["Weekly Room", "Daily Room", "Weekly Laundry", "Daily Laundry"].includes(category)) {
-      drawTaskCheckboxes("adminSingleTaskChecks", getDefaultTasksForSelectedCategory(), "singleTaskCheck");
+    if (taskList.length > 0) {
+      if (title) title.innerText = "Add Tasks";
+      drawTaskCheckboxes("adminSingleTaskChecks", taskList, "singleTaskCheck");
       box.classList.remove("hidden");
     } else {
       box.classList.add("hidden");
@@ -1940,7 +1968,8 @@
     await loadAdminTasks();
     openAdminAreaTasks();
     hideLoading();
-    document.getElementById("adminMessage").innerText = "Added " + addedCount + " missing tasks.";
+    const messageBox = document.getElementById("adminTaskMessage");
+    if (messageBox) messageBox.innerText = "Added " + addedCount + " missing tasks.";
   }
 
   async function deleteCheckedTasksFromSingleArea() {
@@ -1975,7 +2004,8 @@
     await loadAdminTasks();
     openAdminAreaTasks();
     hideLoading();
-    document.getElementById("adminMessage").innerText = "Deleted " + tasksToDelete.length + " tasks.";
+    const messageBox = document.getElementById("adminTaskMessage");
+    if (messageBox) messageBox.innerText = "Deleted " + tasksToDelete.length + " tasks.";
   }
 
   /* =========================
@@ -2197,6 +2227,8 @@
 
     document.getElementById("adminAreaTasksTitle").innerText = selectedArea + " Tasks";
     document.getElementById("adminMessage").innerText = "";
+    const taskMessage = document.getElementById("adminTaskMessage");
+    if (taskMessage) taskMessage.innerText = "";
 
     updateAssignmentTitles();
     setAdminSingleTaskBoxVisibility(selectedCategory);
