@@ -624,11 +624,15 @@
     <div id="adminAreaBigDatePickerBox" class="hidden">
       <h3 id="adminAreaDateTitle"></h3>
 
-      <input
-        type="date"
-        id="adminBigDatePicker"
-        onchange="changeAdminWorkDateFromBigPicker()"
-      >
+      <div id="adminAreaWeekdayButtons" class="weekday-row">
+        <button type="button" onclick="setAdminAreaWeekday('Monday')">Mon</button>
+        <button type="button" onclick="setAdminAreaWeekday('Tuesday')">Tue</button>
+        <button type="button" onclick="setAdminAreaWeekday('Wednesday')">Wed</button>
+        <button type="button" onclick="setAdminAreaWeekday('Thursday')">Thu</button>
+        <button type="button" onclick="setAdminAreaWeekday('Friday')">Fri</button>
+        <button type="button" onclick="setAdminAreaWeekday('Saturday')">Sat</button>
+        <button type="button" onclick="setAdminAreaWeekday('Sunday')">Sun</button>
+      </div>
     </div>
 
     <input
@@ -1262,6 +1266,7 @@
   const adminDefaultAssignment = sessionData.defaultSchedule || sessionData.assignment || "HK1";
   let currentWorkDateISO = getTodayISO();
   let currentWorkDayName = "";
+  let adminAreaManualDayName = "";
   let reassignWorkDateISO = getTodayISO();
   let reassignWorkDayName = "";
   let reassignTargetDayName = "";
@@ -1667,14 +1672,31 @@
   }
 
   async function changeAdminWorkDateFromBigPicker() {
-    const picker = document.getElementById("adminBigDatePicker");
-    if (!picker.value) return;
-    currentWorkDateISO = picker.value;
-    await loadAdminTasks();
-    if (selectedCategory) {
-      drawAdminAreaButtons(selectedCategory);
-      showAdminView("adminAreaView");
-    }
+    return;
+  }
+
+  function setAdminAreaWeekday(dayName) {
+    adminAreaManualDayName = dayName;
+    currentWorkDayName = dayName;
+    drawAdminAreaButtons(selectedCategory);
+    showAdminView("adminAreaView");
+  }
+
+  function updateAdminAreaDayButtons() {
+    const dayMap = {
+      Mon: "Monday",
+      Tue: "Tuesday",
+      Wed: "Wednesday",
+      Thu: "Thursday",
+      Fri: "Friday",
+      Sat: "Saturday",
+      Sun: "Sunday"
+    };
+
+    Array.from(document.querySelectorAll("#adminAreaWeekdayButtons button")).forEach(function(button) {
+      const fullDay = dayMap[button.innerText] || button.innerText;
+      button.classList.toggle("active-day", fullDay === currentWorkDayName);
+    });
   }
 
   /* =========================
@@ -1706,6 +1728,9 @@
   async function loadAdminTasks() {
     showLoading();
     updateDateDisplay();
+    if (adminAreaManualDayName && selectedCategory && isWeeklyCategory(selectedCategory)) {
+      currentWorkDayName = adminAreaManualDayName;
+    }
     updateAssignmentTitles();
 
     if (!currentAssignment) {
@@ -1938,6 +1963,7 @@
             selectedCategory = item;
             adminAreaSearchTerm = "";
             adminBulkTaskOpen = false;
+            adminAreaManualDayName = "";
             document.getElementById("adminAreaSearchInput").value = "";
             drawAdminAreaButtons(item);
             showAdminView("adminAreaView");
@@ -1964,9 +1990,9 @@
     setAdminAreaSearchVisibility(category);
     setAdminBulkTaskBoxVisibility(category);
 
-    document.getElementById("adminBigDatePicker").value = currentWorkDateISO;
     document.getElementById("adminAddAreaButton").innerText = "ADD NEW " + category.toUpperCase();
     document.getElementById("adminAreaDateTitle").innerText = currentWorkDayName;
+    updateAdminAreaDayButtons();
 
     updateAssignmentTitles();
 
@@ -2341,6 +2367,7 @@
     if (isWeeklyCategory(category)) {
       pickerBox.classList.remove("hidden");
       dateTitle.classList.remove("hidden");
+      updateAdminAreaDayButtons();
     } else {
       pickerBox.classList.add("hidden");
       dateTitle.classList.add("hidden");
@@ -4316,6 +4343,7 @@
   ========================== */
 
   window.changeAdminWorkDateFromBigPicker = changeAdminWorkDateFromBigPicker;
+  window.setAdminAreaWeekday = setAdminAreaWeekday;
   window.changeAdminAssignment = changeAdminAssignment;
   window.searchAdminAreas = searchAdminAreas;
   window.changeAdminAreaScheduleDay = changeAdminAreaScheduleDay;
