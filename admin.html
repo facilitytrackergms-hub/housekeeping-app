@@ -4517,12 +4517,21 @@
 
     const activeAssignments = getActiveHousekeepingAssignments();
 
-    const duplicate = allAreas.find(function(area) {
-      return area.id !== fromArea.id &&
-        area.category === "Dehumidifier" &&
-        activeAssignments.includes(getAreaAssignment(area)) &&
-        getRoomKey(area.areaName) === getRoomKey(cleanToRoom);
-    });
+    const visibleDehumidifierRoomKeys = Array.from(document.querySelectorAll("#adminAreaButtons .room-number"))
+      .map(function(item) {
+        return getRoomKey(item.innerText);
+      });
+
+    const destinationIsVisibleDehumidifier = visibleDehumidifierRoomKeys.includes(getRoomKey(cleanToRoom));
+
+    const duplicate = destinationIsVisibleDehumidifier
+      ? allAreas.find(function(area) {
+          return area.id !== fromArea.id &&
+            area.category === "Dehumidifier" &&
+            activeAssignments.includes(getAreaAssignment(area)) &&
+            getRoomKey(area.areaName) === getRoomKey(cleanToRoom);
+        })
+      : null;
 
     if (duplicate) {
       dehumidifierReassignStep = "to";
@@ -4537,7 +4546,7 @@
     const newRoomName = targetArea.areaName;
 
     const ok = await showAppConfirmMessage(
-      "Are you sure you want to move dehumi " + oldRoomName + " to " + newRoomName + "?"
+      "Are you sure you want to move room from " + oldRoomName + " to " + newRoomName + "?"
     );
 
     if (!ok) {
@@ -4594,7 +4603,7 @@
     drawAdminAreaButtons("Dehumidifier");
 
     hideLoading();
-    showAppMessage("Dehumi " + oldRoomName + " has been moved to " + newRoomName + ".");
+    showAppMessage("Room " + oldRoomName + " has been moved to " + newRoomName + ".");
   }
 
   async function saveDehumidifierRoomReassignment() {
