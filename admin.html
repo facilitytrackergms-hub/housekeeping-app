@@ -3,7 +3,7 @@
 
 <head>
   <!-- =========================
-       01 - HEADf
+       01 - HEAD
   ========================== -->
 
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -360,6 +360,12 @@
       font-weight: 900;
       margin: 6px 0 8px;
       color: #111;
+    }
+
+    .selected-reassign-area {
+      background: #0d47a1 !important;
+      color: white !important;
+      outline: 3px solid #111;
     }
 
     .laundry-room-list {
@@ -1054,6 +1060,10 @@
       CHECK COUNT
     </button>
 
+    <button class="green" onclick="saveSelectedReassignmentArea()">
+      SAVE
+    </button>
+
     <button class="back" onclick="backToAdminCategories()">BACK</button>
 
   </div>
@@ -1231,6 +1241,7 @@
   let reassignWorkDateISO = getTodayISO();
   let reassignWorkDayName = "";
   let reassignTargetDayName = "";
+  let selectedReassignmentAreaId = "";
 
   let housekeepingMode = "two";
   let selectedCategory = "";
@@ -3770,6 +3781,7 @@
     reassignWorkDateISO = currentWorkDateISO;
     reassignWorkDayName = "";
     reassignTargetDayName = "";
+    selectedReassignmentAreaId = "";
     updateReassignmentDropdownOptions(true);
     document.getElementById("reassignmentAreaList").innerHTML = "";
     setReassignmentDateVisibility();
@@ -3820,6 +3832,8 @@
     const category = document.getElementById("reassignCategory").value;
     const box = document.getElementById("reassignmentAreaList");
 
+    selectedReassignmentAreaId = "";
+
     if (box) box.innerHTML = "";
 
     if (!fromAssignment || !category) {
@@ -3853,10 +3867,11 @@
       const count = getTasksForWorkId(area.workId).length;
       const btn = document.createElement("button");
       btn.className = "yellow";
+      btn.dataset.areaId = area.id;
       btn.innerHTML =
         '<div class="room-number">' + escapeHtml(area.areaName) + '</div>' +
         '<div class="room-counter">' + escapeHtml(getAreaAssignment(area)) + ' • ' + count + ' TASKS</div>';
-      btn.onclick = function() { moveReassignmentArea(area.id); };
+      btn.onclick = function() { selectReassignmentArea(area.id); };
       box.appendChild(btn);
     });
 
@@ -3869,6 +3884,23 @@
     hideLoading();
   }
 
+  function selectReassignmentArea(areaId) {
+    selectedReassignmentAreaId = areaId;
+
+    Array.from(document.querySelectorAll("#reassignmentAreaList button")).forEach(function(button) {
+      button.classList.toggle("selected-reassign-area", button.dataset.areaId === areaId);
+    });
+  }
+
+  async function saveSelectedReassignmentArea() {
+    if (!selectedReassignmentAreaId) {
+      showAppMessage("Select a room.");
+      return;
+    }
+
+    await moveReassignmentArea(selectedReassignmentAreaId);
+  }
+
   async function moveReassignmentArea(areaId) {
     const area = allAreas.find(function(item) { return item.id === areaId; });
     const toAssignment = document.getElementById("reassignTo").value;
@@ -3876,13 +3908,11 @@
     const category = document.getElementById("reassignCategory").value;
     const targetScheduleDay = isWeeklyCategory(category) ? reassignTargetDayName : (area ? area.scheduleDay : "daily");
 
-if (!area || !fromAssignment || !category) {
-  return;
-}
+    if (!area || !fromAssignment || !toAssignment || !category) {
+      showAppMessage("Select from, to, and category.");
+      return;
+    }
 
-if (!toAssignment) {
-  return;
-}
     if (isWeeklyCategory(category) && (!reassignWorkDayName || !reassignTargetDayName)) {
       showAppMessage("Select from day and to day.");
       return;
@@ -4278,6 +4308,8 @@ if (!toAssignment) {
   window.openReassignment = openReassignment;
   window.loadReassignmentAreas = loadReassignmentAreas;
   window.moveReassignmentArea = moveReassignmentArea;
+  window.selectReassignmentArea = selectReassignmentArea;
+  window.saveSelectedReassignmentArea = saveSelectedReassignmentArea;
   window.changeReassignmentFrom = changeReassignmentFrom;
   window.changeReassignmentTo = changeReassignmentTo;
   window.changeReassignmentCategory = changeReassignmentCategory;
