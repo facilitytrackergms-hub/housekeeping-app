@@ -1046,6 +1046,16 @@
       <option value="">Select category</option>
     </select>
 
+    <div id="dehumidifierReassignmentBox" class="hidden">
+      <label>From Room</label>
+      <input id="dehumidifierFromRoomInput" inputmode="numeric" placeholder="From room">
+
+      <label>To Room</label>
+      <input id="dehumidifierToRoomInput" inputmode="numeric" placeholder="To room">
+    </div>
+
+    <div id="genericReassignmentBox">
+
     <label>From</label>
     <select id="reassignFrom" onchange="changeReassignmentFrom()">
       <option>HK1</option>
@@ -1110,6 +1120,8 @@
     <button class="yellow" onclick="checkAssignmentCounts()">
       CHECK COUNT
     </button>
+
+    </div>
 
     <button class="green" onclick="saveSelectedReassignmentArea()">
       SAVE
@@ -1647,7 +1659,9 @@
     const category = document.getElementById("reassignCategory")?.value || "";
 
     if (label) {
-      if (category && isWeeklyCategory(category) && reassignWorkDayName) {
+      if (category === "Dehumidifier") {
+        label.innerText = "Dehumidifier room move";
+      } else if (category && isWeeklyCategory(category) && reassignWorkDayName) {
         label.innerText =
           "Showing " + fromAssignment + " - " + category + " for " + reassignWorkDayName +
           (toAssignment && reassignTargetDayName ? " → Move to " + toAssignment + " - " + reassignTargetDayName : "");
@@ -3928,7 +3942,15 @@
     reassignTargetDayName = "";
     selectedReassignmentAreaId = "";
     updateReassignmentDropdownOptions(true);
-    document.getElementById("reassignmentAreaList").innerHTML = "";
+
+    const roomSelect = document.getElementById("reassignmentAreaList");
+    if (roomSelect) roomSelect.innerHTML = '<option value="">Select room</option>';
+
+    const dehumidifierFrom = document.getElementById("dehumidifierFromRoomInput");
+    const dehumidifierTo = document.getElementById("dehumidifierToRoomInput");
+    if (dehumidifierFrom) dehumidifierFrom.value = "";
+    if (dehumidifierTo) dehumidifierTo.value = "";
+
     const toPreview = document.getElementById("reassignmentToAreaPreview");
     const toPreviewLabel = document.getElementById("reassignToPreviewLabel");
     if (toPreview) toPreview.innerHTML = "";
@@ -3937,11 +3959,33 @@
     showAdminView("adminReassignmentView");
   }
 
+  function syncReassignmentCategoryView() {
+    const category = document.getElementById("reassignCategory")?.value || "";
+    const dehumidifierBox = document.getElementById("dehumidifierReassignmentBox");
+    const genericBox = document.getElementById("genericReassignmentBox");
+
+    const isDehumidifierMove = category === "Dehumidifier";
+
+    if (dehumidifierBox) dehumidifierBox.classList.toggle("hidden", !isDehumidifierMove);
+    if (genericBox) genericBox.classList.toggle("hidden", isDehumidifierMove);
+  }
+
   function setReassignmentDateVisibility() {
+    syncReassignmentCategoryView();
+
     const fromBox = document.getElementById("reassignFromDayBox");
     const toBox = document.getElementById("reassignToDayBox");
     const category = document.getElementById("reassignCategory")?.value || "";
     const showDays = isWeeklyCategory(category);
+
+    if (category === "Dehumidifier") {
+      reassignWorkDayName = "";
+      reassignTargetDayName = "";
+      if (fromBox) fromBox.classList.add("hidden");
+      if (toBox) toBox.classList.add("hidden");
+      updateReassignmentDateDisplay();
+      return;
+    }
 
     if (showDays) {
       if (!reassignWorkDayName) reassignWorkDayName = getWeekdayName(currentWorkDateISO);
@@ -3967,7 +4011,20 @@
   }
 
   async function changeReassignmentCategory() {
+    selectedReassignmentAreaId = "";
     setReassignmentDateVisibility();
+
+    if (document.getElementById("reassignCategory").value === "Dehumidifier") {
+      const roomSelect = document.getElementById("reassignmentAreaList");
+      const toPreview = document.getElementById("reassignmentToAreaPreview");
+      const toPreviewLabel = document.getElementById("reassignToPreviewLabel");
+      if (roomSelect) roomSelect.innerHTML = '<option value="">Select room</option>';
+      if (toPreview) toPreview.innerHTML = '<option value="">Select destination to preview rooms</option>';
+      if (toPreviewLabel) toPreviewLabel.innerText = "";
+      updateReassignmentDateDisplay();
+      return;
+    }
+
     await loadReassignmentAreas();
   }
 
@@ -4039,12 +4096,165 @@
   }
 
   async function saveSelectedReassignmentArea() {
+    const category = document.getElementById("reassignCategory").value;
+
+    if (category === "Dehumidifier") {
+      await saveDehumidifierRoomReassignment();
+      return;
+    }
+
     if (!selectedReassignmentAreaId) {
       showAppMessage("Select a room.");
       return;
     }
 
     await moveReassignmentArea(selectedReassignmentAreaId);
+  }
+
+  function getRoomKey(value) {
+    const text = String(value || "").trim().toLowerCase();
+    const digits = text.match(/\d+/g);
+
+    if (digits && digits.length > 0) {
+      return digits.join("");
+    }
+
+    return text.replace(/[^a-z0-9]+/g, "");
+  }
+
+  function findAreaByRoomAndCategory(roomValue, categoryValue) {
+    const roomKey = getRoomKey(roomValue);
+
+    return allAreas.find(function(area) {
+      return area.category === categoryValue &&
+        getRoomKey(area.areaName) === roomKey;
+    });
+  }
+
+  function findTargetRoomForDehumidifier(roomValue) {
+    const roomKey = getRoomKey(roomValue);
+    const preferredCategories = ["Daily Room", "Weekly Room", "Common Area"];
+
+    for (let i = 0; i < preferredCategories.length; i++) {
+      const categoryName = preferredCategories[i];
+
+      const exact = allAreas.find(function(area) {
+        return area.category === categoryName &&
+          getRoomKey(area.areaName) === roomKey &&
+          isAreaForCurrentDay(area);
+      });
+
+      if (exact) return exact;
+    }
+
+    for (let i = 0; i < preferredCategories.length; i++) {
+      const categoryName = preferredCategories[i];
+
+      const fallback = allAreas.find(function(area) {
+        return area.category === categoryName &&
+          getRoomKey(area.areaName) === roomKey;
+      });
+
+      if (fallback) return fallback;
+    }
+
+    return allAreas.find(function(area) {
+      return area.category !== "Dehumidifier" &&
+        getRoomKey(area.areaName) === roomKey;
+    });
+  }
+
+  async function saveDehumidifierRoomReassignment() {
+    const fromRoom = document.getElementById("dehumidifierFromRoomInput").value.trim();
+    const toRoom = document.getElementById("dehumidifierToRoomInput").value.trim();
+
+    if (!fromRoom || !toRoom) {
+      showAppMessage("Enter from room and to room.");
+      return;
+    }
+
+    if (getRoomKey(fromRoom) === getRoomKey(toRoom)) {
+      showAppMessage("From room and to room are the same.");
+      return;
+    }
+
+    const fromArea = findAreaByRoomAndCategory(fromRoom, "Dehumidifier");
+    const targetArea = findTargetRoomForDehumidifier(toRoom);
+
+    if (!fromArea) {
+      showAppMessage("No dehumidifier found for room " + fromRoom + ".");
+      return;
+    }
+
+    if (!targetArea) {
+      showAppMessage("No destination room found for " + toRoom + ".");
+      return;
+    }
+
+    const targetAssignment = getAreaAssignment(targetArea);
+    const targetScheduleDay = "daily";
+
+    const duplicate = allAreas.find(function(area) {
+      return area.id !== fromArea.id &&
+        area.category === "Dehumidifier" &&
+        getRoomKey(area.areaName) === getRoomKey(toRoom);
+    });
+
+    if (duplicate) {
+      showAppMessage("A dehumidifier already exists for room " + toRoom + ".");
+      return;
+    }
+
+    const ok = confirm("Move dehumidifier from room " + fromArea.areaName + " to room " + targetArea.areaName + "?");
+    if (!ok) return;
+
+    showLoading();
+
+    const oldWorkId = fromArea.workId;
+    const newWorkId = buildWorkId(targetArea.areaName, "Dehumidifier", targetScheduleDay, targetAssignment);
+
+    await updateDoc(doc(db, "areas", fromArea.id), {
+      areaId: newWorkId,
+      workId: newWorkId,
+      areaName: targetArea.areaName,
+      areaSearch: String(targetArea.areaName || "").toLowerCase(),
+      category: "Dehumidifier",
+      categoryKey: makeId("Dehumidifier"),
+      schedule: targetAssignment,
+      modeType: getModeTypeForAssignment(targetAssignment),
+      modeLabel: targetAssignment,
+      floor: targetArea.floor || getFloorForAssignment(targetAssignment),
+      day: targetScheduleDay,
+      scheduleDay: targetScheduleDay,
+      updatedAt: serverTimestamp()
+    });
+
+    const tasksToMove = getTasksForWorkId(oldWorkId);
+
+    for (let i = 0; i < tasksToMove.length; i++) {
+      await updateDoc(doc(db, "tasks", tasksToMove[i].id), {
+        areaId: newWorkId,
+        workId: newWorkId,
+        areaName: targetArea.areaName,
+        areaSearch: String(targetArea.areaName || "").toLowerCase(),
+        category: "Dehumidifier",
+        categoryKey: makeId("Dehumidifier"),
+        schedule: targetAssignment,
+        modeType: getModeTypeForAssignment(targetAssignment),
+        modeLabel: targetAssignment,
+        floor: targetArea.floor || getFloorForAssignment(targetAssignment),
+        day: targetScheduleDay,
+        updatedAt: serverTimestamp()
+      });
+    }
+
+    await loadAdminTasks();
+
+    document.getElementById("dehumidifierFromRoomInput").value = "";
+    document.getElementById("dehumidifierToRoomInput").value = "";
+
+    hideLoading();
+    showAppMessage("Moved.");
   }
 
   async function moveReassignmentArea(areaId) {
