@@ -285,6 +285,12 @@
       border-radius: 10px;
     }
 
+    #allTasksButton {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
     #message {
       text-align: center;
       font-size: 18px;
@@ -438,6 +444,7 @@
         <textarea id="note" placeholder="Other reason / notes"></textarea>
       </div>
 
+      <button id="changeDehumidifierLocationButton" class="yellow hidden" onclick="goToAdminDehumidifierView()">CHANGE LOCATION</button>
       <button class="green" onclick="saveTaskChecklist()">SAVE</button>
     </div>
 
@@ -1289,9 +1296,23 @@ select.appendChild(blankOption);
     document.getElementById("reason").value = "";
     document.getElementById("note").value = "";
     document.getElementById("reasonBox").classList.add("hidden");
+    updateChangeLocationButtonVisibility();
 
     buildChecklist();
     showView(4);
+  }
+
+  function updateChangeLocationButtonVisibility() {
+    const button = document.getElementById("changeDehumidifierLocationButton");
+    if (!button) return;
+
+    button.classList.toggle("hidden", selectedCategory !== "Dehumidifier");
+  }
+
+  function goToAdminDehumidifierView() {
+    sessionStorage.setItem("adminStartView", "Dehumidifier");
+    sessionStorage.setItem("adminOpenCategory", "Dehumidifier");
+    window.location.href = "admin.html#dehumidifier";
   }
 
   function loadCurrentTaskList(areaId, areaName) {
@@ -1934,9 +1955,9 @@ async function saveReasonIfNeeded(reasonText) {
   window.logout = logout;
   window.customConfirmYes = customConfirmYes;
   window.customConfirmNo = customConfirmNo;
+  window.goToAdminDehumidifierView = goToAdminDehumidifierView;
 
 </script>
 
 </body>
 </html>
-
