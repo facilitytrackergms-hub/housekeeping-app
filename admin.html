@@ -509,6 +509,68 @@
       color: #333;
     }
 
+
+    .admin-room-search-box {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 7px;
+      margin: 0 0 8px;
+      align-items: center;
+    }
+
+    .admin-room-search-box input {
+      margin: 0;
+      height: 46px;
+      font-size: 18px;
+      font-weight: 900;
+      text-align: center;
+    }
+
+    .admin-room-search-box button {
+      width: 104px;
+      height: 46px;
+      margin: 0;
+      font-size: 14px;
+      padding: 8px 5px;
+      background: #0d47a1;
+    }
+
+    .room-report-card {
+      border: 1px solid #ccc;
+      border-radius: 14px;
+      padding: 10px;
+      margin: 8px 0;
+      background: #fafafa;
+    }
+
+    .room-report-card h3 {
+      text-align: left;
+      margin: 0 0 6px;
+      font-size: 18px;
+    }
+
+    .room-report-line {
+      font-size: 14px;
+      font-weight: bold;
+      margin: 3px 0;
+      color: #333;
+    }
+
+    .room-report-task {
+      font-size: 13px;
+      margin: 3px 0;
+      line-height: 1.25;
+    }
+
+    .room-report-section-title {
+      text-align: center;
+      font-size: 16px;
+      font-weight: 900;
+      margin: 10px 0 6px;
+      color: #111;
+    }
+
+
     /* =========================
        05 - LOADING SCREEN STYLE
     ========================== */
@@ -628,6 +690,19 @@
   <div id="adminView2">
 
     <div class="admin-dashboard-title">Admin Dashboard</div>
+
+    <div class="admin-room-search-box">
+      <input
+        id="adminRoomSearchInput"
+        inputmode="numeric"
+        maxlength="3"
+        pattern="[0-9]*"
+        oninput="limitRoomInput(this)"
+        onkeydown="handleAdminRoomSearchKey(event)"
+        placeholder="Room report"
+      >
+      <button type="button" onclick="openAdminRoomReportFromSearch()">SEARCH</button>
+    </div>
 
     <div class="admin-mode-toggle-row">
       <button id="modeTwoButton" type="button" onclick="setHousekeepingMode('two')">Mode 2</button>
@@ -853,6 +928,35 @@
     <p id="adminTaskMessage"></p>
 
     <button class="back" onclick="backToAdminAreaEdit()">BACK</button>
+
+  </div>
+
+  <!-- =========================
+       08E - ADMIN VIEW 7R - ROOM REPORT
+  ========================== -->
+
+  <div id="adminRoomReportView" class="hidden">
+
+    <div class="view-center">
+      <div class="view-tag">ADMIN VIEW 7R - ROOM REPORT</div>
+    </div>
+
+    <h2 id="roomReportTitle">Room Report</h2>
+
+    <label>Date</label>
+    <input
+      type="date"
+      id="roomReportDatePicker"
+      onchange="changeRoomReportDate()"
+    >
+
+    <div class="room-report-section-title">Current Active</div>
+    <div id="roomReportActiveList"></div>
+
+    <div class="room-report-section-title">Selected Date History</div>
+    <div id="roomReportHistoryList"></div>
+
+    <button class="back" onclick="backToAdminCategories()">BACK</button>
 
   </div>
 
@@ -1368,6 +1472,10 @@
   let currentEditingTaskIndex = -1;
   let originalEditingTaskName = "";
   let laundryScheduleRooms = [];
+  let currentRoomReportNumber = "";
+  let currentRoomReportAreas = [];
+  let currentRoomReportStatuses = [];
+  let currentRoomReportIssues = [];
 
   const DEFAULT_WEEKLY_ROOM_TASKS = ["Vac", "Fridge", "Bath", "Mop", "Toilet", "Sink", "Dust", "Bed", "AC Filter"];
   const DEFAULT_DAILY_ROOM_TASKS = ["Clean"];
@@ -1820,6 +1928,7 @@
       "adminAreaView",
       "adminEditView",
       "adminAreaTaskView",
+      "adminRoomReportView",
       "adminEmployeesView",
       "adminIssuesView",
       "adminDailyStatusView",
@@ -3429,6 +3538,249 @@
     drawAdminCategories();
     showAdminView("adminView2");
   }
+
+  /* =========================
+     43B - ROOM REPORT
+  ========================== */
+
+  function handleAdminRoomSearchKey(event) {
+    if (event && event.key === "Enter") {
+      event.preventDefault();
+      openAdminRoomReportFromSearch();
+    }
+  }
+
+  async function openAdminRoomReportFromSearch() {
+    const input = document.getElementById("adminRoomSearchInput");
+    const roomNumber = String(input ? input.value : "").replace(/\D/g, "").slice(0, 3);
+
+    if (!roomNumber) {
+      showAppMessage("Enter room number.");
+      return;
+    }
+
+    await openRoomReport(roomNumber);
+  }
+
+  async function openRoomReport(roomNumber) {
+    currentRoomReportNumber = String(roomNumber || "").replace(/\D/g, "").slice(0, 3);
+
+    if (!currentRoomReportNumber) {
+      showAppMessage("Enter room number.");
+      return;
+    }
+
+    if (allAreas.length === 0 || allSubTasks.length === 0) {
+      await loadAllAdminData();
+    }
+
+    currentRoomReportAreas = getRoomReportAreas(currentRoomReportNumber);
+
+    document.getElementById("roomReportTitle").innerText = "Room " + currentRoomReportNumber + " Report";
+    document.getElementById("roomReportDatePicker").value = currentWorkDateISO;
+
+    drawRoomReportActiveList();
+    await loadRoomReportHistory();
+
+    showAdminView("adminRoomReportView");
+  }
+
+  function getRoomReportAreas(roomNumber) {
+    const roomKey = getRoomKey(roomNumber);
+
+    return allAreas
+      .filter(function(area) {
+        return getRoomKey(area.areaName) === roomKey;
+      })
+      .sort(function(a, b) {
+        const scheduleCompare = String(getAreaAssignment(a) || "").localeCompare(String(getAreaAssignment(b) || ""));
+        if (scheduleCompare !== 0) return scheduleCompare;
+
+        const categoryCompare = String(a.category || "").localeCompare(String(b.category || ""));
+        if (categoryCompare !== 0) return categoryCompare;
+
+        return String(a.scheduleDay || "").localeCompare(String(b.scheduleDay || ""));
+      });
+  }
+
+  function drawRoomReportActiveList() {
+    const box = document.getElementById("roomReportActiveList");
+    box.innerHTML = "";
+
+    if (currentRoomReportAreas.length === 0) {
+      const empty = document.createElement("h3");
+      empty.innerText = "No active setup found for this room.";
+      box.appendChild(empty);
+      return;
+    }
+
+    currentRoomReportAreas.forEach(function(area) {
+      const tasks = getTasksForWorkId(area.workId);
+      const card = document.createElement("div");
+      card.className = "room-report-card";
+
+      let taskHtml = "";
+
+      if (tasks.length === 0) {
+        taskHtml = '<div class="room-report-task">No active tasks.</div>';
+      } else {
+        tasks.forEach(function(task) {
+          taskHtml += '<div class="room-report-task">• ' + escapeHtml(task.taskName || "Task") + '</div>';
+        });
+      }
+
+      card.innerHTML =
+        '<h3>' + escapeHtml(area.areaName || currentRoomReportNumber) + '</h3>' +
+        '<div class="room-report-line">Schedule: ' + escapeHtml(getAreaAssignment(area) || "") + '</div>' +
+        '<div class="room-report-line">Category: ' + escapeHtml(area.category || "") + '</div>' +
+        '<div class="room-report-line">Day: ' + escapeHtml(area.scheduleDay || area.day || "daily") + '</div>' +
+        '<div class="room-report-line">Active Tasks: ' + tasks.length + '</div>' +
+        taskHtml;
+
+      box.appendChild(card);
+    });
+  }
+
+  async function changeRoomReportDate() {
+    await loadRoomReportHistory();
+  }
+
+  async function loadRoomReportHistory() {
+    const picker = document.getElementById("roomReportDatePicker");
+    const selectedDate = picker && picker.value ? picker.value : currentWorkDateISO;
+
+    showLoading();
+
+    const statusQuery = query(
+      collection(db, "task_area_status"),
+      where("workDateISO", "==", selectedDate)
+    );
+
+    const statusSnap = await getDocs(statusQuery);
+
+    currentRoomReportStatuses = statusSnap.docs
+      .map(function(statusDoc) {
+        return {
+          id: statusDoc.id,
+          ...statusDoc.data()
+        };
+      })
+      .filter(function(record) {
+        return isRoomReportRecordMatch(record);
+      })
+      .sort(function(a, b) {
+        return String(a.schedule || "").localeCompare(String(b.schedule || "")) ||
+          String(a.category || "").localeCompare(String(b.category || ""));
+      });
+
+    const issueQuery = query(
+      collection(db, "issue_logs"),
+      where("workDateISO", "==", selectedDate)
+    );
+
+    const issueSnap = await getDocs(issueQuery);
+
+    currentRoomReportIssues = issueSnap.docs
+      .map(function(issueDoc) {
+        return {
+          id: issueDoc.id,
+          ...issueDoc.data()
+        };
+      })
+      .filter(function(issue) {
+        return isRoomReportRecordMatch(issue);
+      })
+      .sort(function(a, b) {
+        const aValue = String(a.createdDate || "") + " " + String(a.createdTime || "");
+        const bValue = String(b.createdDate || "") + " " + String(b.createdTime || "");
+        return bValue.localeCompare(aValue);
+      });
+
+    drawRoomReportHistoryList(selectedDate);
+    hideLoading();
+  }
+
+  function isRoomReportRecordMatch(record) {
+    const roomKey = getRoomKey(currentRoomReportNumber);
+    const areaIds = currentRoomReportAreas.map(function(area) {
+      return String(area.workId || area.areaId || area.id || "");
+    });
+
+    if (areaIds.includes(String(record.areaId || ""))) {
+      return true;
+    }
+
+    if (areaIds.includes(String(record.workId || ""))) {
+      return true;
+    }
+
+    if (getRoomKey(record.areaName) === roomKey) {
+      return true;
+    }
+
+    return false;
+  }
+
+  function drawRoomReportHistoryList(selectedDate) {
+    const box = document.getElementById("roomReportHistoryList");
+    box.innerHTML = "";
+
+    if (currentRoomReportStatuses.length === 0 && currentRoomReportIssues.length === 0) {
+      const empty = document.createElement("h3");
+      empty.innerText = "No history found for " + selectedDate + ".";
+      box.appendChild(empty);
+      return;
+    }
+
+    currentRoomReportStatuses.forEach(function(record) {
+      const card = document.createElement("div");
+      card.className = "room-report-card";
+
+      const completed = Number(record.completedCount || 0);
+      const incomplete = Number(record.incompleteCount || 0);
+      const total = Number(record.totalCount || completed + incomplete || 0);
+      const statusLabel = incomplete > 0 ? "Not Done / Issue" : "Done";
+      const colorClass = incomplete > 0 ? "yellow" : "green";
+      const tasks = record.tasks || {};
+      const taskKeys = Object.keys(tasks);
+      let taskHtml = "";
+
+      taskKeys.forEach(function(taskKey) {
+        const task = tasks[taskKey] || {};
+        const line = String(task.taskName || "Task") + " - " + String(task.status || "") + (task.reason ? " - " + task.reason : "");
+        taskHtml += '<div class="room-report-task">' + escapeHtml(line) + '</div>';
+      });
+
+      card.innerHTML =
+        '<h3>' + escapeHtml(record.areaName || currentRoomReportNumber) + '</h3>' +
+        '<div class="room-report-line">Status: ' + escapeHtml(statusLabel) + '</div>' +
+        '<div class="room-report-line">Schedule: ' + escapeHtml(record.schedule || "") + '</div>' +
+        '<div class="room-report-line">Category: ' + escapeHtml(record.category || "") + '</div>' +
+        '<div class="room-report-line">Employee: ' + escapeHtml(record.employeeName || "") + '</div>' +
+        '<div class="room-report-line">Count: ' + completed + '/' + total + '</div>' +
+        '<button class="' + colorClass + '">' + escapeHtml(statusLabel.toUpperCase()) + '</button>' +
+        taskHtml;
+
+      box.appendChild(card);
+    });
+
+    currentRoomReportIssues.forEach(function(issue) {
+      const card = document.createElement("div");
+      card.className = "room-report-card";
+
+      card.innerHTML =
+        '<h3>' + escapeHtml((issue.areaName || currentRoomReportNumber) + " - Issue") + '</h3>' +
+        '<div class="room-report-line">Status: ' + escapeHtml(issue.status || "Open") + '</div>' +
+        '<div class="room-report-line">Task: ' + escapeHtml(issue.taskName || "") + '</div>' +
+        '<div class="room-report-line">Reason: ' + escapeHtml(issue.issueReason || "") + '</div>' +
+        '<div class="room-report-line">Employee: ' + escapeHtml(issue.employeeName || "") + '</div>' +
+        '<div class="room-report-line">Time: ' + escapeHtml((issue.createdDate || "") + " " + (issue.createdTime || "")) + '</div>' +
+        '<div class="room-report-task">' + escapeHtml(issue.issueNote || "") + '</div>';
+
+      box.appendChild(card);
+    });
+  }
+
 
   /* =========================
      44 - OPEN EMPLOYEES
@@ -5086,6 +5438,9 @@
   ========================== */
 
   window.changeAdminWorkDateFromBigPicker = changeAdminWorkDateFromBigPicker;
+  window.handleAdminRoomSearchKey = handleAdminRoomSearchKey;
+  window.openAdminRoomReportFromSearch = openAdminRoomReportFromSearch;
+  window.changeRoomReportDate = changeRoomReportDate;
   window.setAdminAreaWeekday = setAdminAreaWeekday;
   window.changeAdminAssignment = changeAdminAssignment;
   window.searchAdminAreas = searchAdminAreas;
