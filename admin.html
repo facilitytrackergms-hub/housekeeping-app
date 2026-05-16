@@ -328,6 +328,31 @@
       padding-right: 2px;
     }
 
+    .laundry-room-list {
+      max-height: 260px;
+      overflow-y: auto;
+      padding-right: 2px;
+      margin-top: 8px;
+    }
+
+    .laundry-room-item {
+      border: 1px solid #ccc;
+      border-radius: 10px;
+      padding: 8px;
+      font-size: 15px;
+      font-weight: bold;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      background: #fafafa;
+      margin: 5px 0;
+    }
+
+    .laundry-room-item input {
+      width: auto;
+      margin: 0;
+    }
+
     #adminMessage,
     #adminTaskMessage,
     #employeeMessage {
@@ -993,6 +1018,82 @@
   </div>
 
   <!-- =========================
+       10C - ADMIN VIEW 10L - LAUNDRY SCHEDULE EDIT
+  ========================== -->
+
+  <div id="adminLaundryScheduleView" class="hidden">
+
+    <div class="view-center">
+      <div class="view-tag">ADMIN VIEW 10-L</div>
+    </div>
+
+    <h2>Laundry Schedule Edit</h2>
+
+    <label>Category</label>
+    <select id="laundryScheduleCategory" onchange="changeLaundryScheduleCategory()">
+      <option>Weekly Laundry</option>
+      <option>Daily Laundry</option>
+    </select>
+
+    <div id="laundryFromDayBox">
+      <label>Current Day</label>
+      <select id="laundryFromDay">
+        <option value="">Select day</option>
+        <option>Monday</option>
+        <option>Tuesday</option>
+        <option>Wednesday</option>
+        <option>Thursday</option>
+        <option>Friday</option>
+        <option>Saturday</option>
+        <option>Sunday</option>
+      </select>
+    </div>
+
+    <div id="laundryToDayBox">
+      <label>Move To Day</label>
+      <select id="laundryToDay">
+        <option value="">Keep same day</option>
+        <option>Monday</option>
+        <option>Tuesday</option>
+        <option>Wednesday</option>
+        <option>Thursday</option>
+        <option>Friday</option>
+        <option>Saturday</option>
+        <option>Sunday</option>
+      </select>
+    </div>
+
+    <label>Laundry Handling</label>
+    <select id="laundryHandling">
+      <option value="">Keep same handling</option>
+      <option value="Staff Laundry">Staff Laundry</option>
+      <option value="Self Laundry">Self Laundry</option>
+      <option value="Put Away Only">Put Away Only</option>
+      <option value="No Laundry">No Laundry</option>
+    </select>
+
+    <label>Search</label>
+    <input id="laundryScheduleSearch" placeholder="Search room" oninput="drawLaundryScheduleRooms()">
+
+    <div class="button-row">
+      <button class="green" onclick="loadLaundryScheduleRooms()">LOAD</button>
+      <button class="yellow" onclick="selectAllLaundryRooms()">SELECT ALL</button>
+    </div>
+
+    <div id="laundryScheduleRoomList" class="laundry-room-list"></div>
+
+    <div class="button-row">
+      <button class="green" onclick="saveLaundryScheduleChanges()">SAVE SELECTED</button>
+      <button class="red" onclick="clearLaundryRoomSelection()">CLEAR</button>
+    </div>
+
+    <p id="laundryScheduleMessage"></p>
+
+    <button class="back" onclick="backToReassignment()">BACK</button>
+
+  </div>
+
+  <!-- =========================
        10C - ADMIN VIEW 11 - WORKLOAD
   ========================== -->
 
@@ -1109,6 +1210,7 @@
   let currentEditingTaskId = "";
   let currentEditingTaskIndex = -1;
   let originalEditingTaskName = "";
+  let laundryScheduleRooms = [];
 
   const DEFAULT_WEEKLY_ROOM_TASKS = ["Vac", "Fridge", "Bath", "Mop", "Toilet", "Sink", "Dust", "Bed", "AC Filter"];
   const DEFAULT_DAILY_ROOM_TASKS = ["Clean"];
@@ -1129,7 +1231,7 @@
     if (!select) return;
 
     const currentValue = select.value;
-    const assignments = selectId === "adminAssignmentSelect" || selectId === "adminEditAssignmentInput"
+    const assignments = ["adminAssignmentSelect", "adminEditAssignmentInput", "reassignFrom", "reassignTo"].includes(selectId)
       ? REAL_ASSIGNMENTS
       : getActiveAssignments();
 
@@ -1316,6 +1418,7 @@
       "adminIssueReasonsView",
       "adminEmployeeEditView",
       "adminReassignmentView",
+      "adminLaundryScheduleView",
       "adminWorkloadView"
     ].forEach(function(id) {
       const el = document.getElementById(id);
@@ -3548,7 +3651,18 @@
 
   async function loadReassignmentAreas() {
     const fromAssignment = document.getElementById("reassignFrom").value;
+    const toAssignment = document.getElementById("reassignTo").value;
     const category = document.getElementById("reassignCategory").value;
+
+    if (fromAssignment === "Laundry" && toAssignment === "Laundry") {
+      openLaundryScheduleEditor(category);
+      return;
+    }
+
+    if (fromAssignment === "Laundry" && toAssignment && toAssignment !== "Laundry") {
+      showAppMessage("Laundry rooms stay inside Laundry. Use Laundry Schedule Edit.");
+      return;
+    }
 
     if (!fromAssignment || !category) {
       showAppMessage("Select from and category.");
@@ -3596,6 +3710,11 @@
 
     if (!area || !fromAssignment || !toAssignment || !category) {
       showAppMessage("Select from, to, and category.");
+      return;
+    }
+
+    if (fromAssignment === "Laundry" && toAssignment === "Laundry") {
+      openLaundryScheduleEditor(category);
       return;
     }
 
@@ -3655,11 +3774,196 @@
     await loadReassignmentAreas();
   }
 
+  function openLaundryScheduleEditor(category) {
+    const laundryCategory = category === "Daily Laundry" ? "Daily Laundry" : "Weekly Laundry";
+
+    document.getElementById("laundryScheduleCategory").value = laundryCategory;
+    document.getElementById("laundryFromDay").value = isWeeklyCategory(laundryCategory) ? reassignWorkDayName : "";
+    document.getElementById("laundryToDay").value = "";
+    document.getElementById("laundryHandling").value = "";
+    document.getElementById("laundryScheduleSearch").value = "";
+    document.getElementById("laundryScheduleRoomList").innerHTML = "";
+    document.getElementById("laundryScheduleMessage").innerText = "";
+    changeLaundryScheduleCategory();
+    showAdminView("adminLaundryScheduleView");
+  }
+
+  function changeLaundryScheduleCategory() {
+    const category = document.getElementById("laundryScheduleCategory").value;
+    const showDay = isWeeklyCategory(category);
+    document.getElementById("laundryFromDayBox").classList.toggle("hidden", !showDay);
+    document.getElementById("laundryToDayBox").classList.toggle("hidden", !showDay);
+    document.getElementById("laundryScheduleRoomList").innerHTML = "";
+    document.getElementById("laundryScheduleMessage").innerText = "";
+    laundryScheduleRooms = [];
+  }
+
+  async function loadLaundryScheduleRooms() {
+    const category = document.getElementById("laundryScheduleCategory").value;
+    const fromDay = document.getElementById("laundryFromDay").value;
+
+    if (isWeeklyCategory(category) && !fromDay) {
+      showAppMessage("Select current day.");
+      return;
+    }
+
+    showLoading();
+
+    laundryScheduleRooms = allAreas.filter(function(area) {
+      if (getAreaAssignment(area) !== "Laundry") return false;
+      if (area.category !== category) return false;
+      if (isWeeklyCategory(category)) {
+        return String(area.scheduleDay || "").trim().toLowerCase() === fromDay.toLowerCase();
+      }
+      return true;
+    }).sort(function(a, b) {
+      return String(a.areaName || "").localeCompare(String(b.areaName || ""), undefined, { numeric: true });
+    });
+
+    drawLaundryScheduleRooms();
+    hideLoading();
+  }
+
+  function drawLaundryScheduleRooms() {
+    const box = document.getElementById("laundryScheduleRoomList");
+    const searchText = String(document.getElementById("laundryScheduleSearch").value || "").trim().toLowerCase();
+
+    box.innerHTML = "";
+
+    const rooms = laundryScheduleRooms.filter(function(area) {
+      if (!searchText) return true;
+      return String(area.areaName || "").toLowerCase().includes(searchText);
+    });
+
+    if (rooms.length === 0) {
+      const empty = document.createElement("h3");
+      empty.innerText = "No rooms found.";
+      box.appendChild(empty);
+      return;
+    }
+
+    rooms.forEach(function(area) {
+      const label = document.createElement("label");
+      label.className = "laundry-room-item";
+
+      const handling = area.laundryType || "Staff Laundry";
+      const dayText = isWeeklyCategory(area.category) ? String(area.scheduleDay || "") + " - " : "";
+
+      label.innerHTML =
+        '<input type="checkbox" class="laundryRoomCheck" value="' + escapeHtml(area.id) + '">' +
+        '<span>' + escapeHtml(area.areaName || "Room") + '<br><small>' + escapeHtml(dayText + handling) + '</small></span>';
+
+      box.appendChild(label);
+    });
+  }
+
+  function getCheckedLaundryRoomIds() {
+    return Array.from(document.querySelectorAll(".laundryRoomCheck:checked"))
+      .map(function(input) { return input.value; });
+  }
+
+  function selectAllLaundryRooms() {
+    document.querySelectorAll(".laundryRoomCheck").forEach(function(input) {
+      input.checked = true;
+    });
+  }
+
+  function clearLaundryRoomSelection() {
+    document.querySelectorAll(".laundryRoomCheck").forEach(function(input) {
+      input.checked = false;
+    });
+  }
+
+  function buildLaundryWorkId(area, newDay, newHandling) {
+    return buildAreaId(
+      "laundry",
+      "Laundry",
+      area.category,
+      newDay,
+      area.areaName,
+      "",
+      newHandling || area.laundryType || "Staff Laundry"
+    );
+  }
+
+  async function saveLaundryScheduleChanges() {
+    const category = document.getElementById("laundryScheduleCategory").value;
+    const toDayValue = document.getElementById("laundryToDay").value;
+    const handlingValue = document.getElementById("laundryHandling").value;
+    const checkedIds = getCheckedLaundryRoomIds();
+
+    if (checkedIds.length === 0) {
+      showAppMessage("Select rooms.");
+      return;
+    }
+
+    if (isWeeklyCategory(category) && !toDayValue && !handlingValue) {
+      showAppMessage("Choose a new day or laundry handling.");
+      return;
+    }
+
+    if (!isWeeklyCategory(category) && !handlingValue) {
+      showAppMessage("Choose laundry handling.");
+      return;
+    }
+
+    const ok = confirm("Update " + checkedIds.length + " laundry room(s)?");
+    if (!ok) return;
+
+    showLoading();
+
+    let updatedCount = 0;
+
+    for (let i = 0; i < checkedIds.length; i++) {
+      const area = allAreas.find(function(item) { return item.id === checkedIds[i]; });
+      if (!area) continue;
+
+      const oldWorkId = area.workId;
+      const newDay = isWeeklyCategory(category) ? (toDayValue || area.scheduleDay || area.day || "") : "daily";
+      const newHandling = handlingValue || area.laundryType || "Staff Laundry";
+      const newWorkId = buildLaundryWorkId(area, newDay, newHandling);
+
+      await updateDoc(doc(db, "areas", area.id), {
+        areaId: newWorkId,
+        workId: newWorkId,
+        schedule: "Laundry",
+        modeType: "laundry",
+        modeLabel: "Laundry",
+        day: newDay,
+        scheduleDay: newDay,
+        laundryType: newHandling,
+        updatedAt: serverTimestamp()
+      });
+
+      const tasksToMove = getTasksForWorkId(oldWorkId);
+
+      for (let t = 0; t < tasksToMove.length; t++) {
+        await updateDoc(doc(db, "tasks", tasksToMove[t].id), {
+          areaId: newWorkId,
+          workId: newWorkId,
+          schedule: "Laundry",
+          modeType: "laundry",
+          modeLabel: "Laundry",
+          day: newDay,
+          laundryType: newHandling,
+          updatedAt: serverTimestamp()
+        });
+      }
+
+      updatedCount++;
+    }
+
+    await loadAdminTasks();
+    await loadLaundryScheduleRooms();
+    hideLoading();
+    document.getElementById("laundryScheduleMessage").innerText = "Updated " + updatedCount + " room(s).";
+  }
+
   async function checkAssignmentCounts() {
     updateReassignmentDateDisplay();
     showLoading();
 
-    const assignments = getActiveAssignments();
+    const assignments = REAL_ASSIGNMENTS;
     const resultBox = document.getElementById("workloadResults");
     resultBox.innerHTML = "";
 
@@ -3795,6 +4099,13 @@
   window.changeReassignmentDate = changeReassignmentDate;
   window.checkAssignmentCounts = checkAssignmentCounts;
   window.backToReassignment = backToReassignment;
+  window.openLaundryScheduleEditor = openLaundryScheduleEditor;
+  window.changeLaundryScheduleCategory = changeLaundryScheduleCategory;
+  window.loadLaundryScheduleRooms = loadLaundryScheduleRooms;
+  window.drawLaundryScheduleRooms = drawLaundryScheduleRooms;
+  window.selectAllLaundryRooms = selectAllLaundryRooms;
+  window.clearLaundryRoomSelection = clearLaundryRoomSelection;
+  window.saveLaundryScheduleChanges = saveLaundryScheduleChanges;
 
   /* =========================
      54 - WINDOW FUNCTIONS - EMPLOYEES
