@@ -981,12 +981,7 @@
 
     <label>Category</label>
     <select id="reassignCategory" onchange="changeReassignmentCategory()">
-      <option>Common Area</option>
-      <option>Weekly Room</option>
-      <option>Daily Room</option>
-      <option>Dehumidifier</option>
-      <option>Weekly Laundry</option>
-      <option>Daily Laundry</option>
+      <option value="">Select category</option>
     </select>
 
     <div id="reassignDateBox" class="hidden">
@@ -1231,7 +1226,7 @@
     if (!select) return;
 
     const currentValue = select.value;
-    const assignments = ["adminAssignmentSelect", "adminEditAssignmentInput", "reassignFrom", "reassignTo"].includes(selectId)
+    const assignments = ["adminAssignmentSelect", "adminEditAssignmentInput"].includes(selectId)
       ? REAL_ASSIGNMENTS
       : getActiveAssignments();
 
@@ -1267,8 +1262,7 @@
 
     updateAssignmentDropdownOptions("adminAssignmentSelect", true, "Choose schedule to edit");
     updateAssignmentDropdownOptions("adminEditAssignmentInput", true, "Select assignment");
-    updateAssignmentDropdownOptions("reassignFrom", false);
-    updateAssignmentDropdownOptions("reassignTo", true, "Select assignment");
+    updateReassignmentDropdownOptions(false);
 
     const mainSelect = document.getElementById("adminAssignmentSelect");
     if (mainSelect) {
@@ -1276,6 +1270,66 @@
     }
 
     updateModeToggleButtons();
+  }
+
+  function getReassignmentAssignments() {
+    if (currentAssignment === "Laundry") {
+      return ["Laundry"];
+    }
+
+    return REAL_ASSIGNMENTS.filter(function(assignment) {
+      return assignment !== "Laundry";
+    });
+  }
+
+  function getReassignmentCategories() {
+    if (currentAssignment === "Laundry") {
+      return ["Weekly Laundry", "Daily Laundry"];
+    }
+
+    return ["Common Area", "Weekly Room", "Daily Room", "Dehumidifier"];
+  }
+
+  function fillSelectOptions(selectId, options, includeBlank, blankText, selectedValue) {
+    const select = document.getElementById(selectId);
+    if (!select) return;
+
+    select.innerHTML = "";
+
+    if (includeBlank) {
+      const blank = document.createElement("option");
+      blank.value = "";
+      blank.innerText = blankText || "Select";
+      select.appendChild(blank);
+    }
+
+    options.forEach(function(value) {
+      const option = document.createElement("option");
+      option.value = value;
+      option.innerText = value;
+      select.appendChild(option);
+    });
+
+    if (selectedValue && options.includes(selectedValue)) {
+      select.value = selectedValue;
+    } else if (includeBlank) {
+      select.value = "";
+    } else if (options.length > 0) {
+      select.value = options[0];
+    }
+  }
+
+  function updateReassignmentDropdownOptions(resetValues) {
+    const assignments = getReassignmentAssignments();
+    const categories = getReassignmentCategories();
+
+    const currentFrom = resetValues ? currentAssignment : document.getElementById("reassignFrom")?.value;
+    const currentTo = resetValues ? "" : document.getElementById("reassignTo")?.value;
+    const currentCategory = resetValues ? "" : document.getElementById("reassignCategory")?.value;
+
+    fillSelectOptions("reassignFrom", assignments, true, "Select assignment", currentFrom);
+    fillSelectOptions("reassignTo", assignments, true, "Select assignment", currentTo);
+    fillSelectOptions("reassignCategory", categories, true, "Select category", currentCategory);
   }
 
   function getModeButtonText() {
@@ -3620,9 +3674,7 @@
   async function openReassignment() {
     reassignWorkDateISO = currentWorkDateISO;
     updateReassignmentDateDisplay();
-    document.getElementById("reassignFrom").value = currentAssignment;
-    document.getElementById("reassignTo").value = "";
-    document.getElementById("reassignCategory").value = "Common Area";
+    updateReassignmentDropdownOptions(true);
     document.getElementById("reassignDatePicker").value = reassignWorkDateISO;
     document.getElementById("reassignmentAreaList").innerHTML = "";
     setReassignmentDateVisibility();
@@ -3632,7 +3684,7 @@
   function setReassignmentDateVisibility() {
     const category = document.getElementById("reassignCategory").value;
     const box = document.getElementById("reassignDateBox");
-    if (isWeeklyCategory(category)) box.classList.remove("hidden");
+    if (category && isWeeklyCategory(category)) box.classList.remove("hidden");
     else box.classList.add("hidden");
   }
 
@@ -3654,6 +3706,11 @@
     const toAssignment = document.getElementById("reassignTo").value;
     const category = document.getElementById("reassignCategory").value;
 
+    if (!fromAssignment || !category) {
+      showAppMessage("Select from and category.");
+      return;
+    }
+
     if (fromAssignment === "Laundry" && toAssignment === "Laundry") {
       openLaundryScheduleEditor(category);
       return;
@@ -3664,8 +3721,8 @@
       return;
     }
 
-    if (!fromAssignment || !category) {
-      showAppMessage("Select from and category.");
+    if (fromAssignment !== "Laundry" && (category === "Weekly Laundry" || category === "Daily Laundry")) {
+      showAppMessage("Laundry categories only show when the selected schedule is Laundry.");
       return;
     }
 
