@@ -1312,6 +1312,8 @@
   let reassignWorkDayName = "";
   let reassignTargetDayName = "";
   let selectedReassignmentAreaId = "";
+  let dehumidifierReassignStep = "";
+  let dehumidifierFromAreaId = "";
 
   let housekeepingMode = "two";
   let selectedCategory = "";
@@ -2151,16 +2153,29 @@
 
     updateAssignmentTitles();
 
+    const viewTag = document.getElementById("adminAreaViewTag");
+    const modeLabel = document.getElementById("adminAreaModeLabel");
     const title = document.getElementById("adminAreaAssignmentTitle");
-    if (title && category === "Dehumidifier") {
-      title.innerText = "All Schedules";
+
+    if (category === "Dehumidifier") {
+      if (viewTag) viewTag.classList.add("hidden");
+      if (modeLabel) modeLabel.classList.add("hidden");
+      if (title) title.innerText = "";
+    } else {
+      if (viewTag) viewTag.classList.remove("hidden");
+      if (modeLabel) modeLabel.classList.remove("hidden");
     }
 
     let areas = [];
 
     if (category === "Dehumidifier") {
+      const activeAssignments = getActiveAssignments().filter(function(assignment) {
+        return assignment !== "Laundry";
+      });
+
       areas = allAreas.filter(function(area) {
-        return area.category === "Dehumidifier";
+        return area.category === "Dehumidifier" &&
+          activeAssignments.includes(getAreaAssignment(area));
       });
     } else {
       areas = allAreasForAssignment.filter(function(area) {
@@ -2185,18 +2200,35 @@
     areas.forEach(function(area) {
       const total = getTasksForWorkId(area.workId).length;
       const btn = document.createElement("button");
-      const counterText = category === "Dehumidifier"
-        ? (getAreaAssignment(area) || "No Schedule") + " • " + total + " TASKS"
-        : total + " TASKS";
 
-      btn.className = total > 0 ? "" : "red";
-      btn.innerHTML =
-        '<div class="room-number">' + escapeHtml(area.areaName) + '</div>' +
-        '<div class="room-counter">' + escapeHtml(counterText) + '</div>';
+      if (category === "Dehumidifier") {
+        btn.className = total > 0 ? "" : "red";
 
-      btn.onclick = function() {
-        openAdminEditArea(area.id);
-      };
+        if (dehumidifierReassignStep && area.id === dehumidifierFromAreaId) {
+          btn.classList.add("selected-reassign-area");
+        }
+
+        btn.innerHTML =
+          '<div class="room-number">' + escapeHtml(area.areaName) + '</div>';
+
+        btn.onclick = function() {
+          if (dehumidifierReassignStep) {
+            handleDehumidifierReassignRoomClick(area.id);
+            return;
+          }
+
+          openAdminEditArea(area.id);
+        };
+      } else {
+        btn.className = total > 0 ? "" : "red";
+        btn.innerHTML =
+          '<div class="room-number">' + escapeHtml(area.areaName) + '</div>' +
+          '<div class="room-counter">' + escapeHtml(total + " TASKS") + '</div>';
+
+        btn.onclick = function() {
+          openAdminEditArea(area.id);
+        };
+      }
 
       box.appendChild(btn);
     });
@@ -2215,12 +2247,46 @@
   }
 
   function openDehumidifierReassignment() {
-    openReassignment();
-    const categorySelect = document.getElementById("reassignCategory");
-    if (categorySelect) {
-      categorySelect.value = "Dehumidifier";
+    selectedCategory = "Dehumidifier";
+    dehumidifierReassignStep = "from";
+    dehumidifierFromAreaId = "";
+    drawAdminAreaButtons("Dehumidifier");
+    showAppMessage("Choose From");
+  }
+
+  async function handleDehumidifierReassignRoomClick(areaId) {
+    const area = allAreas.find(function(item) {
+      return item.id === areaId;
+    });
+
+    if (!area) {
+      showAppMessage("Room not found.");
+      return;
     }
-    changeReassignmentCategory();
+
+    if (dehumidifierReassignStep === "from") {
+      dehumidifierFromAreaId = area.id;
+      dehumidifierReassignStep = "to";
+      drawAdminAreaButtons("Dehumidifier");
+      showAppMessage("Choose To");
+      return;
+    }
+
+    if (dehumidifierReassignStep === "to") {
+      const fromArea = allAreas.find(function(item) {
+        return item.id === dehumidifierFromAreaId;
+      });
+
+      if (!fromArea) {
+        dehumidifierReassignStep = "";
+        dehumidifierFromAreaId = "";
+        drawAdminAreaButtons("Dehumidifier");
+        showAppMessage("Choose From again.");
+        return;
+      }
+
+      await moveDehumidifierToRoom(fromArea, area.areaName);
+    }
   }
 
   /* =========================
@@ -4270,60 +4336,54 @@
     });
   }
 
-  async function saveDehumidifierRoomReassignment() {
-    const fromRoom = document.getElementById("dehumidifierFromRoomInput").value.trim();
-    const toRoom = document.getElementById("dehumidifierToRoomInput").value.trim();
-
-    if (!fromRoom || !toRoom) {
-      showAppMessage("Enter from room and to room.");
+  async function moveDehumidifierToRoom(fromArea, toRoomValue) {
+    if (!fromArea || !toRoomValue) {
+      showAppMessage("Choose From and To.");
       return;
     }
 
-    if (getRoomKey(fromRoom) === getRoomKey(toRoom)) {
-      showAppMessage("From room and to room are the same.");
+    if (getRoomKey(fromArea.areaName) === getRoomKey(toRoomValue)) {
+      showAppMessage("Choose a different room.");
       return;
     }
 
-    const fromArea = findAreaByRoomAndCategory(fromRoom, "Dehumidifier");
-    const targetArea = findTargetRoomForDehumidifier(toRoom);
-
-    if (!fromArea) {
-      showAppMessage("No dehumidifier found for room " + fromRoom + ".");
-      return;
-    }
+    const targetArea = findTargetRoomForDehumidifier(toRoomValue);
 
     if (!targetArea) {
-      showAppMessage("No destination room found for " + toRoom + ".");
+      dehumidifierReassignStep = "to";
+      drawAdminAreaButtons("Dehumidifier");
+      showAppMessage("No destination room found for " + toRoomValue + ".");
+      return;
+    }
+
+    const duplicate = allAreas.find(function(area) {
+      return area.id !== fromArea.id &&
+        area.category === "Dehumidifier" &&
+        getRoomKey(area.areaName) === getRoomKey(toRoomValue);
+    });
+
+    if (duplicate) {
+      dehumidifierReassignStep = "to";
+      drawAdminAreaButtons("Dehumidifier");
+      showAppMessage("Room already have a dehumidifier.");
       return;
     }
 
     const targetAssignment = getAreaAssignment(targetArea);
     const targetScheduleDay = "daily";
-
-    const duplicate = allAreas.find(function(area) {
-      return area.id !== fromArea.id &&
-        area.category === "Dehumidifier" &&
-        getRoomKey(area.areaName) === getRoomKey(toRoom);
-    });
-
-    if (duplicate) {
-      showAppMessage("Room already have a dehumidifier.");
-      return;
-    }
-
-    const ok = confirm("Move dehumidifier from room " + fromArea.areaName + " to room " + targetArea.areaName + "?");
-    if (!ok) return;
+    const oldRoomName = fromArea.areaName;
+    const newRoomName = targetArea.areaName;
 
     showLoading();
 
     const oldWorkId = fromArea.workId;
-    const newWorkId = buildWorkId(targetArea.areaName, "Dehumidifier", targetScheduleDay, targetAssignment);
+    const newWorkId = buildWorkId(newRoomName, "Dehumidifier", targetScheduleDay, targetAssignment);
 
     await updateDoc(doc(db, "areas", fromArea.id), {
       areaId: newWorkId,
       workId: newWorkId,
-      areaName: targetArea.areaName,
-      areaSearch: String(targetArea.areaName || "").toLowerCase(),
+      areaName: newRoomName,
+      areaSearch: String(newRoomName || "").toLowerCase(),
       category: "Dehumidifier",
       categoryKey: makeId("Dehumidifier"),
       schedule: targetAssignment,
@@ -4341,8 +4401,8 @@
       await updateDoc(doc(db, "tasks", tasksToMove[i].id), {
         areaId: newWorkId,
         workId: newWorkId,
-        areaName: targetArea.areaName,
-        areaSearch: String(targetArea.areaName || "").toLowerCase(),
+        areaName: newRoomName,
+        areaSearch: String(newRoomName || "").toLowerCase(),
         category: "Dehumidifier",
         categoryKey: makeId("Dehumidifier"),
         schedule: targetAssignment,
@@ -4354,13 +4414,33 @@
       });
     }
 
-    await loadAdminTasks();
+    dehumidifierReassignStep = "";
+    dehumidifierFromAreaId = "";
 
-    document.getElementById("dehumidifierFromRoomInput").value = "";
-    document.getElementById("dehumidifierToRoomInput").value = "";
+    await loadAdminTasks();
+    drawAdminAreaButtons("Dehumidifier");
 
     hideLoading();
-    showAppMessage("Moved.");
+    showAppMessage("Dehumi " + oldRoomName + " has been moved to " + newRoomName + ".");
+  }
+
+  async function saveDehumidifierRoomReassignment() {
+    const fromRoom = document.getElementById("dehumidifierFromRoomInput").value.trim();
+    const toRoom = document.getElementById("dehumidifierToRoomInput").value.trim();
+
+    if (!fromRoom || !toRoom) {
+      showAppMessage("Enter from room and to room.");
+      return;
+    }
+
+    const fromArea = findAreaByRoomAndCategory(fromRoom, "Dehumidifier");
+
+    if (!fromArea) {
+      showAppMessage("No dehumidifier found for room " + fromRoom + ".");
+      return;
+    }
+
+    await moveDehumidifierToRoom(fromArea, toRoom);
   }
 
   async function moveReassignmentArea(areaId) {
