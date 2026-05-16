@@ -386,6 +386,21 @@
       outline: 3px solid #111;
     }
 
+    .reassign-to-preview-label {
+      text-align: center;
+      font-size: 14px;
+      font-weight: 900;
+      margin: 7px 0 5px;
+      color: #111;
+    }
+
+    .reassign-to-preview button {
+      background: #e6e6e6;
+      color: #111;
+      border: 1px solid #bbb;
+      cursor: default;
+    }
+
     .laundry-room-list {
       max-height: 260px;
       overflow-y: auto;
@@ -1084,6 +1099,9 @@
       </div>
     </div>
 
+    <div id="reassignToPreviewLabel" class="reassign-to-preview-label"></div>
+    <div id="reassignmentToAreaPreview" class="rooms-grid reassign-to-preview"></div>
+
     <button class="yellow" onclick="checkAssignmentCounts()">
       CHECK COUNT
     </button>
@@ -1640,6 +1658,7 @@
 
   async function setReassignmentFromWeekday(dayName) {
     reassignWorkDayName = dayName;
+    reassignTargetDayName = dayName;
     updateReassignmentDateDisplay();
     await loadReassignmentAreas();
   }
@@ -1669,6 +1688,57 @@
       const fullDay = dayMap[button.innerText] || button.innerText;
       button.classList.toggle("active-day", fullDay === reassignTargetDayName);
     });
+
+    drawReassignmentToPreview();
+  }
+
+  function drawReassignmentToPreview() {
+    const label = document.getElementById("reassignToPreviewLabel");
+    const box = document.getElementById("reassignmentToAreaPreview");
+
+    if (!label || !box) return;
+
+    const toAssignment = document.getElementById("reassignTo")?.value || "";
+    const category = document.getElementById("reassignCategory")?.value || "";
+
+    label.innerText = "";
+    box.innerHTML = "";
+
+    if (!toAssignment || !category) return;
+
+    if (isWeeklyCategory(category) && !reassignTargetDayName) return;
+
+    const areas = allAreas.filter(function(area) {
+      if (getAreaAssignment(area) !== toAssignment) return false;
+      if (area.category !== category) return false;
+      if (isWeeklyCategory(category)) {
+        return String(area.scheduleDay || "").trim().toLowerCase() === reassignTargetDayName.toLowerCase();
+      }
+      return true;
+    }).sort(function(a, b) {
+      return String(a.areaName || "").localeCompare(String(b.areaName || ""), undefined, { numeric: true });
+    });
+
+    label.innerText = isWeeklyCategory(category)
+      ? "To " + toAssignment + " - " + reassignTargetDayName
+      : "To " + toAssignment;
+
+    areas.forEach(function(area) {
+      const count = getTasksForWorkId(area.workId).length;
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.disabled = true;
+      btn.innerHTML =
+        '<div class="room-number">' + escapeHtml(area.areaName) + '</div>' +
+        '<div class="room-counter">' + escapeHtml(getAreaAssignment(area)) + ' • ' + count + ' TASKS</div>';
+      box.appendChild(btn);
+    });
+
+    if (box.innerHTML === "") {
+      const empty = document.createElement("h3");
+      empty.innerText = isWeeklyCategory(category) ? "No rooms on " + reassignTargetDayName + "." : "No rooms found.";
+      box.appendChild(empty);
+    }
   }
 
   async function changeAdminWorkDateFromBigPicker() {
@@ -3855,6 +3925,10 @@
     selectedReassignmentAreaId = "";
     updateReassignmentDropdownOptions(true);
     document.getElementById("reassignmentAreaList").innerHTML = "";
+    const toPreview = document.getElementById("reassignmentToAreaPreview");
+    const toPreviewLabel = document.getElementById("reassignToPreviewLabel");
+    if (toPreview) toPreview.innerHTML = "";
+    if (toPreviewLabel) toPreviewLabel.innerText = "";
     setReassignmentDateVisibility();
     showAdminView("adminReassignmentView");
   }
@@ -4055,6 +4129,7 @@
     await loadAdminTasks();
     hideLoading();
     showAppMessage("Moved.");
+    drawReassignmentToPreview();
     await loadReassignmentAreas();
   }
 
