@@ -950,11 +950,7 @@
       onchange="changeRoomReportDate()"
     >
 
-    <div class="room-report-section-title">Current Active</div>
-    <div id="roomReportActiveList"></div>
-
-    <div class="room-report-section-title">Selected Date History</div>
-    <div id="roomReportHistoryList"></div>
+    <div id="roomReportSingleCardList"></div>
 
     <button class="back" onclick="backToAdminCategories()">BACK</button>
 
@@ -3579,8 +3575,7 @@
     document.getElementById("roomReportTitle").innerText = "Room " + currentRoomReportNumber + " Report";
     document.getElementById("roomReportDatePicker").value = currentWorkDateISO;
 
-    drawRoomReportActiveList();
-    await loadRoomReportHistory();
+    await loadRoomReportSummary();
 
     showAdminView("adminRoomReportView");
   }
@@ -3603,60 +3598,14 @@
       });
   }
 
-  function drawRoomReportActiveList() {
-    const box = document.getElementById("roomReportActiveList");
-    box.innerHTML = "";
-
-    if (currentRoomReportAreas.length === 0) {
-      const empty = document.createElement("h3");
-      empty.innerText = "No active setup found for this room.";
-      box.appendChild(empty);
-      return;
-    }
-
-    currentRoomReportAreas.forEach(function(area) {
-      const tasks = getTasksForWorkId(area.workId);
-      const card = document.createElement("div");
-      card.className = "room-report-card";
-
-      let taskHtml = "";
-
-      if (tasks.length === 0) {
-        taskHtml = '<div class="room-report-task">No active tasks.</div>';
-      } else {
-        tasks.forEach(function(task) {
-          taskHtml += '<div class="room-report-task">• ' + escapeHtml(task.taskName || "Task") + '</div>';
-        });
-      }
-
-      card.innerHTML =
-        '<h3>' + escapeHtml(area.areaName || currentRoomReportNumber) + '</h3>' +
-        '<div class="room-report-line">Schedule: ' + escapeHtml(getAreaAssignment(area) || "") + '</div>' +
-        '<div class="room-report-line">Category: ' + escapeHtml(area.category || "") + '</div>' +
-        '<div class="room-report-line">Day: ' + escapeHtml(area.scheduleDay || area.day || "daily") + '</div>' +
-        '<div class="room-report-line">Active Tasks: ' + tasks.length + '</div>' +
-        taskHtml;
-
-      box.appendChild(card);
-    });
-  }
-
   async function changeRoomReportDate() {
-    await loadRoomReportHistory();
+    drawRoomReportSingleCard();
   }
 
-  async function loadRoomReportHistory() {
-    const picker = document.getElementById("roomReportDatePicker");
-    const selectedDate = picker && picker.value ? picker.value : currentWorkDateISO;
-
+  async function loadRoomReportSummary() {
     showLoading();
 
-    const statusQuery = query(
-      collection(db, "task_area_status"),
-      where("workDateISO", "==", selectedDate)
-    );
-
-    const statusSnap = await getDocs(statusQuery);
+    const statusSnap = await getDocs(collection(db, "task_area_status"));
 
     currentRoomReportStatuses = statusSnap.docs
       .map(function(statusDoc) {
@@ -3669,16 +3618,10 @@
         return isRoomReportRecordMatch(record);
       })
       .sort(function(a, b) {
-        return String(a.schedule || "").localeCompare(String(b.schedule || "")) ||
-          String(a.category || "").localeCompare(String(b.category || ""));
+        return getRecordSortValue(b) - getRecordSortValue(a);
       });
 
-    const issueQuery = query(
-      collection(db, "issue_logs"),
-      where("workDateISO", "==", selectedDate)
-    );
-
-    const issueSnap = await getDocs(issueQuery);
+    const issueSnap = await getDocs(collection(db, "issue_logs"));
 
     currentRoomReportIssues = issueSnap.docs
       .map(function(issueDoc) {
@@ -3691,12 +3634,10 @@
         return isRoomReportRecordMatch(issue);
       })
       .sort(function(a, b) {
-        const aValue = String(a.createdDate || "") + " " + String(a.createdTime || "");
-        const bValue = String(b.createdDate || "") + " " + String(b.createdTime || "");
-        return bValue.localeCompare(aValue);
+        return getRecordSortValue(b) - getRecordSortValue(a);
       });
 
-    drawRoomReportHistoryList(selectedDate);
+    drawRoomReportSingleCard();
     hideLoading();
   }
 
@@ -3721,64 +3662,277 @@
     return false;
   }
 
-  function drawRoomReportHistoryList(selectedDate) {
-    const box = document.getElementById("roomReportHistoryList");
+  function drawRoomReportSingleCard() {
+    const box = document.getElementById("roomReportSingleCardList");
+    const picker = document.getElementById("roomReportDatePicker");
+    const selectedDate = picker && picker.value ? picker.value : currentWorkDateISO;
+
     box.innerHTML = "";
 
-    if (currentRoomReportStatuses.length === 0 && currentRoomReportIssues.length === 0) {
-      const empty = document.createElement("h3");
-      empty.innerText = "No history found for " + selectedDate + ".";
-      box.appendChild(empty);
-      return;
+    const card = document.createElement("div");
+    card.className = "room-report-card";
+
+    const residentStatus = getRoomResidentStatus();
+    const activeSettingsHtml = buildRoomActiveSettingsHtml();
+    const lastHousekeeping = getLastRoomStatus(function(record) {
+      return ["Weekly Room", "Daily Room"].includes(String(record.category || ""));
+    });
+    const lastLaundry = getLastRoomStatus(function(record) {
+      const category = String(record.category || "");
+      const schedule = String(record.schedule || "");
+      return category.includes("Laundry") || schedule === "Laundry";
+    });
+    const lastDehumidifierAm = getLastRoomStatus(function(record) {
+      return isDehumidifierStatus(record) && getDehumidifierPeriod(record) === "AM";
+    });
+    const lastDehumidifierPm = getLastRoomStatus(function(record) {
+      return isDehumidifierStatus(record) && getDehumidifierPeriod(record) === "PM";
+    });
+    const lastDehumidifierAny = getLastRoomStatus(function(record) {
+      return isDehumidifierStatus(record);
+    });
+
+    const openIssues = currentRoomReportIssues.filter(function(issue) {
+      const status = String(issue.status || "Open");
+      return status === "Open" || status === "Needs Follow-Up";
+    });
+
+    const selectedDateStatuses = currentRoomReportStatuses.filter(function(record) {
+      return getRecordDateISO(record) === selectedDate;
+    });
+
+    const selectedDateIssues = currentRoomReportIssues.filter(function(issue) {
+      return getRecordDateISO(issue) === selectedDate;
+    });
+
+    let dehumidifierHtml = "";
+    if (lastDehumidifierAm || lastDehumidifierPm) {
+      dehumidifierHtml =
+        '<div class="room-report-line">Last Dehumidifier AM: ' + escapeHtml(formatStatusSummary(lastDehumidifierAm)) + '</div>' +
+        '<div class="room-report-line">Last Dehumidifier PM: ' + escapeHtml(formatStatusSummary(lastDehumidifierPm)) + '</div>';
+    } else {
+      dehumidifierHtml =
+        '<div class="room-report-line">Last Dehumidifier: ' + escapeHtml(formatStatusSummary(lastDehumidifierAny)) + '</div>';
     }
 
-    currentRoomReportStatuses.forEach(function(record) {
-      const card = document.createElement("div");
-      card.className = "room-report-card";
+    card.innerHTML =
+      '<h3>Room ' + escapeHtml(currentRoomReportNumber) + '</h3>' +
+      '<div class="room-report-line">Resident Status: ' + escapeHtml(residentStatus) + '</div>' +
+      '<div class="room-report-section-title">Active Room Settings</div>' +
+      activeSettingsHtml +
+      '<div class="room-report-section-title">Last Executed</div>' +
+      '<div class="room-report-line">Last Housekeeping: ' + escapeHtml(formatStatusSummary(lastHousekeeping)) + '</div>' +
+      '<div class="room-report-line">Last Laundry: ' + escapeHtml(formatStatusSummary(lastLaundry)) + '</div>' +
+      dehumidifierHtml +
+      '<div class="room-report-section-title">Open Issues</div>' +
+      buildOpenIssuesHtml(openIssues) +
+      '<div class="room-report-section-title">Selected Date - ' + escapeHtml(selectedDate) + '</div>' +
+      buildSelectedDateHtml(selectedDateStatuses, selectedDateIssues);
 
-      const completed = Number(record.completedCount || 0);
-      const incomplete = Number(record.incompleteCount || 0);
-      const total = Number(record.totalCount || completed + incomplete || 0);
-      const statusLabel = incomplete > 0 ? "Not Done / Issue" : "Done";
-      const colorClass = incomplete > 0 ? "yellow" : "green";
-      const tasks = record.tasks || {};
-      const taskKeys = Object.keys(tasks);
-      let taskHtml = "";
+    box.appendChild(card);
+  }
 
-      taskKeys.forEach(function(taskKey) {
-        const task = tasks[taskKey] || {};
-        const line = String(task.taskName || "Task") + " - " + String(task.status || "") + (task.reason ? " - " + task.reason : "");
-        taskHtml += '<div class="room-report-task">' + escapeHtml(line) + '</div>';
-      });
+  function getRoomResidentStatus() {
+    const statusFields = [
+      "residentStatus",
+      "roomStatus",
+      "occupancyStatus",
+      "occupancy",
+      "residentState",
+      "status"
+    ];
 
-      card.innerHTML =
-        '<h3>' + escapeHtml(record.areaName || currentRoomReportNumber) + '</h3>' +
-        '<div class="room-report-line">Status: ' + escapeHtml(statusLabel) + '</div>' +
-        '<div class="room-report-line">Schedule: ' + escapeHtml(record.schedule || "") + '</div>' +
-        '<div class="room-report-line">Category: ' + escapeHtml(record.category || "") + '</div>' +
-        '<div class="room-report-line">Employee: ' + escapeHtml(record.employeeName || "") + '</div>' +
-        '<div class="room-report-line">Count: ' + completed + '/' + total + '</div>' +
-        '<button class="' + colorClass + '">' + escapeHtml(statusLabel.toUpperCase()) + '</button>' +
-        taskHtml;
+    for (let i = 0; i < currentRoomReportAreas.length; i++) {
+      const area = currentRoomReportAreas[i];
 
-      box.appendChild(card);
+      for (let f = 0; f < statusFields.length; f++) {
+        const value = String(area[statusFields[f]] || "").trim();
+        const lower = value.toLowerCase();
+
+        if (["vacant", "occupied", "hospital", "assisted"].includes(lower)) {
+          return value;
+        }
+      }
+    }
+
+    const combined = currentRoomReportAreas.map(function(area) {
+      return [
+        area.areaName,
+        area.category,
+        area.notes,
+        area.note,
+        area.label,
+        area.roomLabel,
+        area.roomType
+      ].join(" ");
+    }).join(" ").toLowerCase();
+
+    if (combined.includes("vacant")) return "Vacant";
+    if (combined.includes("hospital")) return "Hospital";
+    if (combined.includes("assisted")) return "Assisted";
+    if (currentRoomReportAreas.length > 0) return "Occupied / Active";
+    return "No active room setup";
+  }
+
+  function buildRoomActiveSettingsHtml() {
+    if (currentRoomReportAreas.length === 0) {
+      return '<div class="room-report-line">No active setup found for this room.</div>';
+    }
+
+    let html = "";
+
+    currentRoomReportAreas.forEach(function(area) {
+      const tasks = getTasksForWorkId(area.workId);
+      const category = area.category || "Area";
+      const schedule = getAreaAssignment(area) || "";
+      const day = area.scheduleDay || area.day || "daily";
+      const laundryType = area.laundryType ? " - " + area.laundryType : "";
+
+      html +=
+        '<div class="room-report-line">' +
+        escapeHtml(category + ': ' + schedule + ' - ' + day + laundryType + ' - ' + tasks.length + ' task(s)') +
+        '</div>';
     });
 
-    currentRoomReportIssues.forEach(function(issue) {
-      const card = document.createElement("div");
-      card.className = "room-report-card";
+    return html;
+  }
 
-      card.innerHTML =
-        '<h3>' + escapeHtml((issue.areaName || currentRoomReportNumber) + " - Issue") + '</h3>' +
-        '<div class="room-report-line">Status: ' + escapeHtml(issue.status || "Open") + '</div>' +
-        '<div class="room-report-line">Task: ' + escapeHtml(issue.taskName || "") + '</div>' +
-        '<div class="room-report-line">Reason: ' + escapeHtml(issue.issueReason || "") + '</div>' +
-        '<div class="room-report-line">Employee: ' + escapeHtml(issue.employeeName || "") + '</div>' +
-        '<div class="room-report-line">Time: ' + escapeHtml((issue.createdDate || "") + " " + (issue.createdTime || "")) + '</div>' +
-        '<div class="room-report-task">' + escapeHtml(issue.issueNote || "") + '</div>';
+  function getLastRoomStatus(filterFunction) {
+    return currentRoomReportStatuses.find(function(record) {
+      return filterFunction(record);
+    }) || null;
+  }
 
-      box.appendChild(card);
+  function isDehumidifierStatus(record) {
+    return String(record.category || "") === "Dehumidifier" ||
+      String(record.areaName || "").toLowerCase().includes("dehum") ||
+      String(record.taskName || "").toLowerCase().includes("dehum");
+  }
+
+  function getDehumidifierPeriod(record) {
+    const directValue = String(record.period || record.timePeriod || record.shift || record.amPm || record.ampm || record.time || "").toUpperCase();
+
+    if (directValue.includes("AM")) return "AM";
+    if (directValue.includes("PM")) return "PM";
+
+    const tasks = record.tasks || {};
+    const taskKeys = Object.keys(tasks);
+
+    for (let i = 0; i < taskKeys.length; i++) {
+      const task = tasks[taskKeys[i]] || {};
+      const text = [task.taskName, task.period, task.time, task.status].join(" ").toUpperCase();
+
+      if (text.includes("AM")) return "AM";
+      if (text.includes("PM")) return "PM";
+    }
+
+    return "";
+  }
+
+  function formatStatusSummary(record) {
+    if (!record) return "No record found";
+
+    const completed = Number(record.completedCount || 0);
+    const incomplete = Number(record.incompleteCount || 0);
+    const total = Number(record.totalCount || completed + incomplete || 0);
+    const statusLabel = incomplete > 0 ? "Not Done / Issue" : "Done";
+    const countText = total > 0 ? " - " + completed + "/" + total : "";
+    const employeeText = record.employeeName ? " - " + record.employeeName : "";
+
+    return getRecordDateTimeText(record) + " - " + statusLabel + countText + employeeText;
+  }
+
+  function buildOpenIssuesHtml(openIssues) {
+    if (openIssues.length === 0) {
+      return '<div class="room-report-line">No open issues.</div>';
+    }
+
+    let html = "";
+
+    openIssues.forEach(function(issue) {
+      const line = [
+        issue.status || "Open",
+        issue.taskName || "Issue",
+        issue.issueReason || "",
+        getRecordDateTimeText(issue),
+        issue.followUpNote || issue.issueNote || ""
+      ].filter(function(item) { return String(item || "").trim() !== ""; }).join(" - ");
+
+      html += '<div class="room-report-line">' + escapeHtml(line) + '</div>';
     });
+
+    return html;
+  }
+
+  function buildSelectedDateHtml(statuses, issues) {
+    if (statuses.length === 0 && issues.length === 0) {
+      return '<div class="room-report-line">No activity found for this date.</div>';
+    }
+
+    let html = "";
+
+    statuses.forEach(function(record) {
+      html += '<div class="room-report-line">' + escapeHtml((record.category || "Status") + ': ' + formatStatusSummary(record)) + '</div>';
+    });
+
+    issues.forEach(function(issue) {
+      const line = [
+        "Issue",
+        issue.status || "Open",
+        issue.taskName || "",
+        issue.issueReason || "",
+        getRecordDateTimeText(issue)
+      ].filter(function(item) { return String(item || "").trim() !== ""; }).join(" - ");
+
+      html += '<div class="room-report-line">' + escapeHtml(line) + '</div>';
+    });
+
+    return html;
+  }
+
+  function getRecordDateISO(record) {
+    return String(record.workDateISO || record.completedDate || record.createdDate || record.date || "").slice(0, 10);
+  }
+
+  function getRecordDateTimeText(record) {
+    const dateText = getRecordDateISO(record) || "No date";
+    const timeText = String(
+      record.completedTime ||
+      record.savedTime ||
+      record.createdTime ||
+      record.updatedTime ||
+      record.timeCompleted ||
+      record.time ||
+      ""
+    ).trim();
+
+    return timeText ? dateText + " " + timeText : dateText;
+  }
+
+  function getRecordSortValue(record) {
+    const dateText = getRecordDateISO(record);
+    const timeText = String(
+      record.completedTime ||
+      record.savedTime ||
+      record.createdTime ||
+      record.updatedTime ||
+      record.timeCompleted ||
+      record.time ||
+      "00:00"
+    ).trim();
+
+    const parsed = Date.parse((dateText || "1900-01-01") + " " + timeText);
+    if (!Number.isNaN(parsed)) return parsed;
+
+    if (record.updatedAt && typeof record.updatedAt.toMillis === "function") {
+      return record.updatedAt.toMillis();
+    }
+
+    if (record.createdAt && typeof record.createdAt.toMillis === "function") {
+      return record.createdAt.toMillis();
+    }
+
+    return 0;
   }
 
 
