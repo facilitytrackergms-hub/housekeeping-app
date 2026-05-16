@@ -992,6 +992,11 @@
 
     <h2>Reassignment</h2>
 
+    <label>Category</label>
+    <select id="reassignCategory" onchange="changeReassignmentCategory()">
+      <option value="">Select category</option>
+    </select>
+
     <label>From</label>
     <select id="reassignFrom" onchange="changeReassignmentFrom()">
       <option>HK1</option>
@@ -1002,7 +1007,7 @@
       <option>Laundry</option>
     </select>
 
-    <div id="reassignFromDayBox">
+    <div id="reassignFromDayBox" class="hidden">
       <h3>From Day</h3>
 
       <div id="reassignFromDayButtons" class="weekday-row">
@@ -1027,7 +1032,7 @@
       <option>Laundry</option>
     </select>
 
-    <div id="reassignToDayBox">
+    <div id="reassignToDayBox" class="hidden">
       <h3>To Day</h3>
 
       <div id="reassignToDayButtons" class="weekday-row">
@@ -1040,11 +1045,6 @@
         <button type="button" onclick="setReassignmentToWeekday('Sunday')">Sun</button>
       </div>
     </div>
-
-    <label>Category</label>
-    <select id="reassignCategory" onchange="changeReassignmentCategory()">
-      <option value="">Select category</option>
-    </select>
 
    <div class="button-row">
 
@@ -3777,9 +3777,8 @@
 
   async function openReassignment() {
     reassignWorkDateISO = currentWorkDateISO;
-    reassignWorkDayName = getWeekdayName(reassignWorkDateISO);
-    reassignTargetDayName = reassignWorkDayName;
-    updateReassignmentDateDisplay();
+    reassignWorkDayName = "";
+    reassignTargetDayName = "";
     updateReassignmentDropdownOptions(true);
     document.getElementById("reassignmentAreaList").innerHTML = "";
     setReassignmentDateVisibility();
@@ -3789,12 +3788,19 @@
   function setReassignmentDateVisibility() {
     const fromBox = document.getElementById("reassignFromDayBox");
     const toBox = document.getElementById("reassignToDayBox");
+    const category = document.getElementById("reassignCategory")?.value || "";
+    const showDays = isWeeklyCategory(category);
 
-    if (!reassignWorkDayName) reassignWorkDayName = getWeekdayName(currentWorkDateISO);
-    if (!reassignTargetDayName) reassignTargetDayName = reassignWorkDayName;
+    if (showDays) {
+      if (!reassignWorkDayName) reassignWorkDayName = getWeekdayName(currentWorkDateISO);
+      if (!reassignTargetDayName) reassignTargetDayName = reassignWorkDayName;
+    } else {
+      reassignWorkDayName = "";
+      reassignTargetDayName = "";
+    }
 
-    if (fromBox) fromBox.classList.remove("hidden");
-    if (toBox) toBox.classList.remove("hidden");
+    if (fromBox) fromBox.classList.toggle("hidden", !showDays);
+    if (toBox) toBox.classList.toggle("hidden", !showDays);
 
     updateReassignmentDateDisplay();
   }
@@ -3810,18 +3816,6 @@
   }
 
   async function changeReassignmentCategory() {
-    const category = document.getElementById("reassignCategory").value;
-    if (category && isWeeklyCategory(category) && !reassignWorkDayName) {
-      reassignWorkDayName = getWeekdayName(currentWorkDateISO);
-    }
-    if (category && isWeeklyCategory(category) && !reassignTargetDayName) {
-      reassignTargetDayName = reassignWorkDayName;
-    }
-    if (!category || !isWeeklyCategory(category)) {
-      reassignWorkDayName = "";
-      reassignTargetDayName = "";
-    }
-    updateReassignmentDateDisplay();
     setReassignmentDateVisibility();
     document.getElementById("reassignmentAreaList").innerHTML = "";
   }
