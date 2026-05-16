@@ -81,7 +81,8 @@
     button:active { transform: scale(0.98); }
 
     .green { background: #2e7d32 !important; color: white !important; }
-    .yellow { background: #1976d2 !important; color: white !important; }
+    .yellow { background: #f9a825 !important; color: black !important; }
+    .room-setting-blue { background: #1976d2 !important; color: white !important; }
     .red { background: #c62828 !important; color: white !important; }
     .back { background: #555 !important; color: white !important; }
     .hidden { display: none !important; }
@@ -515,12 +516,12 @@
       </div>
 
       <div id="leadRoomControls" class="lead-room-controls hidden">
-        <button id="dailyWeeklyToggleButton" class="yellow" onclick="toggleCurrentRoomDaily()">DAILY</button>
-        <button id="occupiedVacantToggleButton" class="yellow" onclick="toggleCurrentRoomOccupied()">OCCUPIED</button>
+        <button id="dailyWeeklyToggleButton" class="room-setting-blue" onclick="toggleCurrentRoomDaily()">DAILY</button>
+        <button id="occupiedVacantToggleButton" class="room-setting-blue" onclick="toggleCurrentRoomOccupied()">OCCUPIED</button>
         <div class="resident-status-buttons">
-          <button id="residentAssistedButton" class="yellow" onclick="setCurrentResidentStatus('Assisted')">ASSISTED</button>
-          <button id="residentDependingButton" class="yellow" onclick="setCurrentResidentStatus('Depending')">DEPENDING</button>
-          <button id="residentHospiceButton" class="yellow" onclick="setCurrentResidentStatus('Hospice')">HOSPICE</button>
+          <button id="residentAssistedButton" class="room-setting-blue" onclick="setCurrentResidentStatus('Assisted')">ASSISTED</button>
+          <button id="residentDependingButton" class="room-setting-blue" onclick="setCurrentResidentStatus('Depending')">DEPENDING</button>
+          <button id="residentHospiceButton" class="room-setting-blue" onclick="setCurrentResidentStatus('Hospice')">HOSPICE</button>
         </div>
       </div>
 
@@ -2136,7 +2137,8 @@ async function saveReasonIfNeeded(reasonText) {
 
   function setResidentStatusButtonState(button, isActive) {
     button.classList.toggle("green", isActive);
-    button.classList.toggle("yellow", !isActive);
+    button.classList.toggle("room-setting-blue", !isActive);
+    button.classList.remove("yellow");
   }
 
   function canManageRoomSettings() {
