@@ -1803,6 +1803,7 @@ function goToAdminDehumidifierView() {
     showLoading();
 
     await saveAreaStatus(taskResults);
+    await closeIssueLogsForCompletedTasks(taskResults);
 
     if (hasIncomplete) {
       await createIssueLogs(taskResults);
@@ -2016,6 +2017,51 @@ async function createIssueLogs(taskResults) {
       areaId: currentAreaId,
       employeeId: employeeId,
 
+      updatedAt: serverTimestamp()
+    }, { merge: true });
+  }
+}
+
+async function closeIssueLogsForCompletedTasks(taskResults) {
+  const completedTaskNames = Object.keys(taskResults)
+    .map(function(key) {
+      return taskResults[key];
+    })
+    .filter(function(task) {
+      return task.status === "Completed";
+    })
+    .map(function(task) {
+      return String(task.taskName || "").trim().toLowerCase();
+    })
+    .filter(function(taskName) {
+      return taskName !== "";
+    });
+
+  if (completedTaskNames.length === 0) return;
+
+  const issueQuery = query(
+    collection(db, "issue_logs"),
+    where("workDateISO", "==", currentWorkDateISO),
+    where("schedule", "==", currentAssignment),
+    where("areaId", "==", currentAreaId)
+  );
+
+  const snap = await getDocs(issueQuery);
+
+  for (const item of snap.docs) {
+    const issue = item.data();
+    const issueStatus = String(issue.status || "Open");
+    const issueTaskName = String(issue.taskName || "").trim().toLowerCase();
+
+    if (issueStatus === "Resolved" || issueStatus === "Deleted") continue;
+    if (!completedTaskNames.includes(issueTaskName)) continue;
+
+    await setDoc(doc(db, "issue_logs", item.id), {
+      status: "Resolved",
+      needsFollowUp: false,
+      resolvedBy: employeeName,
+      resolvedDate: currentWorkDateISO,
+      lastUpdated: getTimeNow(),
       updatedAt: serverTimestamp()
     }, { merge: true });
   }
