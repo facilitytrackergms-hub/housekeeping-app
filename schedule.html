@@ -293,34 +293,52 @@
 
 
 
-    .room-button-wrap {
-      position: relative;
+    .dashboard-date-box {
+      margin-top: 8px;
+      margin-bottom: 12px;
     }
 
-    .room-badge-row {
+    .room-button-wrap {
+      position: relative;
+      padding-top: 23px !important;
+      min-height: 72px !important;
+    }
+
+    .room-status-strip {
       position: absolute;
       top: 4px;
       left: 5px;
-      display: flex;
+      right: 5px;
+      display: grid;
+      grid-template-columns: 1fr 1.7fr 1fr;
+      align-items: center;
       gap: 3px;
       z-index: 2;
+      pointer-events: none;
     }
 
-    .room-badge {
-      min-width: 15px;
-      height: 15px;
-      border-radius: 50%;
-      background: rgba(255,255,255,0.90);
+    .room-status-chip {
+      min-height: 16px;
+      border-radius: 8px;
+      background: rgba(255,255,255,0.92);
       color: #111;
-      font-size: 9px;
+      font-size: 8px;
       font-weight: 900;
-      line-height: 15px;
+      line-height: 16px;
       text-align: center;
+      padding: 0 3px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .room-status-chip.blank {
+      opacity: 0;
     }
 
     .lead-room-controls {
       display: grid;
-      grid-template-columns: 1fr 1fr 1fr;
+      grid-template-columns: 1fr 1fr;
       gap: 6px;
       margin: 2px 0 8px;
     }
@@ -442,19 +460,19 @@
   <div id="miniHeader" class="mini-header"></div>
 
   <div id="view2">
-    <div class="date-section-box">
-      <div class="date-row">
-        <h3 id="workDateTitle"></h3>
-      </div>
-      <div id="weekdayButtons" class="weekday-button-row"></div>
-    </div>
-
     <div class="top-info-box">
      <div id="userNameLabel" class="user-name-label"></div>
 <h2 id="assignmentTitle"></h2>
 <div id="modeLabel" class="user-name-label"></div>
       <button id="coverScheduleButton" class="cover-btn" onclick="showCoverScheduleDropdown()">COVER SCHEDULE</button>
       <select id="coverScheduleSelect" class="hidden" onchange="changeCoverSchedule()"></select>
+    </div>
+
+    <div class="date-section-box dashboard-date-box">
+      <div class="date-row">
+        <h3 id="workDateTitle"></h3>
+      </div>
+      <div id="weekdayButtons" class="weekday-button-row"></div>
     </div>
 
     <div id="categoryButtons" class="category-section-box"></div>
@@ -488,6 +506,7 @@
       <div id="leadRoomControls" class="lead-room-controls hidden">
         <button id="dailyWeeklyToggleButton" class="yellow" onclick="toggleCurrentRoomDaily()">DAILY</button>
         <button id="occupiedVacantToggleButton" class="yellow" onclick="toggleCurrentRoomOccupied()">OCCUPIED</button>
+        <button id="residentStatusToggleButton" class="yellow" onclick="toggleCurrentResidentStatus()">ASSISTED</button>
         <button id="leadDehumidifierButton" class="yellow" onclick="goToAdminDehumidifierView()">DEHUM</button>
       </div>
 
@@ -2013,6 +2032,18 @@ async function saveReasonIfNeeded(reasonText) {
     await saveCurrentRoomSetting({ isOccupied: nextValue });
   }
 
+  async function toggleCurrentResidentStatus() {
+    if (!isLeadHousekeeper) return;
+
+    const roomKey = getCurrentRoomKey();
+    if (!roomKey) return;
+
+    const setting = getCurrentRoomSetting();
+    const nextStatus = getNextResidentStatus(setting.residentStatus || "Assisted");
+
+    await saveCurrentRoomSetting({ residentStatus: nextStatus });
+  }
+
   async function saveCurrentRoomSetting(changes) {
     showLoading();
 
@@ -2053,8 +2084,10 @@ async function saveReasonIfNeeded(reasonText) {
     const controls = document.getElementById("leadRoomControls");
     const dailyButton = document.getElementById("dailyWeeklyToggleButton");
     const occupiedButton = document.getElementById("occupiedVacantToggleButton");
+    const residentButton = document.getElementById("residentStatusToggleButton");
+    const dehumidifierButton = document.getElementById("leadDehumidifierButton");
 
-    if (!controls || !dailyButton || !occupiedButton) return;
+    if (!controls || !dailyButton || !occupiedButton || !residentButton || !dehumidifierButton) return;
 
     if (!isLeadHousekeeper || !isSharedRoomCategory(selectedCategory)) {
       controls.classList.add("hidden");
@@ -2062,9 +2095,12 @@ async function saveReasonIfNeeded(reasonText) {
     }
 
     const setting = getCurrentRoomSetting();
+    const roomKey = getCurrentRoomKey();
 
     dailyButton.innerText = setting.isDaily === true ? "DAILY" : "WEEKLY";
     occupiedButton.innerText = setting.isOccupied === false ? "VACANT" : "OCCUPIED";
+    residentButton.innerText = getResidentStatusText(setting.residentStatus || "Assisted").toUpperCase();
+    dehumidifierButton.classList.toggle("hidden", !hasDehumidifierForRoom(roomKey));
 
     controls.classList.remove("hidden");
   }
@@ -2142,23 +2178,54 @@ async function saveReasonIfNeeded(reasonText) {
   function getRoomBadgeHtml(task) {
     const roomKey = task.roomKey || getRoomKey(task.areaName || "");
     const setting = getRoomSettingByRoomKey(roomKey);
-    const badges = [];
+    const dailyText = setting.isDaily === true || task.category === "Daily Room" ? "DAILY" : "";
+    const dehumText = hasDehumidifierForRoom(roomKey) ? "DEHUM" : "";
+    const centerText = getRoomCenterStatusText(setting);
 
-    if (setting.isDaily === true || task.category === "Daily Room") {
-      badges.push("D");
-    }
+    if (!dailyText && !centerText && !dehumText) return "";
 
-    if (hasDehumidifierForRoom(roomKey)) {
-      badges.push("H");
-    }
-
-    if (badges.length === 0) return "";
-
-    return '<div class="room-badge-row">' +
-      badges.map(function(label) {
-        return '<span class="room-badge">' + label + '</span>';
-      }).join("") +
+    return '<div class="room-status-strip">' +
+      '<span class="room-status-chip ' + (dailyText ? '' : 'blank') + '">' + escapeHtml(dailyText || '-') + '</span>' +
+      '<span class="room-status-chip ' + (centerText ? '' : 'blank') + '">' + escapeHtml(centerText || '-') + '</span>' +
+      '<span class="room-status-chip ' + (dehumText ? '' : 'blank') + '">' + escapeHtml(dehumText || '-') + '</span>' +
       '</div>';
+  }
+
+  function getRoomCenterStatusText(setting) {
+    if (!setting || Object.keys(setting).length === 0) return "";
+
+    const resident = getResidentStatusText(setting.residentStatus || "");
+    const occupancy = getOccupancyText(setting);
+
+    if (resident && occupancy) return resident + " • " + occupancy;
+    if (resident) return resident;
+    return occupancy;
+  }
+
+  function getResidentStatusText(value) {
+    const text = String(value || "").trim();
+    if (!text) return "";
+
+    const lower = text.toLowerCase();
+    if (lower === "assisted") return "Assisted";
+    if (lower === "depending") return "Depending";
+    if (lower === "hospice") return "Hospice";
+    return text;
+  }
+
+  function getOccupancyText(setting) {
+    if (!setting || Object.keys(setting).length === 0) return "";
+    return setting.isOccupied === false ? "VACANT" : "OCCUPIED";
+  }
+
+  function getNextResidentStatus(value) {
+    const current = String(value || "").trim().toLowerCase();
+    const statuses = ["Assisted", "Depending", "Hospice"];
+    const index = statuses.findIndex(function(status) {
+      return status.toLowerCase() === current;
+    });
+
+    return statuses[(index + 1) % statuses.length];
   }
 
   function hasDehumidifierForRoom(roomKey) {
@@ -2328,9 +2395,9 @@ async function saveReasonIfNeeded(reasonText) {
   window.goToAdminDehumidifierView = goToAdminDehumidifierView;
   window.toggleCurrentRoomDaily = toggleCurrentRoomDaily;
   window.toggleCurrentRoomOccupied = toggleCurrentRoomOccupied;
+  window.toggleCurrentResidentStatus = toggleCurrentResidentStatus;
 
 </script>
 
 </body>
 </html>
-
