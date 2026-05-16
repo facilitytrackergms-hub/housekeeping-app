@@ -537,37 +537,74 @@
 
     .room-report-card {
       border: 1px solid #ccc;
-      border-radius: 14px;
-      padding: 10px;
+      border-radius: 16px;
+      padding: 12px;
       margin: 8px 0;
       background: #fafafa;
     }
 
     .room-report-card h3 {
+      text-align: center;
+      margin: 0 0 8px;
+      font-size: 22px;
+      font-weight: 900;
+    }
+
+    .room-report-section-title {
       text-align: left;
-      margin: 0 0 6px;
-      font-size: 18px;
+      font-size: 16px;
+      font-weight: 900;
+      margin: 12px 0 6px;
+      padding: 6px 8px;
+      color: #0d47a1;
+      background: #eef5ff;
+      border-left: 5px solid #0d47a1;
+      border-radius: 9px;
     }
 
     .room-report-line {
       font-size: 14px;
-      font-weight: bold;
-      margin: 3px 0;
+      font-weight: 800;
+      margin: 5px 0;
+      color: #222;
+      line-height: 1.25;
+    }
+
+    .room-report-row {
+      display: grid;
+      grid-template-columns: 92px 1fr;
+      gap: 8px;
+      font-size: 14px;
+      line-height: 1.25;
+      padding: 5px 0;
+      border-bottom: 1px solid #e6e6e6;
+    }
+
+    .room-report-row:last-child {
+      border-bottom: none;
+    }
+
+    .room-report-label {
+      font-weight: 900;
       color: #333;
+    }
+
+    .room-report-value {
+      font-weight: 700;
+      color: #111;
+    }
+
+    .room-report-empty {
+      font-size: 14px;
+      font-weight: 700;
+      margin: 5px 0;
+      color: #555;
     }
 
     .room-report-task {
       font-size: 13px;
       margin: 3px 0;
       line-height: 1.25;
-    }
-
-    .room-report-section-title {
-      text-align: center;
-      font-size: 16px;
-      font-weight: 900;
-      margin: 10px 0 6px;
-      color: #111;
     }
 
 
@@ -3708,25 +3745,45 @@
 
     card.innerHTML =
       '<h3>Room ' + escapeHtml(currentRoomReportNumber) + '</h3>' +
-      '<div class="room-report-line">Resident Status: ' + escapeHtml(residentStatus) + '</div>' +
+      buildRoomReportRow("Resident", residentStatus) +
       '<div class="room-report-section-title">Laundry Schedule</div>' +
       laundryScheduleHtml +
-      '<div class="room-report-section-title">Last Laundry Executed</div>' +
-      '<div class="room-report-line">' + escapeHtml(formatStatusSummary(lastLaundry)) + '</div>' +
+      '<div class="room-report-section-title">Last Laundry</div>' +
+      buildStatusSummaryHtml(lastLaundry) +
       '<div class="room-report-section-title">Housekeeping Schedule</div>' +
       housekeepingScheduleHtml +
-      '<div class="room-report-section-title">Last Housekeeping Executed</div>' +
-      '<div class="room-report-line">' + escapeHtml(formatStatusSummary(lastHousekeeping)) + '</div>' +
-      '<div class="room-report-section-title">Dehumidifier</div>' +
+      '<div class="room-report-section-title">Last Housekeeping</div>' +
+      buildStatusSummaryHtml(lastHousekeeping) +
+      '<div class="room-report-section-title">Dehumidifier Schedule</div>' +
       dehumidifierScheduleHtml +
-      '<div class="room-report-section-title">Last Dehumidifier Executed</div>' +
+      '<div class="room-report-section-title">Last Dehumidifier</div>' +
       buildDehumidifierExecutedHtml(hasDehumidifierSetup, lastDehumidifierAm, lastDehumidifierPm) +
       '<div class="room-report-section-title">Open Issues</div>' +
       buildOpenIssuesHtml(openIssues) +
-      '<div class="room-report-section-title">Selected Date - ' + escapeHtml(formatDateWithWeekday(selectedDate)) + '</div>' +
+      '<div class="room-report-section-title">Selected Date Activity - ' + escapeHtml(formatDateWithWeekday(selectedDate)) + '</div>' +
       buildSelectedDateHtml(selectedDateStatuses, selectedDateIssues);
 
     box.appendChild(card);
+  }
+
+  function buildRoomReportRow(label, value) {
+    return '<div class="room-report-row">' +
+      '<div class="room-report-label">' + escapeHtml(label) + '</div>' +
+      '<div class="room-report-value">' + escapeHtml(value || "None") + '</div>' +
+      '</div>';
+  }
+
+  function buildRoomReportEmpty(text) {
+    return '<div class="room-report-empty">' + escapeHtml(text || "No record found") + '</div>';
+  }
+
+  function buildStatusSummaryHtml(record) {
+    if (!record) return buildRoomReportEmpty("No record found");
+
+    return buildRoomReportRow("Task", getRecordTaskLabel(record)) +
+      buildRoomReportRow("When", getRecordDateTimeText(record)) +
+      buildRoomReportRow("Result", getRecordResultText(record)) +
+      buildRoomReportRow("Employee", record.employeeName || "Not listed");
   }
 
   function getRoomResidentStatus() {
@@ -3796,25 +3853,25 @@
         currentRoomReportAreas.filter(function(area) {
           return String(area.category || "") === "Dehumidifier";
         }),
-        "No dehumidifier found."
+        "No dehumidifier set up."
       );
     }
 
-    let html = "";
-    html += buildRoomModeSettingsGroup("MODE 2", ["HK1", "HK2"]);
-    html += buildRoomModeSettingsGroup("MODE 3", ["1stfloor", "2ndFloor", "3rdFloor"]);
-    return html || '<div class="room-report-line">No housekeeping schedule found.</div>';
+    return buildRoomModeSettingsGroup("MODE 2", ["HK1", "HK2"]) +
+      buildRoomModeSettingsGroup("MODE 3", ["1stfloor", "2ndFloor", "3rdFloor"]);
   }
 
   function buildRoomModeSettingsGroup(title, schedules) {
     const areas = currentRoomReportAreas.filter(function(area) {
-      return schedules.includes(getAreaAssignment(area)) && String(area.category || "") !== "Dehumidifier";
+      return schedules.includes(getAreaAssignment(area)) &&
+        String(area.category || "") !== "Dehumidifier" &&
+        !String(area.category || "").includes("Laundry");
     });
 
-    let html = '<div class="room-report-section-title">' + escapeHtml(title) + '</div>';
+    let html = '<div class="room-report-line">' + escapeHtml(title) + '</div>';
 
     if (areas.length === 0) {
-      html += '<div class="room-report-line">No setup.</div>';
+      html += buildRoomReportEmpty("No setup.");
       return html;
     }
 
@@ -3823,13 +3880,13 @@
 
   function buildRoomSettingsForAreas(areas, emptyText) {
     if (!areas || areas.length === 0) {
-      return '<div class="room-report-line">' + escapeHtml(emptyText || "No setup.") + '</div>';
+      return buildRoomReportEmpty(emptyText || "No setup.");
     }
 
     let html = "";
 
     areas.forEach(function(area) {
-      html += '<div class="room-report-line">' + escapeHtml(formatRoomSettingLine(area)) + '</div>';
+      html += formatRoomSettingLine(area);
     });
 
     return html;
@@ -3837,21 +3894,32 @@
 
   function buildDehumidifierExecutedHtml(hasDehumidifierSetup, lastDehumidifierAm, lastDehumidifierPm) {
     if (!hasDehumidifierSetup) {
-      return '<div class="room-report-line">No dehumidifier found.</div>';
+      return buildRoomReportEmpty("Not applicable.");
     }
 
-    return '<div class="room-report-line">AM: ' + escapeHtml(formatStatusSummary(lastDehumidifierAm)) + '</div>' +
-      '<div class="room-report-line">PM: ' + escapeHtml(formatStatusSummary(lastDehumidifierPm)) + '</div>';
+    return '<div class="room-report-line">AM</div>' +
+      buildStatusSummaryHtml(lastDehumidifierAm) +
+      '<div class="room-report-line">PM</div>' +
+      buildStatusSummaryHtml(lastDehumidifierPm);
   }
 
   function formatRoomSettingLine(area) {
     const tasks = getTasksForWorkId(area.workId);
     const category = area.category || "Area";
-    const schedule = getAreaAssignment(area) || "";
+    const schedule = getAreaAssignment(area) || "Not assigned";
     const day = area.scheduleDay || area.day || "daily";
-    const laundryType = area.laundryType ? " - " + area.laundryType : "";
+    const laundryType = area.laundryType || "";
+    const taskText = tasks.length === 1 ? "1 task" : tasks.length + " tasks";
 
-    return category + ": " + schedule + " - " + day + laundryType + " - " + tasks.length + " task(s)";
+    let details = schedule + " • " + day;
+
+    if (laundryType) {
+      details += " • " + laundryType;
+    }
+
+    details += " • " + taskText;
+
+    return buildRoomReportRow(category, details);
   }
 
   function getLastRoomStatus(filterFunction) {
@@ -3899,15 +3967,22 @@
   function formatStatusSummary(record) {
     if (!record) return "No record found";
 
+    return getRecordTaskLabel(record) + " - " +
+      getRecordDateTimeText(record) + " - " +
+      getRecordResultText(record) +
+      (record.employeeName ? " - " + record.employeeName : "");
+  }
+
+  function getRecordResultText(record) {
+    if (!record) return "No record found";
+
     const completed = Number(record.completedCount || 0);
     const incomplete = Number(record.incompleteCount || 0);
     const total = Number(record.totalCount || completed + incomplete || 0);
     const statusLabel = incomplete > 0 ? "Not Done / Issue" : "Done";
-    const countText = total > 0 ? " - " + completed + "/" + total : "";
-    const employeeText = record.employeeName ? " - " + record.employeeName : "";
-    const taskText = getRecordTaskLabel(record);
+    const countText = total > 0 ? " " + completed + "/" + total : "";
 
-    return taskText + " - " + getRecordDateTimeText(record) + " - " + statusLabel + countText + employeeText;
+    return statusLabel + countText;
   }
 
   function getRecordTaskLabel(record) {
@@ -3926,21 +4001,19 @@
 
   function buildOpenIssuesHtml(openIssues) {
     if (openIssues.length === 0) {
-      return '<div class="room-report-line">No open issues.</div>';
+      return buildRoomReportEmpty("None open.");
     }
 
     let html = "";
 
     openIssues.forEach(function(issue) {
-      const line = [
-        issue.status || "Open",
-        issue.taskName || "Issue",
-        issue.issueReason || "",
-        getRecordDateTimeText(issue),
-        issue.followUpNote || issue.issueNote || ""
-      ].filter(function(item) { return String(item || "").trim() !== ""; }).join(" - ");
-
-      html += '<div class="room-report-line">' + escapeHtml(line) + '</div>';
+      html += buildRoomReportRow("Status", issue.status || "Open");
+      html += buildRoomReportRow("Task", issue.taskName || "Issue");
+      if (issue.issueReason) html += buildRoomReportRow("Reason", issue.issueReason);
+      html += buildRoomReportRow("Reported", getRecordDateTimeText(issue));
+      if (issue.followUpNote || issue.issueNote) {
+        html += buildRoomReportRow("Note", issue.followUpNote || issue.issueNote);
+      }
     });
 
     return html;
@@ -3948,25 +4021,22 @@
 
   function buildSelectedDateHtml(statuses, issues) {
     if (statuses.length === 0 && issues.length === 0) {
-      return '<div class="room-report-line">No activity found for this date.</div>';
+      return buildRoomReportEmpty("No activity found for this date.");
     }
 
     let html = "";
 
     statuses.forEach(function(record) {
-      html += '<div class="room-report-line">' + escapeHtml(formatStatusSummary(record)) + '</div>';
+      html += buildRoomReportRow(getRecordTaskLabel(record), getRecordResultText(record));
+      html += buildRoomReportRow("Time", getRecordDateTimeText(record));
+      if (record.employeeName) html += buildRoomReportRow("Employee", record.employeeName);
     });
 
     issues.forEach(function(issue) {
-      const line = [
-        "Issue",
-        issue.status || "Open",
-        issue.taskName || "",
-        issue.issueReason || "",
-        getRecordDateTimeText(issue)
-      ].filter(function(item) { return String(item || "").trim() !== ""; }).join(" - ");
-
-      html += '<div class="room-report-line">' + escapeHtml(line) + '</div>';
+      html += buildRoomReportRow("Issue", issue.status || "Open");
+      if (issue.taskName) html += buildRoomReportRow("Task", issue.taskName);
+      if (issue.issueReason) html += buildRoomReportRow("Reason", issue.issueReason);
+      html += buildRoomReportRow("Time", getRecordDateTimeText(issue));
     });
 
     return html;
