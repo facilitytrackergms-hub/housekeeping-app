@@ -613,6 +613,8 @@
       <button type="button" onclick="openEmployees()">Edit Employees Info</button>
     </div>
 
+    <div id="adminTopButtons" class="rooms-grid"></div>
+
     <label>Schedule</label>
     <select id="adminAssignmentSelect" onchange="changeAdminAssignment()">
       <option value="">Choose schedule to edit</option>
@@ -2001,49 +2003,106 @@
   ========================== */
 
   function drawAdminCategories() {
-    const box = document.getElementById("adminCategoryButtons");
-    box.innerHTML = "";
+    const topBox = document.getElementById("adminTopButtons");
+    const scheduleBox = document.getElementById("adminCategoryButtons");
 
-    const alwaysButtons = ["Dehumidifier", "Daily Status", "Issues", "Issue Reasons", "Reports", "Logout"];
-    let buttons = [];
+    if (topBox) topBox.innerHTML = "";
+    if (scheduleBox) scheduleBox.innerHTML = "";
+
+    const topButtons = ["Dehumidifier", "Daily Status", "Issues", "Issue Reasons", "Reports", "Logout"];
+
+    let scheduleButtons = [];
 
     if (currentAssignment === "Laundry") {
-      buttons = ["Weekly Laundry", "Daily Laundry"].concat(alwaysButtons);
+      scheduleButtons = ["Weekly Laundry", "Daily Laundry"];
     } else if (currentAssignment) {
-      buttons = ["Common Area", "Weekly Room", "Daily Room"].concat(alwaysButtons);
-    } else {
-      buttons = alwaysButtons;
+      scheduleButtons = ["Common Area", "Weekly Room", "Daily Room"];
     }
 
-    buttons.forEach(function(item) {
-      const btn = document.createElement("button");
-      btn.innerText = item;
-
-      if (item === "Logout") {
-        btn.className = "back";
-        btn.onclick = logout;
-      } else {
-        btn.className = "yellow";
-
-        if (item === "Employees") {
-          btn.onclick = openEmployees;
-        } else if (item === "Issues") {
-          btn.onclick = openIssues;
-        } else if (item === "Issue Reasons") {
-          btn.onclick = openIssueReasons;
-        } else if (item === "Daily Status") {
-          btn.onclick = openDailyStatus;
-        } else if (item === "Reports") {
-          btn.onclick = function() { window.location.href = "reports.html"; };
-        } else {
-          btn.onclick = function() {
-            openAdminCategory(item);
-          };
-        }
-      }
-
-      box.appendChild(btn);
+    topButtons.forEach(function(item) {
+      appendAdminDashboardButton(topBox, item);
     });
+
+    scheduleButtons.forEach(function(item) {
+      appendAdminDashboardButton(scheduleBox, item);
+    });
+  }
+
+  function appendAdminDashboardButton(box, item) {
+    if (!box) return;
+
+    const btn = document.createElement("button");
+    btn.innerText = item;
+
+    if (item === "Logout") {
+      btn.className = "back";
+      btn.onclick = logout;
+    } else {
+      btn.className = "yellow";
+
+      if (item === "Employees") {
+        btn.onclick = openEmployees;
+      } else if (item === "Issues") {
+        btn.onclick = openIssues;
+      } else if (item === "Issue Reasons") {
+        btn.onclick = openIssueReasons;
+      } else if (item === "Daily Status") {
+        btn.onclick = openDailyStatus;
+      } else if (item === "Reports") {
+        btn.onclick = function() { window.location.href = "reports.html"; };
+      } else {
+        btn.onclick = function() {
+          openAdminCategory(item);
+        };
+      }
+    }
+
+    box.appendChild(btn);
+  }
+
+  async function loadAllAdminData() {
+    showLoading();
+    updateDateDisplay();
+
+    const settingsSnap = await getDocs(collection(db, "settings"));
+    housekeepingMode = "two";
+
+    settingsSnap.docs.forEach(function(docItem) {
+      const data = docItem.data();
+      if (data.settingName === "housekeepingMode" || docItem.id === "housekeepingmode") {
+        housekeepingMode = String(data.settingValue || "two").toLowerCase();
+      }
+    });
+
+    syncModeControls();
+
+    const areaSnap = await getDocs(collection(db, "areas"));
+
+    allAreas = areaSnap.docs.map(function(areaDoc) {
+      return normalizeArea({ id: areaDoc.id, ...areaDoc.data() });
+    }).filter(function(area) {
+      return area.active !== false && area.active !== "No";
+    });
+
+    const subTaskSnap = await getDocs(collection(db, "tasks"));
+
+    allSubTasks = subTaskSnap.docs.map(function(taskDoc) {
+      return normalizeSubTask({ id: taskDoc.id, ...taskDoc.data() });
+    }).filter(function(task) {
+      return task.active !== false && task.active !== "No";
+    });
+
+    allAreasForAssignment = currentAssignment
+      ? allAreas.filter(function(area) { return getAreaAssignment(area) === currentAssignment; })
+      : [];
+
+    allAreasForDay = allAreasForAssignment.filter(function(area) {
+      return isAreaForCurrentDay(area);
+    });
+
+    updateTaskNameOptions();
+    drawAdminCategories();
+    hideLoading();
   }
 
   async function openAdminCategory(item) {
@@ -2060,7 +2119,9 @@
     const searchInput = document.getElementById("adminAreaSearchInput");
     if (searchInput) searchInput.value = "";
 
-    if (allAreas.length === 0 || allSubTasks.length === 0) {
+    if (item === "Dehumidifier" && (allAreas.length === 0 || allSubTasks.length === 0)) {
+      await loadAllAdminData();
+    } else if (allAreas.length === 0 || allSubTasks.length === 0) {
       await loadAdminTasks();
     }
 
