@@ -964,12 +964,12 @@ select.appendChild(blankOption);
     if (!header) return;
 
     const modeText = housekeepingMode === "three" ? "Mode 3" : "Mode 2";
-    const dayText = selectedWeeklyDayName || currentWorkDayName || "";
+    const areaText = selectedCategory || "";
 
     header.innerText =
       employeeName + " • " +
       homeAssignment + " • " +
-      dayText + " • " +
+      areaText + " • " +
       modeText + " • " +
       getDisplayAssignment();
   }
