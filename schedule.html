@@ -2268,6 +2268,11 @@ async function saveReasonIfNeeded(reasonText) {
   function hasDehumidifierForRoom(roomKey) {
     if (!roomKey) return false;
 
+    const setting = getRoomSettingByRoomKey(roomKey);
+
+    if (setting.hasDehumidifier === true) return true;
+    if (setting.hasDehumidifier === false) return false;
+
     return allTasksForDay.some(function(task) {
       return task.category === "Dehumidifier" && getRoomKey(task.areaName || "") === roomKey;
     });
