@@ -993,7 +993,7 @@
     <h2>Reassignment</h2>
 
     <label>From</label>
-    <select id="reassignFrom">
+    <select id="reassignFrom" onchange="changeReassignmentFrom()">
       <option>HK1</option>
       <option>HK2</option>
       <option>1stfloor</option>
@@ -1002,23 +1002,7 @@
       <option>Laundry</option>
     </select>
 
-    <label>To</label>
-    <select id="reassignTo">
-      <option value="">Select assignment</option>
-      <option>HK1</option>
-      <option>HK2</option>
-      <option>1stfloor</option>
-      <option>2ndFloor</option>
-      <option>3rdFloor</option>
-      <option>Laundry</option>
-    </select>
-
-    <label>Category</label>
-    <select id="reassignCategory" onchange="changeReassignmentCategory()">
-      <option value="">Select category</option>
-    </select>
-
-    <div id="reassignDateBox" class="hidden">
+    <div id="reassignFromDayBox">
       <h3>From Day</h3>
 
       <div id="reassignFromDayButtons" class="weekday-row">
@@ -1030,7 +1014,20 @@
         <button type="button" onclick="setReassignmentFromWeekday('Saturday')">Sat</button>
         <button type="button" onclick="setReassignmentFromWeekday('Sunday')">Sun</button>
       </div>
+    </div>
 
+    <label>To</label>
+    <select id="reassignTo" onchange="changeReassignmentTo()">
+      <option value="">Select assignment</option>
+      <option>HK1</option>
+      <option>HK2</option>
+      <option>1stfloor</option>
+      <option>2ndFloor</option>
+      <option>3rdFloor</option>
+      <option>Laundry</option>
+    </select>
+
+    <div id="reassignToDayBox">
       <h3>To Day</h3>
 
       <div id="reassignToDayButtons" class="weekday-row">
@@ -1043,6 +1040,11 @@
         <button type="button" onclick="setReassignmentToWeekday('Sunday')">Sun</button>
       </div>
     </div>
+
+    <label>Category</label>
+    <select id="reassignCategory" onchange="changeReassignmentCategory()">
+      <option value="">Select category</option>
+    </select>
 
    <div class="button-row">
 
@@ -1594,9 +1596,9 @@
           "Showing " + fromAssignment + " - " + category + " for " + reassignWorkDayName +
           (toAssignment && reassignTargetDayName ? " → Move to " + toAssignment + " - " + reassignTargetDayName : "");
       } else if (category) {
-        label.innerText = "Showing " + fromAssignment + " - " + category;
+        label.innerText = "Showing " + fromAssignment + " - " + category + (toAssignment ? " → Move to " + toAssignment : "");
       } else {
-        label.innerText = "";
+        label.innerText = fromAssignment ? "Choose category for " + fromAssignment : "";
       }
     }
 
@@ -3785,15 +3787,25 @@
   }
 
   function setReassignmentDateVisibility() {
-    const category = document.getElementById("reassignCategory").value;
-    const box = document.getElementById("reassignDateBox");
-    if (category && isWeeklyCategory(category)) {
-      if (!reassignWorkDayName) reassignWorkDayName = getWeekdayName(currentWorkDateISO);
-      if (!reassignTargetDayName) reassignTargetDayName = reassignWorkDayName;
-      box.classList.remove("hidden");
-    } else {
-      box.classList.add("hidden");
-    }
+    const fromBox = document.getElementById("reassignFromDayBox");
+    const toBox = document.getElementById("reassignToDayBox");
+
+    if (!reassignWorkDayName) reassignWorkDayName = getWeekdayName(currentWorkDateISO);
+    if (!reassignTargetDayName) reassignTargetDayName = reassignWorkDayName;
+
+    if (fromBox) fromBox.classList.remove("hidden");
+    if (toBox) toBox.classList.remove("hidden");
+
+    updateReassignmentDateDisplay();
+  }
+
+  function changeReassignmentFrom() {
+    document.getElementById("reassignmentAreaList").innerHTML = "";
+    updateReassignmentDateDisplay();
+  }
+
+  function changeReassignmentTo() {
+    document.getElementById("reassignmentAreaList").innerHTML = "";
     updateReassignmentDateDisplay();
   }
 
@@ -4289,6 +4301,8 @@
   window.openReassignment = openReassignment;
   window.loadReassignmentAreas = loadReassignmentAreas;
   window.moveReassignmentArea = moveReassignmentArea;
+  window.changeReassignmentFrom = changeReassignmentFrom;
+  window.changeReassignmentTo = changeReassignmentTo;
   window.changeReassignmentCategory = changeReassignmentCategory;
   window.changeReassignmentDate = changeReassignmentDate;
   window.setReassignmentFromWeekday = setReassignmentFromWeekday;
