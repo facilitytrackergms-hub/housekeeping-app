@@ -291,6 +291,47 @@
       text-overflow: ellipsis;
     }
 
+
+
+    .room-button-wrap {
+      position: relative;
+    }
+
+    .room-badge-row {
+      position: absolute;
+      top: 4px;
+      left: 5px;
+      display: flex;
+      gap: 3px;
+      z-index: 2;
+    }
+
+    .room-badge {
+      min-width: 15px;
+      height: 15px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.90);
+      color: #111;
+      font-size: 9px;
+      font-weight: 900;
+      line-height: 15px;
+      text-align: center;
+    }
+
+    .lead-room-controls {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 6px;
+      margin: 2px 0 8px;
+    }
+
+    .lead-room-controls button {
+      margin: 0;
+      font-size: 12px;
+      padding: 10px 3px;
+      border-radius: 10px;
+    }
+
     #message {
       text-align: center;
       font-size: 18px;
@@ -444,6 +485,12 @@
         <textarea id="note" placeholder="Other reason / notes"></textarea>
       </div>
 
+      <div id="leadRoomControls" class="lead-room-controls hidden">
+        <button id="dailyWeeklyToggleButton" class="yellow" onclick="toggleCurrentRoomDaily()">DAILY</button>
+        <button id="occupiedVacantToggleButton" class="yellow" onclick="toggleCurrentRoomOccupied()">OCCUPIED</button>
+        <button id="leadDehumidifierButton" class="yellow" onclick="goToAdminDehumidifierView()">DEHUM</button>
+      </div>
+
       <button id="changeDehumidifierLocationButton" class="yellow hidden" onclick="goToAdminDehumidifierView()">CHANGE LOCATION</button>
       <button class="green" onclick="saveTaskChecklist()">SAVE</button>
     </div>
@@ -525,6 +572,14 @@
     ((sessionData.firstName || "") + " " + (sessionData.lastName || "")).trim() ||
     "Employee";
 
+  const employeeRole =
+    sessionData.role ||
+    sessionData.employeeRole ||
+    sessionData.position ||
+    "";
+
+  const isLeadHousekeeper = isLeadHousekeeperRole(employeeRole);
+
   let homeAssignment =
     sessionData.defaultSchedule ||
     sessionData.default_schedule ||
@@ -554,6 +609,7 @@
   let progressData = {};
   let activeIssueData = {};
   let issueReasons = [];
+  let roomSettingsData = {};
 
   let selectedCategory = "";
   let currentAreaId = "";
@@ -597,6 +653,7 @@
 
       allAreasForSchedule = await loadAreasForAssignment(currentAssignment);
       allTasksForSchedule = await loadTasksForAssignment(currentAssignment);
+      roomSettingsData = await loadRoomSettings();
       progressData = await loadProgressData();
       activeIssueData = await loadActiveIssueData();
       issueReasons = await loadIssueReasons();
@@ -681,6 +738,31 @@
       });
   }
 
+
+  async function loadRoomSettings() {
+    const settingsQuery = query(
+      collection(db, "room_settings"),
+      where("schedule", "==", currentAssignment)
+    );
+
+    const snap = await getDocs(settingsQuery);
+    const data = {};
+
+    snap.docs.forEach(function(item) {
+      const setting = {
+        id: item.id,
+        ...item.data()
+      };
+
+      const roomKey = getRoomKey(setting.roomKey || setting.roomName || "");
+      if (!roomKey) return;
+
+      data[roomKey] = setting;
+    });
+
+    return data;
+  }
+
   async function loadProgressData() {
     const statusQuery = query(
       collection(db, "task_area_status"),
@@ -693,10 +775,16 @@
     snap.docs.forEach(function(item) {
       const status = item.data();
 
-if (String(status.schedule || "") !== String(currentAssignment || "")) return;
-if (!status.areaId) return;
+      if (String(status.schedule || "") !== String(currentAssignment || "")) return;
 
-data[status.areaId] = status;
+      if (status.areaId) {
+        data[status.areaId] = status;
+      }
+
+      const roomKey = getRoomKey(status.roomKey || status.areaName || "");
+      if (roomKey) {
+        data[roomKey] = status;
+      }
     });
 
     return data;
@@ -799,7 +887,7 @@ data[status.areaId] = status;
       areasById[area.areaId || area.id] = area;
     });
 
-    return allTasksForSchedule
+    const builtTasks = allTasksForSchedule
       .filter(function(task) {
         const area = areasById[task.areaId];
         if (!area) return false;
@@ -809,15 +897,22 @@ data[status.areaId] = status;
       })
       .map(function(task) {
         const area = areasById[task.areaId];
+        const areaName = area.areaName || task.areaName || "";
+        const category = area.category || task.category || "";
+        const roomKey = getRoomKey(areaName);
+        const roomSetting = getRoomSettingByRoomKey(roomKey);
 
         return {
           areaId: task.areaId,
-          areaName: area.areaName || task.areaName || "",
+          originalAreaId: task.areaId,
+          roomKey: roomKey,
+          roomSetting: roomSetting,
+          areaName: areaName,
           areaSearch: area.areaSearch || task.areaSearch || "",
           taskId: task.taskId || task.id,
           taskName: task.taskName || "",
           taskSearch: task.taskSearch || "",
-          category: area.category || task.category || "",
+          category: category,
           categoryKey: area.categoryKey || task.categoryKey || "",
           day: area.day || task.day || "",
           schedule: currentAssignment,
@@ -828,6 +923,47 @@ data[status.areaId] = status;
           sourceSheet: task.sourceSheet || ""
         };
       });
+
+    const adjustedTasks = [];
+    const used = {};
+
+    builtTasks.forEach(function(task) {
+      const roomSetting = task.roomSetting || {};
+      const roomIsDaily = roomSetting.isDaily === true;
+      const hasRoomSetting = !!task.roomKey && !!roomSettingsData[task.roomKey];
+
+      if (task.category === "Weekly Room" && hasRoomSetting && roomIsDaily) {
+        const clonedTask = {
+          ...task,
+          areaId: "daily_" + task.roomKey,
+          category: "Daily Room",
+          categoryKey: "daily_room"
+        };
+
+        addUniqueTask(adjustedTasks, used, clonedTask);
+        return;
+      }
+
+      if (task.category === "Daily Room" && hasRoomSetting && !roomIsDaily) {
+        return;
+      }
+
+      addUniqueTask(adjustedTasks, used, task);
+    });
+
+    return adjustedTasks;
+  }
+
+  function addUniqueTask(list, used, task) {
+    const key = [
+      task.category,
+      task.roomKey || task.areaId,
+      cleanId(task.taskName || task.taskId || "task")
+    ].join("|");
+
+    if (used[key]) return;
+    used[key] = true;
+    list.push(task);
   }
 
   function isCorrectDay(dayValue) {
@@ -1119,11 +1255,13 @@ select.appendChild(blankOption);
       const total = visibleAreaTasks.length;
 
       const btn = document.createElement("button");
+      btn.classList.add("room-button-wrap");
       btn.innerHTML =
+        getRoomBadgeHtml(areaTasks[0] || {}) +
         '<div class="room-number">' + getAreaDisplayName(areaName) + '</div>' +
         '<div class="room-counter">' + counts.completed + '/' + total + (counts.incomplete > 0 ? ' ISSUE' : '') + '</div>';
 
-      btn.className = getProgressColor(counts.completed, counts.incomplete, total);
+      btn.className += " " + getProgressColor(counts.completed, counts.incomplete, total);
 
       btn.onclick = function() {
         openAreaChoice(areaId, areaName);
@@ -1219,11 +1357,8 @@ select.appendChild(blankOption);
     let incomplete = 0;
 
     tasks.forEach(function(task) {
-      const areaStatus = progressData[task.areaId] || {};
-      const savedStatus = areaStatus.tasks && areaStatus.tasks[task.taskId]
-        ? areaStatus.tasks[task.taskId].status
-        : "";
-
+      const areaStatus = getProgressStatusForTask(task);
+      const savedStatus = getSavedStatusForTask(task, areaStatus);
       const taskStatus = getEffectiveTaskStatus(task, savedStatus);
 
       if (taskStatus === "Completed") completed++;
@@ -1310,6 +1445,7 @@ select.appendChild(blankOption);
     document.getElementById("note").value = "";
     document.getElementById("reasonBox").classList.add("hidden");
     updateChangeLocationButtonVisibility();
+    updateLeadRoomControls();
 
     buildChecklist();
     showView(4);
@@ -1367,12 +1503,11 @@ select.appendChild(blankOption);
     const box = document.getElementById("checklist");
     box.innerHTML = "";
 
-    const areaStatus = progressData[currentAreaId] || {};
-    const savedTasks = areaStatus.tasks || {};
+    const areaStatus = getProgressStatusForCurrentArea();
 
     currentTaskList.forEach(function(task, index) {
-      const savedStatus = savedTasks[task.taskId] ? savedTasks[task.taskId].status : "";
-      const taskStatus = getEffectiveTaskStatus(task, savedStatus);
+      const savedStatus = getSavedStatusForTask(task, areaStatus);
+      const taskStatus = savedStatus ? getEffectiveTaskStatus(task, savedStatus) : "Completed";
       const isCompleted = taskStatus === "Completed";
 
       const div = document.createElement("div");
@@ -1520,6 +1655,8 @@ select.appendChild(blankOption);
     await deleteDoc(statusRef);
 
     delete progressData[currentAreaId];
+    const roomKey = getCurrentRoomKey();
+    if (roomKey) delete progressData[roomKey];
 
     await loadAssignmentTasks();
 
@@ -1638,6 +1775,8 @@ select.appendChild(blankOption);
     const statusRef = doc(db, "task_area_status", statusId);
 
     const firstTask = currentTaskList[0] || {};
+    const roomKey = getCurrentRoomKey();
+    const taskStatusByName = getTaskStatusByName(taskResults);
 
     const statusDoc = {
       statusId: statusId,
@@ -1650,6 +1789,7 @@ select.appendChild(blankOption);
       modeType: getModeTypeForAssignment(currentAssignment),
       areaId: currentAreaId,
       areaName: currentAreaName,
+      roomKey: roomKey,
       category: selectedCategory,
       floor: firstTask.floor || "",
       status: statusSummary.status,
@@ -1657,6 +1797,7 @@ select.appendChild(blankOption);
       incompleteCount: statusSummary.incompleteCount,
       totalCount: statusSummary.totalCount,
       tasks: taskResults,
+      taskStatusByName: taskStatusByName,
       updatedAt: serverTimestamp()
     };
 
@@ -1682,14 +1823,17 @@ select.appendChild(blankOption);
       note: document.getElementById("note").value || "",
       work_id: statusId,
       areaName: currentAreaName,
+      roomKey: roomKey,
       completedCount: statusSummary.completedCount,
       incompleteCount: statusSummary.incompleteCount,
       totalCount: statusSummary.totalCount,
       taskResults: Object.keys(taskResults).map(function(key) { return taskResults[key]; }),
+      taskStatusByName: taskStatusByName,
       updatedAt: serverTimestamp()
     }, { merge: true });
 
     progressData[currentAreaId] = statusDoc;
+    if (roomKey) progressData[roomKey] = statusDoc;
   }
 
   function getStatusSummary(taskResults) {
@@ -1720,10 +1864,14 @@ select.appendChild(blankOption);
   }
 
 function makeStatusId(areaId) {
+  const key = isSharedRoomCategory(selectedCategory)
+    ? getCurrentRoomKey() || areaId
+    : areaId;
+
   return cleanId([
     currentWorkDateISO,
     currentAssignment,
-    areaId
+    key
   ].join("_"));
 }
 
@@ -1839,6 +1987,213 @@ async function saveReasonIfNeeded(reasonText) {
   issueReasons.push(cleaned);
   buildReasonDropdown();
 }
+
+
+  async function toggleCurrentRoomDaily() {
+    if (!isLeadHousekeeper) return;
+
+    const roomKey = getCurrentRoomKey();
+    if (!roomKey) return;
+
+    const setting = getCurrentRoomSetting();
+    const nextValue = !(setting.isDaily === true);
+
+    await saveCurrentRoomSetting({ isDaily: nextValue });
+  }
+
+  async function toggleCurrentRoomOccupied() {
+    if (!isLeadHousekeeper) return;
+
+    const roomKey = getCurrentRoomKey();
+    if (!roomKey) return;
+
+    const setting = getCurrentRoomSetting();
+    const nextValue = !(setting.isOccupied === true);
+
+    await saveCurrentRoomSetting({ isOccupied: nextValue });
+  }
+
+  async function saveCurrentRoomSetting(changes) {
+    showLoading();
+
+    const roomKey = getCurrentRoomKey();
+    const currentSetting = getCurrentRoomSetting();
+    const settingRef = doc(db, "room_settings", cleanId(currentAssignment + "_" + roomKey));
+
+    const updatedSetting = {
+      roomKey: roomKey,
+      roomName: currentAreaName,
+      schedule: currentAssignment,
+      isDaily: currentSetting.isDaily === true,
+      isOccupied: currentSetting.isOccupied !== false,
+      residentStatus: currentSetting.residentStatus || "",
+      updatedBy: employeeName,
+      updatedAt: serverTimestamp(),
+      ...changes
+    };
+
+    await setDoc(settingRef, updatedSetting, { merge: true });
+
+    roomSettingsData[roomKey] = {
+      ...currentSetting,
+      ...updatedSetting
+    };
+
+    await loadAssignmentTasks();
+
+    hideLoading();
+    updateLeadRoomControls();
+
+    if (selectedCategory) {
+      drawAreaButtons(selectedCategory);
+    }
+  }
+
+  function updateLeadRoomControls() {
+    const controls = document.getElementById("leadRoomControls");
+    const dailyButton = document.getElementById("dailyWeeklyToggleButton");
+    const occupiedButton = document.getElementById("occupiedVacantToggleButton");
+
+    if (!controls || !dailyButton || !occupiedButton) return;
+
+    if (!isLeadHousekeeper || !isSharedRoomCategory(selectedCategory)) {
+      controls.classList.add("hidden");
+      return;
+    }
+
+    const setting = getCurrentRoomSetting();
+
+    dailyButton.innerText = setting.isDaily === true ? "DAILY" : "WEEKLY";
+    occupiedButton.innerText = setting.isOccupied === false ? "VACANT" : "OCCUPIED";
+
+    controls.classList.remove("hidden");
+  }
+
+  function getCurrentRoomSetting() {
+    const roomKey = getCurrentRoomKey();
+    return getRoomSettingByRoomKey(roomKey);
+  }
+
+  function getCurrentRoomKey() {
+    return getRoomKey(currentAreaName);
+  }
+
+  function getRoomSettingByRoomKey(roomKey) {
+    if (!roomKey) return {};
+    return roomSettingsData[roomKey] || {};
+  }
+
+  function getProgressStatusForCurrentArea() {
+    const roomKey = getCurrentRoomKey();
+
+    if (isSharedRoomCategory(selectedCategory) && roomKey && progressData[roomKey]) {
+      return progressData[roomKey] || {};
+    }
+
+    return progressData[currentAreaId] || {};
+  }
+
+  function getProgressStatusForTask(task) {
+    const roomKey = task.roomKey || getRoomKey(task.areaName || "");
+
+    if (isSharedRoomCategory(task.category) && roomKey && progressData[roomKey]) {
+      return progressData[roomKey] || {};
+    }
+
+    return progressData[task.areaId] || {};
+  }
+
+  function getSavedStatusForTask(task, areaStatus) {
+    if (!areaStatus) return "";
+
+    const savedTasks = areaStatus.tasks || {};
+    const savedByName = areaStatus.taskStatusByName || {};
+    const taskNameKey = cleanId(task.taskName || "");
+
+    if (savedTasks[task.taskId]) {
+      return savedTasks[task.taskId].status || "";
+    }
+
+    if (savedByName[taskNameKey]) {
+      return savedByName[taskNameKey].status || "";
+    }
+
+    return "";
+  }
+
+  function getTaskStatusByName(taskResults) {
+    const byName = {};
+
+    Object.keys(taskResults).forEach(function(key) {
+      const task = taskResults[key];
+      const nameKey = cleanId(task.taskName || "");
+      if (!nameKey) return;
+
+      byName[nameKey] = {
+        taskName: task.taskName,
+        status: task.status,
+        reason: task.reason || ""
+      };
+    });
+
+    return byName;
+  }
+
+  function getRoomBadgeHtml(task) {
+    const roomKey = task.roomKey || getRoomKey(task.areaName || "");
+    const setting = getRoomSettingByRoomKey(roomKey);
+    const badges = [];
+
+    if (setting.isDaily === true || task.category === "Daily Room") {
+      badges.push("D");
+    }
+
+    if (hasDehumidifierForRoom(roomKey)) {
+      badges.push("H");
+    }
+
+    if (badges.length === 0) return "";
+
+    return '<div class="room-badge-row">' +
+      badges.map(function(label) {
+        return '<span class="room-badge">' + label + '</span>';
+      }).join("") +
+      '</div>';
+  }
+
+  function hasDehumidifierForRoom(roomKey) {
+    if (!roomKey) return false;
+
+    return allTasksForDay.some(function(task) {
+      return task.category === "Dehumidifier" && getRoomKey(task.areaName || "") === roomKey;
+    });
+  }
+
+  function isSharedRoomCategory(category) {
+    return category === "Weekly Room" || category === "Daily Room";
+  }
+
+  function isLeadHousekeeperRole(role) {
+    const text = String(role || "")
+      .trim()
+      .toLowerCase()
+      .replace(/[_-]+/g, " ");
+
+    return text === "lead housekeeper" ||
+      text === "lead housekeeping" ||
+      text === "lead" ||
+      text === "admin" ||
+      (text.includes("lead") && text.includes("house"));
+  }
+
+  function getRoomKey(value) {
+    const text = String(value || "").trim();
+    const numberMatch = text.match(/\d+/);
+
+    if (numberMatch) return numberMatch[0];
+
+    return cleanId(text);
+  }
 
   /* 15 - MODAL */
 
@@ -1971,6 +2326,8 @@ async function saveReasonIfNeeded(reasonText) {
   window.customConfirmYes = customConfirmYes;
   window.customConfirmNo = customConfirmNo;
   window.goToAdminDehumidifierView = goToAdminDehumidifierView;
+  window.toggleCurrentRoomDaily = toggleCurrentRoomDaily;
+  window.toggleCurrentRoomOccupied = toggleCurrentRoomOccupied;
 
 </script>
 
