@@ -1312,6 +1312,8 @@ select.appendChild(blankOption);
   function goToAdminDehumidifierView() {
     sessionStorage.setItem("adminStartView", "Dehumidifier");
     sessionStorage.setItem("adminOpenCategory", "Dehumidifier");
+    sessionStorage.setItem("adminDehumidifierFromRoom", currentAreaName || "");
+    sessionStorage.setItem("adminDehumidifierFromAreaId", currentAreaId || "");
     window.location.href = "admin.html#dehumidifier";
   }
 
