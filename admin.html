@@ -1072,7 +1072,10 @@
 
     <div id="reassignShowingLabel" class="reassign-showing-label"></div>
 
-    <div id="reassignmentAreaList" class="rooms-grid"></div>
+    <label>From Room</label>
+    <select id="reassignmentAreaList" onchange="selectReassignmentArea(this.value)">
+      <option value="">Select room</option>
+    </select>
 
     <label>To</label>
     <select id="reassignTo" onchange="changeReassignmentTo()">
@@ -1100,7 +1103,9 @@
     </div>
 
     <div id="reassignToPreviewLabel" class="reassign-to-preview-label"></div>
-    <div id="reassignmentToAreaPreview" class="rooms-grid reassign-to-preview"></div>
+    <select id="reassignmentToAreaPreview">
+      <option value="">Select destination to preview rooms</option>
+    </select>
 
     <button class="yellow" onclick="checkAssignmentCounts()">
       CHECK COUNT
@@ -1694,15 +1699,15 @@
 
   function drawReassignmentToPreview() {
     const label = document.getElementById("reassignToPreviewLabel");
-    const box = document.getElementById("reassignmentToAreaPreview");
+    const select = document.getElementById("reassignmentToAreaPreview");
 
-    if (!label || !box) return;
+    if (!label || !select) return;
 
     const toAssignment = document.getElementById("reassignTo")?.value || "";
     const category = document.getElementById("reassignCategory")?.value || "";
 
     label.innerText = "";
-    box.innerHTML = "";
+    select.innerHTML = '<option value="">Select destination to preview rooms</option>';
 
     if (!toAssignment || !category) return;
 
@@ -1723,22 +1728,21 @@
       ? "To " + toAssignment + " - " + reassignTargetDayName
       : "To " + toAssignment;
 
+    if (areas.length === 0) {
+      const empty = document.createElement("option");
+      empty.value = "";
+      empty.innerText = isWeeklyCategory(category) ? "No rooms on " + reassignTargetDayName : "No rooms found";
+      select.appendChild(empty);
+      return;
+    }
+
     areas.forEach(function(area) {
       const count = getTasksForWorkId(area.workId).length;
-      const btn = document.createElement("button");
-      btn.type = "button";
-      btn.disabled = true;
-      btn.innerHTML =
-        '<div class="room-number">' + escapeHtml(area.areaName) + '</div>' +
-        '<div class="room-counter">' + escapeHtml(getAreaAssignment(area)) + ' • ' + count + ' TASKS</div>';
-      box.appendChild(btn);
+      const option = document.createElement("option");
+      option.value = area.id;
+      option.innerText = area.areaName + " - " + getAreaAssignment(area) + " - " + count + " TASKS";
+      select.appendChild(option);
     });
-
-    if (box.innerHTML === "") {
-      const empty = document.createElement("h3");
-      empty.innerText = isWeeklyCategory(category) ? "No rooms on " + reassignTargetDayName + "." : "No rooms found.";
-      box.appendChild(empty);
-    }
   }
 
   async function changeAdminWorkDateFromBigPicker() {
@@ -3975,11 +3979,13 @@
   async function loadReassignmentAreas() {
     const fromAssignment = document.getElementById("reassignFrom").value;
     const category = document.getElementById("reassignCategory").value;
-    const box = document.getElementById("reassignmentAreaList");
+    const select = document.getElementById("reassignmentAreaList");
 
     selectedReassignmentAreaId = "";
 
-    if (box) box.innerHTML = "";
+    if (select) {
+      select.innerHTML = '<option value="">Select room</option>';
+    }
 
     if (!fromAssignment || !category) {
       updateReassignmentDateDisplay();
@@ -4004,37 +4010,32 @@
       return getAreaAssignment(area) === fromAssignment &&
         area.category === category &&
         (isWeeklyCategory(category) ? isAreaForReassignDay(area) : true);
+    }).sort(function(a, b) {
+      return String(a.areaName || "").localeCompare(String(b.areaName || ""), undefined, { numeric: true });
     });
 
-    box.innerHTML = "";
+    if (areas.length === 0) {
+      const empty = document.createElement("option");
+      empty.value = "";
+      empty.innerText = isWeeklyCategory(category) ? "No rooms for " + reassignWorkDayName : "No rooms found";
+      select.appendChild(empty);
+      hideLoading();
+      return;
+    }
 
     areas.forEach(function(area) {
       const count = getTasksForWorkId(area.workId).length;
-      const btn = document.createElement("button");
-      btn.className = "yellow";
-      btn.dataset.areaId = area.id;
-      btn.innerHTML =
-        '<div class="room-number">' + escapeHtml(area.areaName) + '</div>' +
-        '<div class="room-counter">' + escapeHtml(getAreaAssignment(area)) + ' • ' + count + ' TASKS</div>';
-      btn.onclick = function() { selectReassignmentArea(area.id); };
-      box.appendChild(btn);
+      const option = document.createElement("option");
+      option.value = area.id;
+      option.innerText = area.areaName + " - " + getAreaAssignment(area) + " - " + count + " TASKS";
+      select.appendChild(option);
     });
-
-    if (box.innerHTML === "") {
-      const empty = document.createElement("h3");
-      empty.innerText = isWeeklyCategory(category) ? "No areas found for " + reassignWorkDayName + "." : "No areas found.";
-      box.appendChild(empty);
-    }
 
     hideLoading();
   }
 
   function selectReassignmentArea(areaId) {
-    selectedReassignmentAreaId = areaId;
-
-    Array.from(document.querySelectorAll("#reassignmentAreaList button")).forEach(function(button) {
-      button.classList.toggle("selected-reassign-area", button.dataset.areaId === areaId);
-    });
+    selectedReassignmentAreaId = areaId || "";
   }
 
   async function saveSelectedReassignmentArea() {
