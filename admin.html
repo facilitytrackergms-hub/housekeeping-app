@@ -7354,23 +7354,21 @@
   async function openMaintenanceInspectionReport() {
     showLoading();
     try {
-      if (allAreas.length === 0) {
-        await loadAllAdminData();
-      }
-
-      await loadMaintenanceInspectionRecords();
-
       const datePicker = document.getElementById("maintenanceReportDatePicker");
       const typeSelect = document.getElementById("maintenanceReportTypeSelect");
       const searchInput = document.getElementById("maintenanceReportSearchInput");
 
       if (datePicker && !datePicker.value) datePicker.value = currentWorkDateISO || getTodayISO();
       if (typeSelect && !typeSelect.value) typeSelect.value = "All";
-      if (searchInput) searchInput.focus();
 
-      drawMaintenanceInspectionReport();
       updateAssignmentTitles();
       showAdminView("adminMaintenanceReportView");
+      await loadMaintenanceInspectionRecords();
+      drawMaintenanceInspectionReport();
+      if (searchInput) searchInput.focus();
+    } catch (error) {
+      console.error("Inspection report failed", error);
+      showAppMessage("Could not open inspection report. Try again.");
     } finally {
       hideLoading();
     }
@@ -7466,6 +7464,9 @@
     try {
       await loadMaintenanceInspectionRecords();
       drawMaintenanceInspectionReport();
+    } catch (error) {
+      console.error("Inspection report refresh failed", error);
+      showAppMessage("Could not load inspection records.");
     } finally {
       hideLoading();
     }
