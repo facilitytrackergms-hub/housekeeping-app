@@ -1108,7 +1108,7 @@
 
     <div id="adminCategoryButtons" class="rooms-grid"></div>
 
-    <div class="app-version-label">Updated: 2026-05-17 6:50 PM</div>
+    <div class="app-version-label">Updated: 2026-05-17 7:05 PM</div>
 
   </div>
 
@@ -1237,7 +1237,7 @@
 
     <div class="button-row">
       <button class="red" id="deleteAreaButton" onclick="deleteAdminArea()">DELETE AREA</button>
-      <button class="back" onclick="backToAdminAreas()">BACK</button>
+      <button class="back" id="adminEditBackButton" onclick="backToAdminAreas()">BACK</button>
     </div>
 
     <p id="adminMessage"></p>
@@ -3978,12 +3978,25 @@ async function startAdmin() {
     const assignmentInput = document.getElementById("adminEditAssignmentInput");
     const saveButton = document.getElementById("adminSaveAreaButton");
     const deleteButton = document.getElementById("deleteAreaButton");
+    const backButton = document.getElementById("adminEditBackButton");
+    const saveRow = saveButton ? saveButton.parentElement : null;
+    const deleteRow = deleteButton ? deleteButton.parentElement : null;
 
     if (assignmentLabel) assignmentLabel.classList.toggle("hidden", isNewDehumidifier);
     if (assignmentInput) assignmentInput.classList.toggle("hidden", isNewDehumidifier);
 
     if (saveButton) saveButton.innerText = isNewDehumidifier ? "SAVE" : "SAVE AREA";
     if (deleteButton) deleteButton.classList.toggle("hidden", isNewDehumidifier);
+
+    if (isNewDehumidifier) {
+      if (saveRow && backButton && backButton.parentElement !== saveRow) {
+        saveRow.appendChild(backButton);
+      }
+    } else {
+      if (deleteRow && backButton && backButton.parentElement !== deleteRow) {
+        deleteRow.appendChild(backButton);
+      }
+    }
   }
 
   /* =========================
@@ -4214,19 +4227,37 @@ async function startAdmin() {
   async function ensureCurrentAreaSaved() {
     adminAreaSaveRedirectedToExisting = false;
     const areaName = document.getElementById("adminEditAreaInput").value.trim();
-    const assignment = document.getElementById("adminEditAssignmentInput").value.trim();
+    let assignment = document.getElementById("adminEditAssignmentInput").value.trim();
     const category = document.getElementById("adminEditCategoryInput").value.trim();
     const scheduleDay = isWeeklyCategory(category)
       ? document.getElementById("adminAreaScheduleInput").value.trim()
       : "daily";
 
-    if (!areaName || !assignment || !category) {
-      alert("Fill area and assignment.");
+    if (category === "Dehumidifier" && areaName && !assignment) {
+      const targetArea = findTargetRoomForDehumidifier(areaName);
+      if (targetArea) {
+        assignment = getAreaAssignment(targetArea);
+        document.getElementById("adminEditAssignmentInput").value = assignment;
+      }
+    }
+
+    if (!areaName) {
+      await showAppConfirmMessage("Fill room number.");
+      return false;
+    }
+
+    if (!category) {
+      await showAppConfirmMessage("Missing category.");
+      return false;
+    }
+
+    if (!assignment) {
+      await showAppConfirmMessage("No schedule found for this room.");
       return false;
     }
 
     if (isWeeklyCategory(category) && !scheduleDay) {
-      alert("Select schedule day.");
+      await showAppConfirmMessage("Select schedule day.");
       return false;
     }
 
@@ -4328,7 +4359,7 @@ async function startAdmin() {
     openAdminEditArea(selectedAreaDocId);
     hideLoading();
 
-    if (wasNewArea && !adminAreaSaveRedirectedToExisting) {
+    if (wasNewArea && selectedCategory !== "Dehumidifier" && !adminAreaSaveRedirectedToExisting) {
       const addTasksNow = confirm("Area saved. Add tasks now?");
       if (addTasksNow) {
         openAdminAreaTasks();
