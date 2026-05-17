@@ -988,11 +988,11 @@
       if (task.category === "Weekly Room" && hasRoomSetting && roomIsDaily) {
         const clonedTask = {
           ...task,
-          areaId: "daily_" + task.roomKey,
           category: "Daily Room",
           categoryKey: "daily_room"
         };
 
+        addUniqueTask(adjustedTasks, used, task);
         addUniqueTask(adjustedTasks, used, clonedTask);
         return;
       }
