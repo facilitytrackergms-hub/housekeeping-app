@@ -529,14 +529,29 @@
 
 
     .maintenance-selected-card {
-      border: 1px solid #ccc;
-      border-radius: 14px;
-      padding: 10px;
-      margin: 8px 0;
-      background: #fafafa;
+      border-radius: 16px;
+      padding: 13px 10px;
+      margin: 8px auto 8px;
+      background: #1976d2;
+      color: white;
       text-align: center;
-      font-size: 15px;
       font-weight: 900;
+      max-width: 260px;
+      box-shadow: 0 3px 10px rgba(0,0,0,0.18);
+    }
+
+    .maintenance-selected-room-number {
+      font-size: 30px;
+      line-height: 1;
+    }
+
+    .maintenance-selected-room-label {
+      font-size: 13px;
+      margin-top: 4px;
+    }
+
+    .maintenance-pass-fail-row {
+      margin: 8px 0 10px;
     }
 
     .inspection-reason-grid {
@@ -884,7 +899,7 @@
 
     <div id="adminCategoryButtons" class="rooms-grid"></div>
 
-    <div class="app-version-label">Updated: 2026-05-17 11:56 AM</div>
+    <div class="app-version-label">Updated: 2026-05-17 12:05 PM</div>
 
   </div>
 
@@ -1320,6 +1335,10 @@
     >
 
     <div id="maintenanceInspectionSelectedArea" class="maintenance-selected-card hidden"></div>
+    <div id="maintenanceInspectionActionRow" class="button-row maintenance-pass-fail-row hidden">
+      <button class="green" onclick="saveMaintenanceInspectionResult('Pass')">PASS</button>
+      <button class="red" onclick="saveMaintenanceInspectionResult('Fail')">FAIL</button>
+    </div>
     <div id="maintenanceInspectionAreaList" class="rooms-grid"></div>
 
     <label>Thing Being Inspected</label>
@@ -1338,11 +1357,6 @@
       <option value="">Select fail reason</option>
     </select>
     <div id="maintenanceInspectionReasonButtons" class="inspection-reason-grid"></div>
-
-    <div class="button-row">
-      <button class="green" onclick="saveMaintenanceInspectionResult('Pass')">PASS</button>
-      <button class="red" onclick="saveMaintenanceInspectionResult('Fail')">FAIL</button>
-    </div>
 
     <p id="maintenanceInspectionMessage"></p>
 
@@ -6168,35 +6182,21 @@
       return;
     }
 
-    const results = allAreas
-      .filter(function(area) {
-        const combined = [
-          area.areaName,
-          area.category,
-          area.schedule,
-          area.scheduleDay,
-          area.floor
-        ].join(" ").toLowerCase();
+    const groupedResults = getMaintenanceInspectionGroupedAreas(searchText).slice(0, 8);
 
-        return combined.includes(searchText) || getRoomKey(area.areaName) === getRoomKey(searchText);
-      })
-      .sort(function(a, b) {
-        return String(a.areaName || "").localeCompare(String(b.areaName || ""), undefined, { numeric: true });
-      })
-      .slice(0, 12);
-
-    if (results.length === 0) {
+    if (groupedResults.length === 0) {
       const none = document.createElement("h3");
       none.innerText = "No area found.";
       box.appendChild(none);
       return;
     }
 
-    results.forEach(function(area) {
+    groupedResults.forEach(function(group) {
+      const area = group.primaryArea;
       const btn = document.createElement("button");
       btn.innerHTML =
-        '<div class="room-number">' + escapeHtml(area.areaName || "Area") + '</div>' +
-        '<div class="room-counter">' + escapeHtml((area.category || "") + " - " + (getAreaAssignment(area) || "")) + '</div>';
+        '<div class="room-number">' + escapeHtml(group.label || "Area") + '</div>' +
+        '<div class="room-counter">' + escapeHtml(group.count > 1 ? group.count + " records found" : ((area.category || "") + " - " + (getAreaAssignment(area) || ""))) + '</div>';
 
       btn.onclick = function() {
         selectMaintenanceInspectionArea(area.id);
@@ -6206,34 +6206,94 @@
     });
   }
 
+  function getMaintenanceInspectionGroupedAreas(searchText) {
+    const exactRoomKey = getRoomKey(searchText);
+    const groups = {};
+
+    allAreas.forEach(function(area) {
+      const areaRoomKey = getRoomKey(area.areaName);
+      const combined = [
+        area.areaName,
+        area.category,
+        area.schedule,
+        area.scheduleDay,
+        area.floor
+      ].join(" ").toLowerCase();
+
+      if (!combined.includes(searchText) && areaRoomKey !== exactRoomKey) return;
+
+      const groupKey = areaRoomKey || String(area.areaName || "").trim().toLowerCase();
+      if (!groupKey) return;
+
+      if (!groups[groupKey]) {
+        groups[groupKey] = [];
+      }
+
+      groups[groupKey].push(area);
+    });
+
+    return Object.keys(groups).map(function(groupKey) {
+      const areas = groups[groupKey].sort(sortMaintenanceInspectionAreaChoice);
+      const primaryArea = areas[0];
+
+      return {
+        groupKey: groupKey,
+        label: primaryArea.areaName || groupKey,
+        primaryArea: primaryArea,
+        count: areas.length
+      };
+    }).sort(function(a, b) {
+      return String(a.label || "").localeCompare(String(b.label || ""), undefined, { numeric: true });
+    });
+  }
+
+  function sortMaintenanceInspectionAreaChoice(a, b) {
+    const order = {
+      "Daily Room": 1,
+      "Weekly Room": 2,
+      "Common Area": 3,
+      "Dehumidifier": 4,
+      "Daily Laundry": 5,
+      "Weekly Laundry": 6
+    };
+
+    const aOrder = order[a.category] || 99;
+    const bOrder = order[b.category] || 99;
+    if (aOrder !== bOrder) return aOrder - bOrder;
+
+    return String(getAreaAssignment(a) || "").localeCompare(String(getAreaAssignment(b) || ""));
+  }
+
   function selectMaintenanceInspectionArea(areaId) {
     selectedMaintenanceInspectionArea = allAreas.find(function(area) {
       return area.id === areaId;
     }) || null;
 
     const selectedBox = document.getElementById("maintenanceInspectionSelectedArea");
+    const actionRow = document.getElementById("maintenanceInspectionActionRow");
     const listBox = document.getElementById("maintenanceInspectionAreaList");
 
     if (selectedMaintenanceInspectionArea && selectedBox) {
       selectedBox.classList.remove("hidden");
-      selectedBox.innerText =
-        "Selected: " +
-        (selectedMaintenanceInspectionArea.areaName || "Area") +
-        " - " +
-        (selectedMaintenanceInspectionArea.category || "") +
-        " - " +
-        (getAreaAssignment(selectedMaintenanceInspectionArea) || "");
+      selectedBox.innerHTML =
+        '<div class="maintenance-selected-room-number">' + escapeHtml(selectedMaintenanceInspectionArea.areaName || "Area") + '</div>' +
+        '<div class="maintenance-selected-room-label">' + escapeHtml((selectedMaintenanceInspectionArea.category || "") + " - " + (getAreaAssignment(selectedMaintenanceInspectionArea) || "")) + '</div>';
     }
 
+    if (actionRow) actionRow.classList.remove("hidden");
     if (listBox) listBox.innerHTML = "";
   }
 
   function clearMaintenanceInspectionSelectedArea() {
     const selectedBox = document.getElementById("maintenanceInspectionSelectedArea");
+    const actionRow = document.getElementById("maintenanceInspectionActionRow");
+
     if (selectedBox) {
       selectedBox.innerText = "";
       selectedBox.classList.add("hidden");
     }
+
+    if (actionRow) actionRow.classList.add("hidden");
   }
 
   function getSelectedMaintenanceInspectionItem() {
@@ -6325,15 +6385,11 @@
 
     const input = document.getElementById("maintenanceInspectionSearchInput");
     const searchText = String(input ? input.value : "").trim();
-    const searchRoomKey = getRoomKey(searchText);
 
     if (!searchText) return null;
 
-    return allAreas.find(function(area) {
-      return getRoomKey(area.areaName) === searchRoomKey;
-    }) || allAreas.find(function(area) {
-      return String(area.areaName || "").trim().toLowerCase() === searchText.toLowerCase();
-    }) || null;
+    const groupedResults = getMaintenanceInspectionGroupedAreas(searchText.toLowerCase());
+    return groupedResults.length > 0 ? groupedResults[0].primaryArea : null;
   }
 
   async function saveMaintenanceInspectionResult(resultValue) {
