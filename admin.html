@@ -1046,33 +1046,33 @@
 
     <div class="admin-dashboard-title">Admin Dashboard</div>
 
-    <div class="admin-dashboard-subtitle">Create report</div>
-    <div class="admin-report-button-row">
+    <div id="adminReportSectionTitle" class="admin-dashboard-subtitle">Create report</div>
+    <div id="adminReportSection" class="admin-report-button-row">
       <button type="button" onclick="openReportChooser()">Room / Area Report</button>
     </div>
 
-    <div class="admin-dashboard-subtitle">Change schedule mode</div>
-    <div class="admin-mode-toggle-row">
+    <div id="adminModeSectionTitle" class="admin-dashboard-subtitle">Change schedule mode</div>
+    <div id="adminModeSection" class="admin-mode-toggle-row">
       <button id="modeTwoButton" type="button" onclick="setHousekeepingMode('two')">Mode 2</button>
       <button id="modeThreeButton" type="button" onclick="setHousekeepingMode('three')">Mode 3</button>
     </div>
 
-    <div class="admin-dashboard-subtitle">Use to add employee info</div>
-    <div class="admin-employee-shortcut">
+    <div id="adminEmployeeSectionTitle" class="admin-dashboard-subtitle">Use to add employee info</div>
+    <div id="adminEmployeeSection" class="admin-employee-shortcut">
       <button type="button" onclick="openEmployees()">Edit Employees Info</button>
     </div>
 
     <div class="admin-dashboard-subtitle">Admin tools</div>
     <div id="adminTopButtons" class="rooms-grid"></div>
 
-    <div class="admin-dashboard-subtitle">Schedule editor</div>
+    <div id="adminScheduleSectionTitle" class="admin-dashboard-subtitle">Schedule editor</div>
     <select id="adminAssignmentSelect" onchange="changeAdminAssignment()">
       <option value="">Choose schedule to edit</option>
     </select>
 
     <div id="adminCategoryButtons" class="rooms-grid"></div>
 
-    <div class="app-version-label">Updated: 2026-05-17 5:15 PM</div>
+    <div class="app-version-label">Updated: 2026-05-17 5:30 PM</div>
 
   </div>
 
@@ -1575,10 +1575,10 @@
     <div class="assignment-title" id="adminMaintenanceDashboardAssignmentTitle"></div>
     <h2>Maintenance Inspection</h2>
     <div id="maintenanceDashboardSummary" class="maintenance-summary-grid"></div>
-    <button class="green" onclick="openMaintenanceInspection()">NEW INSPECTION</button>
-    <button class="yellow" onclick="openMaintenanceWorkBoard()">WORK BOARD</button>
-    <button class="yellow" onclick="openMaintenanceInspectionReport()">INSPECTION REPORT</button>
-    <button class="yellow" onclick="openMaintenanceMaterialsNeeded()">MATERIALS</button>
+    <button id="maintenanceNewInspectionButton" class="green" onclick="openMaintenanceInspection()">NEW INSPECTION</button>
+    <button id="maintenanceWorkBoardButton" class="yellow" onclick="openMaintenanceWorkBoard()">WORK BOARD</button>
+    <button id="maintenanceInspectionReportButton" class="yellow" onclick="openMaintenanceInspectionReport()">INSPECTION REPORT</button>
+    <button id="maintenanceMaterialsButton" class="yellow" onclick="openMaintenanceMaterialsNeeded()">MATERIALS</button>
     <button class="back" onclick="backToAdminCategories()">BACK</button>
   </div>
 
@@ -2031,6 +2031,72 @@
   }
 
   /* =========================
+     13B - ADMIN PERMISSIONS
+  ========================== */
+
+  function hasPermission(permissionName) {
+    if (!sessionData) return false;
+
+    const permissions = sessionData.permissions || {};
+    const permissionKeys = Object.keys(permissions);
+
+    if (permissionKeys.length === 0 && String(sessionData.role || "").toLowerCase() === "admin") {
+      return true;
+    }
+
+    const value = permissions[permissionName];
+
+    if (value === true) return true;
+    if (value === false) return false;
+
+    const text = String(value || "").trim().toLowerCase();
+
+    return text === "yes" || text === "true" || text === "1";
+  }
+
+  function requirePermission(permissionName) {
+    if (hasPermission(permissionName)) return true;
+
+    showAppMessage("Access not allowed.");
+    return false;
+  }
+
+  function setPermissionElementVisibility(id, canShow) {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.classList.toggle("hidden", !canShow);
+  }
+
+  function canOpenAdminDashboardItem(item) {
+    if (item === "Logout") return true;
+    if (item === "Daily Status") return hasPermission("dailyStatus");
+    if (item === "Issues") return hasPermission("issues");
+    if (item === "Issue Reasons") return hasPermission("editIssueReasons");
+    if (item === "Maintenance Inspection") return hasPermission("maintenanceInspection") || hasPermission("maintenanceWorkBoard") || hasPermission("materialsNeeded");
+    if (["Dehumidifier", "Common Area", "Weekly Room", "Daily Room", "Weekly Laundry", "Daily Laundry"].includes(item)) return hasPermission("editSchedules");
+    return true;
+  }
+
+  function applyAdminPermissionVisibility() {
+    setPermissionElementVisibility("adminReportSectionTitle", hasPermission("reports"));
+    setPermissionElementVisibility("adminReportSection", hasPermission("reports"));
+    setPermissionElementVisibility("adminModeSectionTitle", hasPermission("changeScheduleMode"));
+    setPermissionElementVisibility("adminModeSection", hasPermission("changeScheduleMode"));
+    setPermissionElementVisibility("adminEmployeeSectionTitle", hasPermission("editEmployees"));
+    setPermissionElementVisibility("adminEmployeeSection", hasPermission("editEmployees"));
+    setPermissionElementVisibility("adminScheduleSectionTitle", hasPermission("editSchedules"));
+    setPermissionElementVisibility("adminAssignmentSelect", hasPermission("editSchedules"));
+    setPermissionElementVisibility("adminCategoryButtons", hasPermission("editSchedules"));
+  }
+
+  function applyMaintenanceDashboardPermissions() {
+    setPermissionElementVisibility("maintenanceNewInspectionButton", hasPermission("maintenanceInspection"));
+    setPermissionElementVisibility("maintenanceInspectionReportButton", hasPermission("maintenanceInspection"));
+    setPermissionElementVisibility("maintenanceWorkBoardButton", hasPermission("maintenanceWorkBoard"));
+    setPermissionElementVisibility("maintenanceMaterialsButton", hasPermission("materialsNeeded"));
+  }
+
+  /* =========================
      14 - GLOBAL ADMIN VARIABLES
   ========================== */
 
@@ -2239,6 +2305,7 @@
   }
 
   async function setHousekeepingMode(targetMode) {
+    if (!requirePermission("changeScheduleMode")) return;
     if (targetMode !== "two" && targetMode !== "three") return;
     if (housekeepingMode === targetMode) {
       updateModeToggleButtons();
@@ -2294,6 +2361,15 @@
 
   async function startAdmin() {
     await loadAdminModeOnly();
+
+    if (!hasPermission("adminDashboard")) {
+      showAppMessage("Access not allowed.");
+      setTimeout(function() {
+        window.location.href = "index.html";
+      }, 1200);
+      return;
+    }
+
     currentAssignment = "";
     syncModeControls();
     await loadAdminTasks();
@@ -2303,6 +2379,7 @@
     }
 
     drawAdminCategories();
+    applyAdminPermissionVisibility();
     showAdminView("adminView2");
   }
 
@@ -2769,6 +2846,7 @@
   ========================== */
 
   async function changeAdminAssignment() {
+    if (!requirePermission("editSchedules")) return;
     currentAssignment = document.getElementById("adminAssignmentSelect").value;
     selectedCategory = "";
     await loadAdminTasks();
@@ -3016,12 +3094,18 @@
     }
 
     topButtons.forEach(function(item) {
-      appendAdminDashboardButton(topBox, item);
+      if (canOpenAdminDashboardItem(item)) {
+        appendAdminDashboardButton(topBox, item);
+      }
     });
 
     scheduleButtons.forEach(function(item) {
-      appendAdminDashboardButton(scheduleBox, item);
+      if (canOpenAdminDashboardItem(item)) {
+        appendAdminDashboardButton(scheduleBox, item);
+      }
     });
+
+    applyAdminPermissionVisibility();
   }
 
   function appendAdminDashboardButton(box, item) {
@@ -3106,6 +3190,11 @@
   }
 
   async function openAdminCategory(item) {
+    if (!canOpenAdminDashboardItem(item)) {
+      showAppMessage("Access not allowed.");
+      return;
+    }
+
     if (["Common Area", "Weekly Room", "Daily Room", "Weekly Laundry", "Daily Laundry"].includes(item) && !currentAssignment) {
       showAppMessage("Choose schedule first.");
       return;
@@ -4339,6 +4428,7 @@
 
 
   function openReportChooser() {
+    if (!requirePermission("reports")) return;
     pendingReportType = "daily";
     openDailyReportHome(currentWorkDateISO || getTodayISO());
   }
@@ -5662,6 +5752,7 @@
   ========================== */
 
   async function openEmployees() {
+    if (!requirePermission("editEmployees")) return;
     showLoading();
 
     const snap = await getDocs(collection(db, "employees"));
@@ -5700,6 +5791,7 @@
   ========================== */
 
   async function openIssues() {
+    if (!requirePermission("issues")) return;
     document.getElementById("issueDatePicker").value = currentWorkDateISO;
     document.getElementById("issueStatusFilter").value = "Open";
     document.getElementById("issueSearchInput").value = "";
@@ -6107,6 +6199,7 @@
   ========================== */
 
   async function openDailyStatus() {
+    if (!requirePermission("dailyStatus")) return;
     document.getElementById("dailyStatusDatePicker").value = currentWorkDateISO;
     document.getElementById("dailyStatusCategoryFilter").value = "All";
     document.getElementById("dailyStatusResultFilter").value = "All";
@@ -6298,6 +6391,7 @@
   ========================== */
 
   async function openIssueReasons() {
+    if (!requirePermission("editIssueReasons")) return;
     showLoading();
 
     const snap = await getDocs(collection(db, "issue_reasons"));
@@ -6666,6 +6760,7 @@
   }
 
   async function openMaintenanceDashboard() {
+    if (!requirePermission("maintenanceInspection") && !hasPermission("maintenanceWorkBoard") && !hasPermission("materialsNeeded")) return;
     showLoading();
     try {
       if (allAreas.length === 0) {
@@ -6674,6 +6769,7 @@
 
       await loadMaintenanceInspectionRecords();
       drawMaintenanceDashboardSummary();
+      applyMaintenanceDashboardPermissions();
       updateAssignmentTitles();
       showAdminView("adminMaintenanceDashboardView");
     } finally {
@@ -6747,6 +6843,7 @@
   }
 
   async function openMaintenanceWorkBoard() {
+    if (!requirePermission("maintenanceWorkBoard")) return;
     showLoading();
     try {
       await loadMaintenanceInspectionRecords();
@@ -6956,6 +7053,7 @@
   }
 
   async function openMaintenanceInspection() {
+    if (!requirePermission("maintenanceInspection")) return;
     showLoading();
 
     if (allAreas.length === 0) {
@@ -8044,6 +8142,7 @@
   }
 
   async function openMaintenanceInspectionReport() {
+    if (!requirePermission("maintenanceInspection")) return;
     showLoading();
     try {
       const datePicker = document.getElementById("maintenanceReportDatePicker");
@@ -8302,6 +8401,7 @@
   }
 
   async function openMaintenanceMaterialsNeeded() {
+    if (!requirePermission("materialsNeeded")) return;
     showLoading();
     try {
       await loadMaintenanceInspectionRecords();
