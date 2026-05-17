@@ -2525,29 +2525,46 @@
 
   startAdmin();
 
-  async function startAdmin() {
-    await loadAdminModeOnly();
+async function startAdmin() {
+  await loadAdminModeOnly();
 
-    if (!hasPermission("adminDashboard")) {
-      showAppMessage("Access not allowed.");
-      setTimeout(function() {
-        window.location.href = "index.html";
-      }, 1200);
-      return;
-    }
+  const hash = String(window.location.hash || "").toLowerCase();
+  const startView = sessionStorage.getItem("adminStartView") || "";
+  const openCategory = sessionStorage.getItem("adminOpenCategory") || "";
 
-    currentAssignment = "";
-    syncModeControls();
-    await loadAdminTasks();
+  const isDehumidifierDeepLink =
+    hash === "#dehumidifier" ||
+    startView === "Dehumidifier" ||
+    openCategory === "Dehumidifier";
 
-    if (await openAdminDeepLinkIfNeeded()) {
-      return;
-    }
-
-    drawAdminCategories();
-    applyAdminPermissionVisibility();
-    showAdminView("adminView2");
+  if (!hasPermission("adminDashboard") && !isDehumidifierDeepLink) {
+    showAppMessage("Access not allowed.");
+    setTimeout(function() {
+      window.location.href = "index.html";
+    }, 1200);
+    return;
   }
+
+  if (isDehumidifierDeepLink && !hasPermission("editRoomSettings") && !hasPermission("editSchedules")) {
+    showAppMessage("Access not allowed.");
+    setTimeout(function() {
+      window.location.href = "index.html";
+    }, 1200);
+    return;
+  }
+
+  currentAssignment = "";
+  syncModeControls();
+  await loadAdminTasks();
+
+  if (await openAdminDeepLinkIfNeeded()) {
+    return;
+  }
+
+  drawAdminCategories();
+  applyAdminPermissionVisibility();
+  showAdminView("adminView2");
+}
 
   async function loadAdminModeOnly() {
     showLoading();
