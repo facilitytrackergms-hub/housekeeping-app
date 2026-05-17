@@ -837,7 +837,7 @@
 
     <div id="adminCategoryButtons" class="rooms-grid"></div>
 
-    <div class="app-version-label">Updated: 2026-05-17 9:51 AM</div>
+    <div class="app-version-label">Updated: 2026-05-17 10:05 AM</div>
 
   </div>
 
@@ -4537,26 +4537,27 @@
   }
 
   function buildDailyScheduleBlock(title, record, type, selectedDate, scheduleType) {
-    const statusLine = record ? getDailyReportStatusLine(record) : "No Save";
-    const employeeLine = record ? getDailyReportEmployeeLine(record) : "No record found";
-    const issueHtml = buildDailyIssuesLine(type, selectedDate, scheduleType);
+    if (!record) {
+      return '<div class="daily-report-block-title">' + escapeHtml(title) + '</div>' +
+        '<div class="daily-report-line">No save found.</div>';
+    }
 
     return '<div class="daily-report-block-title">' + escapeHtml(title) + '</div>' +
-      '<div class="daily-report-line">' + escapeHtml(statusLine) + '</div>' +
-      '<div class="daily-report-line">' + escapeHtml(employeeLine) + '</div>' +
-      issueHtml;
+      '<div class="daily-report-line">Status: ' + escapeHtml(getDailyReportStatusLine(record)) + '</div>' +
+      '<div class="daily-report-line">Saved: ' + escapeHtml(formatDailyReportDateTime(record)) + '</div>' +
+      '<div class="daily-report-line">Completed by: ' + escapeHtml(record.employeeName || "Unknown") + '</div>' +
+      buildDailyIncompleteTasksHtml(record) +
+      buildDailyIssuesLine(type, selectedDate, scheduleType);
   }
 
   function getDailyReportStatusLine(record) {
     const completed = Number(record.completedCount || 0);
     const incomplete = Number(record.incompleteCount || 0);
     const total = Number(record.totalCount || completed + incomplete || 0);
-    const statusText = incomplete > 0 ? "Not Done / Issue" : "Done";
-    const doneBySchedule = isDailyReportDoneBySchedule(record) ? "By schedule" : "Outside schedule";
-    const doneInTime = isDailyReportDoneInTime(record) ? "On time" : "Late";
-    const countText = total > 0 ? " · " + completed + "/" + total : "";
+    const statusText = incomplete > 0 ? "Incomplete" : "Complete";
+    const countText = total > 0 ? " - " + completed + " of " + total + " done" : "";
 
-    return statusText + " · " + doneInTime + " · " + doneBySchedule + countText;
+    return statusText + countText;
   }
 
   function getDailyReportEmployeeLine(record) {
@@ -4611,23 +4612,73 @@
     return isDailyReportDoneBySchedule(record);
   }
 
-  function buildDailyIssuesLine(type, selectedDate, scheduleType) {
-    const issues = getDailyIssuesForBlock(type, selectedDate, scheduleType);
-    const label = getDailyIssueLabel(type);
+  function buildDailyIncompleteTasksHtml(record) {
+    const tasks = getDailyIncompleteTasks(record);
 
-    if (issues.length === 0) {
-      return '<div class="daily-report-line">' + escapeHtml(label + ': None') + '</div>';
+    if (tasks.length === 0) {
+      return '<div class="daily-report-line">Incomplete Tasks / Issues: None</div>';
     }
 
-    const firstIssue = issues[0];
-    const text = [
-      label + ': ' + (firstIssue.taskName || "Issue"),
-      firstIssue.issueReason || "",
-      firstIssue.issueNote || ""
-    ].filter(function(item) { return String(item || "").trim() !== ""; }).join(" - ");
+    let html = '<div class="daily-report-line">Incomplete Tasks / Issues</div>';
 
-    return '<div class="daily-report-line">' + escapeHtml(text) + '</div>' +
-      '<button class="daily-report-issue-button" onclick="openIssuesForRoomCategory(\'' + escapeHtml(type) + '\')">OPEN ISSUES</button>';
+    tasks.forEach(function(task) {
+      html += '<div class="daily-report-line">- ' + escapeHtml(task.taskName + ': ' + task.reason) + '</div>';
+    });
+
+    return html;
+  }
+
+  function getDailyIncompleteTasks(record) {
+    const output = [];
+    const seen = {};
+
+    collectDailyIncompleteTasks(record.taskStatusByName || {}, output, seen);
+    collectDailyIncompleteTasks(record.tasks || {}, output, seen);
+
+    return output;
+  }
+
+  function collectDailyIncompleteTasks(taskMap, output, seen) {
+    Object.keys(taskMap || {}).forEach(function(taskKey) {
+      const task = taskMap[taskKey] || {};
+      const status = String(task.status || "").trim().toLowerCase();
+
+      if (status !== "incomplete") return;
+
+      const taskName = String(task.taskName || task.name || taskKey || "Task").trim();
+      const reason = String(task.reason || task.issueReason || task.note || task.notes || "Incomplete").trim();
+      const uniqueKey = makeId(taskName);
+
+      if (seen[uniqueKey]) return;
+
+      seen[uniqueKey] = true;
+      output.push({
+        taskName: taskName,
+        reason: reason || "Incomplete"
+      });
+    });
+  }
+
+  function buildDailyIssuesLine(type, selectedDate, scheduleType) {
+    const issues = getDailyIssuesForBlock(type, selectedDate, scheduleType);
+
+    if (issues.length === 0) {
+      return "";
+    }
+
+    let html = '<div class="daily-report-line">Open Issue Logs</div>';
+
+    issues.forEach(function(issue) {
+      const text = [
+        issue.taskName || "Issue",
+        issue.issueReason || "",
+        issue.issueNote || ""
+      ].filter(function(item) { return String(item || "").trim() !== ""; }).join(" - ");
+
+      html += '<div class="daily-report-line">- ' + escapeHtml(text) + '</div>';
+    });
+
+    return html + '<button class="daily-report-issue-button" onclick="openIssuesForRoomCategory(\'' + escapeHtml(type) + '\')">OPEN ISSUES</button>';
   }
 
   function getDailyIssuesForBlock(type, selectedDate, scheduleType) {
@@ -5003,7 +5054,7 @@
     const incomplete = Number(record.incompleteCount || 0);
     const total = Number(record.totalCount || completed + incomplete || 0);
     const statusLabel = incomplete > 0 ? "Not Done / Issue" : "Done";
-    const countText = total > 0 ? " - " + completed + "/" + total : "";
+    const countText = total > 0 ? " - " + completed + " of " + total + " done" : "";
     const employeeText = record.employeeName ? " - " + record.employeeName : "";
     const taskText = getRecordTaskLabel(record);
 
