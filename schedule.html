@@ -2341,11 +2341,15 @@ async function saveReasonIfNeeded(reasonText) {
     button.classList.remove("yellow");
   }
 
-  function setResidentStatusButtonState(button, isActive) {
-    button.classList.toggle("green", isActive);
-    button.classList.toggle("red", !isActive);
-    button.classList.remove("yellow", "room-setting-blue");
+ function setResidentStatusButtonState(button, isActive) {
+  button.classList.remove("green", "yellow", "red", "room-setting-blue");
+
+  if (isActive) {
+    button.classList.add("room-setting-blue");
+  } else {
+    button.classList.add("red");
   }
+}
 
   function canManageRoomSettings() {
     return isSharedRoomCategory(selectedCategory);
