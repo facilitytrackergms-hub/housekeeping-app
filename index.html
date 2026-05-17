@@ -259,6 +259,7 @@
     const role = cleanText_(emp.role || "employee").toLowerCase();
     const assignment = cleanText_(emp.assignment || "Housekeeping");
     const defaultSchedule = cleanText_(emp.defaultSchedule || "");
+    const permissions = buildPermissions_(emp);
 
     return {
       id: docId,
@@ -270,8 +271,46 @@
       pin: pinInput,
       role: role,
       assignment: assignment,
-      defaultSchedule: defaultSchedule
+      defaultSchedule: defaultSchedule,
+      permissions: permissions
     };
+  }
+
+  function buildPermissions_(emp) {
+    const permissions = emp.permissions || {};
+
+    return {
+      housekeeping: readPermission_(permissions.housekeeping, emp.canViewHousekeeping),
+      laundry: readPermission_(permissions.laundry, emp.canViewLaundry),
+      ptac: readPermission_(permissions.ptac, emp.canViewPTAC),
+      maintenanceInspection: readPermission_(permissions.maintenanceInspection, emp.canViewMaintenanceInspection),
+      maintenanceWorkBoard: readPermission_(permissions.maintenanceWorkBoard, emp.canViewMaintenanceWorkBoard),
+      materialsNeeded: readPermission_(permissions.materialsNeeded, emp.canViewMaterialsNeeded),
+      reports: readPermission_(permissions.reports, emp.canViewReports),
+      activityHistory: readPermission_(permissions.activityHistory, emp.canViewActivityHistory),
+      adminDashboard: readPermission_(permissions.adminDashboard, emp.canViewAdminDashboard),
+      editEmployees: readPermission_(permissions.editEmployees, emp.canEditEmployees),
+      editSchedules: readPermission_(permissions.editSchedules, emp.canEditSchedules),
+      editRoomSettings: readPermission_(permissions.editRoomSettings, emp.canEditRoomSettings),
+      editIssueReasons: readPermission_(permissions.editIssueReasons, emp.canEditIssueReasons),
+      dailyStatus: readPermission_(permissions.dailyStatus, emp.canViewDailyStatus),
+      issues: readPermission_(permissions.issues, emp.canViewIssues),
+      changeScheduleMode: readPermission_(permissions.changeScheduleMode, emp.canChangeScheduleMode)
+    };
+  }
+
+  function readPermission_(permissionValue, fallbackValue) {
+    if (permissionValue === true || fallbackValue === true) return true;
+
+    const permissionText = cleanText_(permissionValue).toLowerCase();
+    const fallbackText = cleanText_(fallbackValue).toLowerCase();
+
+    return permissionText === "yes" ||
+      permissionText === "true" ||
+      permissionText === "1" ||
+      fallbackText === "yes" ||
+      fallbackText === "true" ||
+      fallbackText === "1";
   }
 
   function isEmployeeActive(emp) {
