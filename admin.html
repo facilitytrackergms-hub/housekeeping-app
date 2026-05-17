@@ -837,7 +837,7 @@
 
     <div id="adminCategoryButtons" class="rooms-grid"></div>
 
-    <div class="app-version-label">Updated: 2026-05-17 10:05 AM</div>
+    <div class="app-version-label">Updated: 2026-05-17 10:11 AM</div>
 
   </div>
 
@@ -4514,11 +4514,15 @@
   }
 
   function getDailyReportRecordsForDateMode(type, scheduleType, selectedDate, allowWeekdayFallback) {
-    return currentRoomReportStatuses.filter(function(record) {
-      if (!isDailyReportRecordForSelectedDate(record, selectedDate, allowWeekdayFallback)) return false;
-      if (!isDailyReportRecordTypeMatch(record, type, scheduleType)) return false;
-      return true;
-    });
+    return currentRoomReportStatuses
+      .filter(function(record) {
+        if (!isDailyReportRecordForSelectedDate(record, selectedDate, allowWeekdayFallback)) return false;
+        if (!isDailyReportRecordTypeMatch(record, type, scheduleType)) return false;
+        return true;
+      })
+      .sort(function(a, b) {
+        return getRecordSortValue(b) - getRecordSortValue(a);
+      });
   }
 
   function isDailyReportRecordTypeMatch(record, type, scheduleType) {
@@ -4666,19 +4670,7 @@
       return "";
     }
 
-    let html = '<div class="daily-report-line">Open Issue Logs</div>';
-
-    issues.forEach(function(issue) {
-      const text = [
-        issue.taskName || "Issue",
-        issue.issueReason || "",
-        issue.issueNote || ""
-      ].filter(function(item) { return String(item || "").trim() !== ""; }).join(" - ");
-
-      html += '<div class="daily-report-line">- ' + escapeHtml(text) + '</div>';
-    });
-
-    return html + '<button class="daily-report-issue-button" onclick="openIssuesForRoomCategory(\'' + escapeHtml(type) + '\')">OPEN ISSUES</button>';
+    return '<button class="daily-report-issue-button" onclick="openIssuesForRoomCategory(\'' + escapeHtml(type) + '\')">OPEN ISSUES</button>';
   }
 
   function getDailyIssuesForBlock(type, selectedDate, scheduleType) {
@@ -4692,26 +4684,31 @@
   }
 
   function getDailyIssuesForBlockDateMode(type, selectedDate, scheduleType, allowWeekdayFallback) {
-    return currentRoomReportIssues.filter(function(issue) {
-      if (!isDailyReportRecordForSelectedDate(issue, selectedDate, allowWeekdayFallback)) return false;
+    return currentRoomReportIssues
+      .filter(function(issue) {
+        if (!isDailyReportRecordForSelectedDate(issue, selectedDate, allowWeekdayFallback)) return false;
 
-      const category = String(issue.category || "");
+        const category = String(issue.category || "");
 
-      if (type === "Laundry") {
-        if (!(category.includes("Laundry") || String(issue.schedule || "") === "Laundry")) return false;
-      } else if (type === "Housekeeping") {
-        if (!["Weekly Room", "Daily Room"].includes(category)) return false;
-      } else if (type === "Dehumidifier") {
-        if (!isDehumidifierStatus(issue)) return false;
-      }
+        if (type === "Laundry") {
+          if (!(category.includes("Laundry") || String(issue.schedule || "") === "Laundry")) return false;
+        } else if (type === "Housekeeping") {
+          if (!["Weekly Room", "Daily Room"].includes(category)) return false;
+        } else if (type === "Dehumidifier") {
+          if (!isDehumidifierStatus(issue)) return false;
+        }
 
-      if (scheduleType === "weekly") return isWeeklyCategory(category);
-      if (scheduleType === "daily") return !isWeeklyCategory(category);
-      if (scheduleType === "am") return getDehumidifierPeriod(issue) === "AM";
-      if (scheduleType === "pm") return getDehumidifierPeriod(issue) === "PM";
+        if (scheduleType === "weekly") return isWeeklyCategory(category);
+        if (scheduleType === "daily") return !isWeeklyCategory(category);
+        if (scheduleType === "am") return getDehumidifierPeriod(issue) === "AM";
+        if (scheduleType === "pm") return getDehumidifierPeriod(issue) === "PM";
 
-      return true;
-    });
+        return true;
+      })
+      .sort(function(a, b) {
+        return getRecordSortValue(b) - getRecordSortValue(a);
+      })
+      .slice(0, 1);
   }
 
   function isDailyReportRecordForSelectedDate(record, selectedDate, allowWeekdayFallback) {
