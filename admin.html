@@ -1471,6 +1471,7 @@
   let selectedAreaDocId = "";
   let selectedAreaWorkId = "";
   let selectedAreaScheduleDay = "";
+  let adminAreaSaveRedirectedToExisting = false;
   let adminAreaSearchTerm = "";
   let adminBulkTaskOpen = false;
 
@@ -3259,6 +3260,7 @@
   ========================== */
 
   async function ensureCurrentAreaSaved() {
+    adminAreaSaveRedirectedToExisting = false;
     const areaName = document.getElementById("adminEditAreaInput").value.trim();
     const assignment = document.getElementById("adminEditAssignmentInput").value.trim();
     const category = document.getElementById("adminEditCategoryInput").value.trim();
@@ -3302,6 +3304,7 @@
           ...updatedSetting
         };
 
+        adminAreaSaveRedirectedToExisting = true;
         selectedArea = weeklyBaseArea.areaName || areaName;
         currentAssignment = assignment;
         selectedCategory = "Weekly Room";
@@ -3373,7 +3376,7 @@
     openAdminEditArea(selectedAreaDocId);
     hideLoading();
 
-    if (wasNewArea) {
+    if (wasNewArea && !adminAreaSaveRedirectedToExisting) {
       const addTasksNow = confirm("Area saved. Add tasks now?");
       if (addTasksNow) {
         openAdminAreaTasks();
