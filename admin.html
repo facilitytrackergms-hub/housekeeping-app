@@ -1072,7 +1072,7 @@
 
     <div id="adminCategoryButtons" class="rooms-grid"></div>
 
-    <div class="app-version-label">Updated: 2026-05-17 5:30 PM</div>
+    <div class="app-version-label">Updated: 2026-05-17 5:55 PM</div>
 
   </div>
 
@@ -2037,13 +2037,11 @@
   function hasPermission(permissionName) {
     if (!sessionData) return false;
 
-    const permissions = sessionData.permissions || {};
-    const permissionKeys = Object.keys(permissions);
-
-    if (permissionKeys.length === 0 && String(sessionData.role || "").toLowerCase() === "admin") {
+    if (String(sessionData.role || "").toLowerCase() === "admin") {
       return true;
     }
 
+    const permissions = sessionData.permissions || {};
     const value = permissions[permissionName];
 
     if (value === true) return true;
