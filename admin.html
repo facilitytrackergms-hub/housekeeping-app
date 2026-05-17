@@ -3276,6 +3276,43 @@
       return false;
     }
 
+    if (category === "Daily Room") {
+      const roomKey = getRoomKey(areaName || "");
+      const weeklyBaseArea = roomKey
+        ? allAreas.find(function(area) {
+            return getAreaAssignment(area) === assignment &&
+              area.category === "Weekly Room" &&
+              getRoomKey(area.areaName || "") === roomKey;
+          })
+        : null;
+
+      if (weeklyBaseArea) {
+        const settingRef = doc(db, "room_settings", makeId(assignment + "_" + roomKey));
+        const updatedSetting = {
+          roomKey: roomKey,
+          roomName: weeklyBaseArea.areaName || areaName,
+          schedule: assignment,
+          isDaily: true,
+          updatedAt: serverTimestamp()
+        };
+
+        await setDoc(settingRef, updatedSetting, { merge: true });
+        roomSettingsData[roomKey] = {
+          ...(roomSettingsData[roomKey] || {}),
+          ...updatedSetting
+        };
+
+        selectedArea = weeklyBaseArea.areaName || areaName;
+        currentAssignment = assignment;
+        selectedCategory = "Weekly Room";
+        selectedAreaDocId = weeklyBaseArea.id;
+        selectedAreaWorkId = weeklyBaseArea.workId;
+        selectedAreaScheduleDay = weeklyBaseArea.scheduleDay || weeklyBaseArea.day || "";
+        document.getElementById("adminAssignmentSelect").value = assignment;
+        return true;
+      }
+    }
+
     const newWorkId = buildWorkId(areaName, category, scheduleDay, assignment);
     const oldWorkId = selectedAreaWorkId;
 
