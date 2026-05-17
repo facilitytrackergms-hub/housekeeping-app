@@ -968,7 +968,7 @@
 
     <div id="adminCategoryButtons" class="rooms-grid"></div>
 
-    <div class="app-version-label">Updated: 2026-05-17 3:40 PM</div>
+    <div class="app-version-label">Updated: 2026-05-17 3:43 PM</div>
 
   </div>
 
@@ -5461,6 +5461,10 @@
     if (!Number.isNaN(parsed)) return parsed;
 
     return 0;
+  }
+
+  function getRecordSortTime(record) {
+    return getRecordSortValue(record);
   }
 
 
