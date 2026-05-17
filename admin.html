@@ -512,7 +512,7 @@
 
     .admin-room-search-box {
       display: grid;
-      grid-template-columns: 1fr auto;
+      grid-template-columns: 1fr;
       gap: 7px;
       margin: 0 0 8px;
       align-items: center;
@@ -580,7 +580,7 @@
 
     .admin-report-button-row {
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: 1fr;
       gap: 7px;
       margin: 0 0 8px;
     }
@@ -658,6 +658,17 @@
       background: #f9a825;
       color: #111;
     }
+
+    .report-flow-date-box {
+      margin: 6px 0 10px;
+    }
+
+    .report-flow-date-box input {
+      margin: 0;
+      text-align: center;
+      font-weight: 900;
+    }
+
 
 
     /* =========================
@@ -781,8 +792,7 @@
     <div class="admin-dashboard-title">Admin Dashboard</div>
 
     <div class="admin-report-button-row">
-      <button type="button" onclick="openOperationalReportHome()">Operational Report</button>
-      <button type="button" onclick="openDailyReportHome()">Daily Report</button>
+      <button type="button" onclick="openReportChooser()">Reports</button>
     </div>
 
     <div class="admin-mode-toggle-row">
@@ -1028,17 +1038,16 @@
         inputmode="numeric"
         maxlength="3"
         pattern="[0-9]*"
-        oninput="limitRoomInput(this)"
+        oninput="handleReportRoomAutoInput(this, 'operational')"
         onkeydown="handleRoomReportSearchKey(event)"
-        placeholder="Operational report"
+        placeholder="Room / area number"
       >
-      <button type="button" onclick="openRoomReportFromReportSearch()">SEARCH</button>
     </div>
 
-    <label>Date</label>
     <input
       type="date"
       id="roomReportDatePicker"
+      class="hidden"
       onchange="changeRoomReportDate()"
     >
 
@@ -1064,17 +1073,16 @@
         inputmode="numeric"
         maxlength="3"
         pattern="[0-9]*"
-        oninput="limitRoomInput(this)"
+        oninput="handleReportRoomAutoInput(this, 'daily')"
         onkeydown="handleDailyReportSearchKey(event)"
-        placeholder="Daily report"
+        placeholder="Room / area number"
       >
-      <button type="button" onclick="openDailyReportFromSearch()">SEARCH</button>
     </div>
 
-    <label>Date</label>
     <input
       type="date"
       id="dailyReportDatePicker"
+      class="hidden"
       onchange="changeDailyReportDate()"
     >
 
@@ -1504,6 +1512,17 @@
   </div>
 </div>
 
+<div id="reportFlowBox" class="app-message-bg hidden">
+  <div class="app-message-card">
+    <h3 id="reportFlowTitle">Reports</h3>
+    <p id="reportFlowText">Choose report.</p>
+    <div id="reportFlowDateBox" class="report-flow-date-box hidden">
+      <input type="date" id="reportFlowDatePicker">
+    </div>
+    <div id="reportFlowActions" class="app-message-actions"></div>
+  </div>
+</div>
+
 
 <script type="module">
 
@@ -1604,6 +1623,7 @@
   let currentRoomReportStatuses = [];
   let currentRoomReportIssues = [];
   let currentDailyReportIssueCategory = "";
+  let pendingReportType = "";
 
   const DEFAULT_WEEKLY_ROOM_TASKS = ["Vac", "Fridge", "Bath", "Mop", "Toilet", "Sink", "Dust", "Bed", "AC Filter"];
   const DEFAULT_DAILY_ROOM_TASKS = ["Clean"];
@@ -2497,7 +2517,7 @@
     if (topBox) topBox.innerHTML = "";
     if (scheduleBox) scheduleBox.innerHTML = "";
 
-    const topButtons = ["Dehumidifier", "Daily Status", "Issues", "Issue Reasons", "Reports", "Logout"];
+    const topButtons = ["Dehumidifier", "Daily Status", "Issues", "Issue Reasons", "Logout"];
 
     let scheduleButtons = [];
 
@@ -3827,7 +3847,114 @@
      43B - ROOM REPORT
   ========================== */
 
-  function openOperationalReportHome() {
+
+  function openReportChooser() {
+    pendingReportType = "";
+    const box = document.getElementById("reportFlowBox");
+    const title = document.getElementById("reportFlowTitle");
+    const text = document.getElementById("reportFlowText");
+    const dateBox = document.getElementById("reportFlowDateBox");
+    const actions = document.getElementById("reportFlowActions");
+
+    if (title) title.innerText = "Reports";
+    if (text) text.innerText = "Choose report.";
+    if (dateBox) dateBox.classList.add("hidden");
+    if (actions) {
+      actions.className = "app-message-actions";
+      actions.innerHTML =
+        '<button type="button" onclick="selectReportType('operational')">OPERATIONAL</button>' +
+        '<button type="button" onclick="selectReportType('daily')">DAILY</button>' +
+        '<button type="button" class="back" onclick="closeReportFlowPopup()">CANCEL</button>';
+    }
+
+    if (box) box.classList.remove("hidden");
+  }
+
+  function selectReportType(type) {
+    pendingReportType = type === "daily" ? "daily" : "operational";
+    openReportDateChoice();
+  }
+
+  function openReportDateChoice() {
+    const title = document.getElementById("reportFlowTitle");
+    const text = document.getElementById("reportFlowText");
+    const dateBox = document.getElementById("reportFlowDateBox");
+    const datePicker = document.getElementById("reportFlowDatePicker");
+    const actions = document.getElementById("reportFlowActions");
+
+    if (title) title.innerText = "Choose Date";
+    if (text) text.innerText = "Use today or another day?";
+    if (dateBox) dateBox.classList.add("hidden");
+    if (datePicker) datePicker.value = getTodayISO();
+    if (actions) {
+      actions.className = "app-message-actions";
+      actions.innerHTML =
+        '<button type="button" class="green" onclick="useReportToday()">TODAY</button>' +
+        '<button type="button" onclick="showReportOtherDate()">ANOTHER DAY</button>' +
+        '<button type="button" class="back" onclick="closeReportFlowPopup()">CANCEL</button>';
+    }
+  }
+
+  function useReportToday() {
+    openSelectedReportWithDate(getTodayISO());
+  }
+
+  function showReportOtherDate() {
+    const text = document.getElementById("reportFlowText");
+    const dateBox = document.getElementById("reportFlowDateBox");
+    const datePicker = document.getElementById("reportFlowDatePicker");
+    const actions = document.getElementById("reportFlowActions");
+
+    if (text) text.innerText = "Pick date.";
+    if (dateBox) dateBox.classList.remove("hidden");
+    if (datePicker && !datePicker.value) datePicker.value = getTodayISO();
+    if (actions) {
+      actions.className = "app-message-actions";
+      actions.innerHTML =
+        '<button type="button" class="green" onclick="continueReportOtherDate()">CONTINUE</button>' +
+        '<button type="button" class="back" onclick="openReportDateChoice()">BACK</button>';
+    }
+  }
+
+  function continueReportOtherDate() {
+    const datePicker = document.getElementById("reportFlowDatePicker");
+    const selectedDate = datePicker && datePicker.value ? datePicker.value : getTodayISO();
+    openSelectedReportWithDate(selectedDate);
+  }
+
+  function openSelectedReportWithDate(selectedDate) {
+    currentWorkDateISO = selectedDate || getTodayISO();
+    updateDateDisplay();
+    closeReportFlowPopup();
+
+    if (pendingReportType === "daily") {
+      openDailyReportHome(currentWorkDateISO);
+      return;
+    }
+
+    openOperationalReportHome(currentWorkDateISO);
+  }
+
+  function closeReportFlowPopup() {
+    const box = document.getElementById("reportFlowBox");
+    if (box) box.classList.add("hidden");
+  }
+
+  function handleReportRoomAutoInput(input, type) {
+    limitRoomInput(input);
+    const roomNumber = String(input ? input.value : "").replace(/\D/g, "").slice(0, 3);
+
+    if (roomNumber.length !== 3) return;
+
+    if (type === "daily") {
+      openDailyReport(roomNumber);
+      return;
+    }
+
+    openRoomReport(roomNumber);
+  }
+
+  function openOperationalReportHome(selectedDate) {
     currentRoomReportNumber = "";
     currentRoomReportAreas = [];
     currentRoomReportStatuses = [];
@@ -3838,13 +3965,14 @@
     const box = document.getElementById("roomReportSingleCardList");
 
     if (searchInput) searchInput.value = "";
-    if (picker) picker.value = currentWorkDateISO;
+    if (picker) picker.value = selectedDate || currentWorkDateISO;
     if (box) box.innerHTML = '<div class="room-report-card"><h3 class="room-report-main-title">Operational Report</h3><div class="room-report-line">Search a room to build the report.</div></div>';
 
     showAdminView("adminRoomReportView");
+    setTimeout(function() { if (searchInput) searchInput.focus(); }, 50);
   }
 
-  function openDailyReportHome() {
+  function openDailyReportHome(selectedDate) {
     currentRoomReportNumber = "";
     currentRoomReportAreas = [];
     currentRoomReportStatuses = [];
@@ -3855,10 +3983,11 @@
     const box = document.getElementById("dailyReportCardList");
 
     if (searchInput) searchInput.value = "";
-    if (picker) picker.value = currentWorkDateISO;
+    if (picker) picker.value = selectedDate || currentWorkDateISO;
     if (box) box.innerHTML = '<div class="daily-report-card"><div class="daily-report-card-title">Daily Report</div><div class="daily-report-line">Search a room to build the report.</div></div>';
 
     showAdminView("adminDailyReportView");
+    setTimeout(function() { if (searchInput) searchInput.focus(); }, 50);
   }
 
   function handleAdminRoomSearchKey(event) {
@@ -6533,6 +6662,14 @@
   ========================== */
 
   window.changeAdminWorkDateFromBigPicker = changeAdminWorkDateFromBigPicker;
+  window.openReportChooser = openReportChooser;
+  window.selectReportType = selectReportType;
+  window.openReportDateChoice = openReportDateChoice;
+  window.useReportToday = useReportToday;
+  window.showReportOtherDate = showReportOtherDate;
+  window.continueReportOtherDate = continueReportOtherDate;
+  window.closeReportFlowPopup = closeReportFlowPopup;
+  window.handleReportRoomAutoInput = handleReportRoomAutoInput;
   window.openOperationalReportHome = openOperationalReportHome;
   window.openDailyReportHome = openDailyReportHome;
   window.handleAdminRoomSearchKey = handleAdminRoomSearchKey;
