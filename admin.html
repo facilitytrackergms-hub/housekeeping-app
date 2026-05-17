@@ -97,6 +97,14 @@
       line-height: 1.15;
     }
 
+    .app-version-label {
+      text-align: center;
+      font-size: 11px;
+      font-weight: 900;
+      color: #777;
+      margin: 8px 0 0;
+    }
+
 
     .admin-employee-shortcut {
       margin: 0 0 8px;
@@ -828,6 +836,8 @@
     </select>
 
     <div id="adminCategoryButtons" class="rooms-grid"></div>
+
+    <div class="app-version-label">Updated: 2026-05-17 9:51 AM</div>
 
   </div>
 
@@ -4669,9 +4679,34 @@
 
   function isDailyReportRecordForSelectedWeekday(record, selectedDate) {
     const selectedDay = getWeekdayName(selectedDate).toLowerCase();
-    const recordDay = String(record.scheduleDay || record.day || record.weekday || "").trim().toLowerCase();
+    const recordDay = getDailyReportRecordScheduleDay(record);
 
     return recordDay !== "" && recordDay === selectedDay;
+  }
+
+  function getDailyReportRecordScheduleDay(record) {
+    const directDay = String(record.scheduleDay || record.day || "").trim().toLowerCase();
+
+    if (directDay && directDay !== "daily") {
+      return directDay;
+    }
+
+    const idText = [
+      record.areaId,
+      record.workId,
+      record.statusId,
+      record.id
+    ].join("_").toLowerCase();
+
+    const weekdays = ["sunday", "monday", "tuesday", "wednesday", "thursday", "friday", "saturday"];
+
+    for (let i = 0; i < weekdays.length; i++) {
+      if (idText.includes("_" + weekdays[i] + "_") || idText.includes("-" + weekdays[i] + "-")) {
+        return weekdays[i];
+      }
+    }
+
+    return String(record.weekday || "").trim().toLowerCase();
   }
 
   function getDailyIssueLabel(type) {
