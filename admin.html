@@ -1108,7 +1108,7 @@
 
     <div id="adminCategoryButtons" class="rooms-grid"></div>
 
-    <div class="app-version-label">Updated: 2026-05-17 7:05 PM</div>
+    <div class="app-version-label">Updated: 2026-05-17 7:20 PM</div>
 
   </div>
 
@@ -2757,7 +2757,7 @@ async function startAdmin() {
       input.classList.add("hidden");
     }
 
-    if (okButton) okButton.innerText = "CONFIRM";
+    if (okButton) okButton.innerText = "OK";
     if (cancelButton) cancelButton.innerText = "CANCEL";
 
     document.getElementById("appMessageTitle").innerText = title || "Confirm";
@@ -3651,7 +3651,17 @@ async function startAdmin() {
     if (selectedCategory === "Daily Room") return DEFAULT_DAILY_ROOM_TASKS;
     if (selectedCategory === "Weekly Laundry") return ["Laundry Service"];
     if (selectedCategory === "Daily Laundry") return ["Laundry Service"];
+    if (selectedCategory === "Dehumidifier") return getDefaultDehumidifierTasks();
     return [];
+  }
+
+  function getDefaultDehumidifierTasks() {
+    return [
+      "Empty Dehumidifier 8 AM",
+      "Empty Dehumidifier 2 PM",
+      "AM Filter",
+      "PM Filter"
+    ];
   }
 
   function getAllTaskNameSuggestions() {
@@ -3666,6 +3676,11 @@ async function startAdmin() {
 
   function getSuggestedTasksForSelectedCategory() {
     const defaultTasks = getDefaultTasksForSelectedCategory();
+
+    if (selectedCategory === "Dehumidifier") {
+      return defaultTasks;
+    }
+
     const allNames = getAllTaskNameSuggestions();
     return [...new Set(defaultTasks.concat(allNames))];
   }
@@ -3973,22 +3988,44 @@ async function startAdmin() {
      29B - AREA EDITOR DISPLAY MODE
   ========================== */
 
-  function setAdminAreaEditorMode(isNewDehumidifier) {
+  function setAdminAreaEditorMode(isDehumidifierEditor) {
     const assignmentLabel = document.getElementById("adminEditAssignmentLabel");
     const assignmentInput = document.getElementById("adminEditAssignmentInput");
+    const areaInput = document.getElementById("adminEditAreaInput");
     const saveButton = document.getElementById("adminSaveAreaButton");
+    const taskButton = document.getElementById("openAreaTasksButton");
     const deleteButton = document.getElementById("deleteAreaButton");
     const backButton = document.getElementById("adminEditBackButton");
     const saveRow = saveButton ? saveButton.parentElement : null;
     const deleteRow = deleteButton ? deleteButton.parentElement : null;
 
-    if (assignmentLabel) assignmentLabel.classList.toggle("hidden", isNewDehumidifier);
-    if (assignmentInput) assignmentInput.classList.toggle("hidden", isNewDehumidifier);
+    if (assignmentLabel) assignmentLabel.classList.toggle("hidden", isDehumidifierEditor);
+    if (assignmentInput) assignmentInput.classList.toggle("hidden", isDehumidifierEditor);
+    if (taskButton) taskButton.classList.toggle("hidden", isDehumidifierEditor);
 
-    if (saveButton) saveButton.innerText = isNewDehumidifier ? "SAVE" : "SAVE AREA";
-    if (deleteButton) deleteButton.classList.toggle("hidden", isNewDehumidifier);
+    if (areaInput) {
+      if (isDehumidifierEditor) {
+        areaInput.setAttribute("inputmode", "numeric");
+        areaInput.setAttribute("maxlength", "3");
+        areaInput.setAttribute("pattern", "[0-9]*");
+        areaInput.placeholder = "Room number";
+        areaInput.oninput = function() {
+          limitRoomInput(this);
+        };
+      } else {
+        areaInput.removeAttribute("inputmode");
+        areaInput.removeAttribute("maxlength");
+        areaInput.removeAttribute("pattern");
+        areaInput.placeholder = "";
+        areaInput.oninput = null;
+      }
+    }
 
-    if (isNewDehumidifier) {
+    if (saveButton) saveButton.innerText = isDehumidifierEditor ? "SAVE" : "SAVE AREA";
+    if (deleteButton) deleteButton.classList.toggle("hidden", isDehumidifierEditor);
+    if (backButton) backButton.innerText = isDehumidifierEditor ? "CANCEL" : "BACK";
+
+    if (isDehumidifierEditor) {
       if (saveRow && backButton && backButton.parentElement !== saveRow) {
         saveRow.appendChild(backButton);
       }
@@ -4246,6 +4283,11 @@ async function startAdmin() {
       return false;
     }
 
+    if (category === "Dehumidifier" && !/^\d{3}$/.test(areaName)) {
+      await showAppConfirmMessage("Enter 3 digits.");
+      return false;
+    }
+
     if (!category) {
       await showAppConfirmMessage("Missing category.");
       return false;
@@ -4345,6 +4387,34 @@ async function startAdmin() {
     return true;
   }
 
+  async function ensureDefaultDehumidifierTasksForCurrentArea() {
+    if (selectedCategory !== "Dehumidifier" || !selectedAreaWorkId) return;
+
+    const defaultTasks = getDefaultDehumidifierTasks();
+
+    for (let i = 0; i < defaultTasks.length; i++) {
+      const taskName = defaultTasks[i];
+      const exists = allSubTasks.some(function(task) {
+        return task.workId === selectedAreaWorkId &&
+          String(task.taskName || "").trim().toLowerCase() === taskName.toLowerCase();
+      });
+
+      if (!exists) {
+        await addDoc(collection(db, "tasks"), getTaskCreateData({
+          workId: selectedAreaWorkId,
+          areaId: selectedAreaWorkId,
+          areaName: selectedArea,
+          category: selectedCategory,
+          scheduleDay: selectedAreaScheduleDay,
+          day: selectedAreaScheduleDay,
+          schedule: currentAssignment,
+          modeType: getModeTypeForAssignment(currentAssignment),
+          floor: getFloorForAssignment(currentAssignment)
+        }, taskName));
+      }
+    }
+  }
+
   async function saveAdminAreaOnly() {
     const wasNewArea = !selectedAreaDocId;
 
@@ -4355,12 +4425,17 @@ async function startAdmin() {
       return;
     }
 
+    if (wasNewArea && selectedCategory === "Dehumidifier") {
+      await loadAdminTasks();
+      await ensureDefaultDehumidifierTasksForCurrentArea();
+    }
+
     await loadAdminTasks();
     openAdminEditArea(selectedAreaDocId);
     hideLoading();
 
     if (wasNewArea && selectedCategory !== "Dehumidifier" && !adminAreaSaveRedirectedToExisting) {
-      const addTasksNow = confirm("Area saved. Add tasks now?");
+      const addTasksNow = await showAppConfirmMessage("Area saved. Add tasks now?");
       if (addTasksNow) {
         openAdminAreaTasks();
         return;
