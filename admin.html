@@ -2556,7 +2556,6 @@
 
       allAreasForAssignment.forEach(function(area) {
         if (area.category !== "Daily Room" && area.category !== "Weekly Room") return;
-        if (area.category === "Weekly Room" && String(area.scheduleDay || "").trim().toLowerCase() !== currentWorkDayName.toLowerCase()) return;
         if (area.category === "Daily Room" && !isAreaForCurrentDay(area)) return;
 
         const roomKey = getRoomKey(area.areaName || "");
