@@ -3990,9 +3990,9 @@
   }
 
   function buildRoomModeSettingsGroup(title, schedules) {
-    const areas = currentRoomReportAreas.filter(function(area) {
+    const areas = dedupeRoomReportHousekeepingAreas(currentRoomReportAreas.filter(function(area) {
       return schedules.includes(getAreaAssignment(area)) && String(area.category || "") !== "Dehumidifier";
-    });
+    }));
 
     let html = '<div class="room-report-section-title">' + escapeHtml(title) + '</div>';
 
@@ -4002,6 +4002,68 @@
     }
 
     return html + buildRoomSettingsForAreas(areas, "No setup.");
+  }
+
+  function dedupeRoomReportHousekeepingAreas(areas) {
+    const output = [];
+    const groups = {};
+
+    areas.forEach(function(area) {
+      const category = String(area.category || "");
+      const roomKey = getRoomKey(area.areaName || "");
+      const assignment = getAreaAssignment(area);
+      const isRoomCategory = category === "Weekly Room" || category === "Daily Room";
+
+      if (!isRoomCategory || !roomKey || !assignment) {
+        output.push(area);
+        return;
+      }
+
+      const groupKey = assignment + "|" + roomKey;
+
+      if (!groups[groupKey]) {
+        groups[groupKey] = {
+          roomKey: roomKey,
+          rows: [],
+          outputIndex: output.length
+        };
+        output.push(null);
+      }
+
+      groups[groupKey].rows.push(area);
+    });
+
+    Object.keys(groups).forEach(function(groupKey) {
+      const group = groups[groupKey];
+      const weeklyRows = group.rows.filter(function(area) { return area.category === "Weekly Room"; });
+      const dailyRows = group.rows.filter(function(area) { return area.category === "Daily Room"; });
+
+      if (weeklyRows.length > 0) {
+        const weeklyBase = weeklyRows[0];
+        const setting = roomSettingsData[group.roomKey] || {};
+        const displayRows = [weeklyBase];
+
+        if (setting.isDaily === true) {
+          displayRows.push({
+            ...weeklyBase,
+            category: "Daily Room",
+            scheduleDay: "daily",
+            day: "daily"
+          });
+        }
+
+        output[group.outputIndex] = displayRows;
+        return;
+      }
+
+      output[group.outputIndex] = dailyRows;
+    });
+
+    return output.reduce(function(flattened, item) {
+      if (Array.isArray(item)) return flattened.concat(item);
+      if (item) flattened.push(item);
+      return flattened;
+    }, []);
   }
 
   function buildRoomSettingsForAreas(areas, emptyText) {
