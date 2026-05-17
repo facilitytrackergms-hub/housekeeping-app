@@ -534,14 +534,13 @@
 
 
     .maintenance-selected-card {
-      border: 1px solid #2e7d32;
-      border-left: 5px solid #2e7d32;
+      border: 1px solid #ccc;
       border-radius: 10px;
-      padding: 8px 9px;
+      padding: 7px 9px;
       margin: 6px 0 8px;
-      background: #f7fff8;
+      background: transparent;
       color: #111;
-      text-align: left;
+      text-align: center;
       font-weight: 900;
       box-shadow: none;
     }
@@ -569,7 +568,34 @@
     }
 
     .maintenance-pass-fail-row {
-      margin: 6px 0 10px;
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 7px;
+      margin: 8px 0 10px;
+    }
+
+    .maintenance-pass-fail-row button {
+      min-height: 46px;
+      margin: 0;
+      padding: 8px 2px;
+      font-size: 15px;
+    }
+
+    .maintenance-urgency-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 7px;
+    }
+
+    .maintenance-urgency-row button {
+      min-height: 42px;
+      margin: 0;
+      padding: 7px 2px;
+      font-size: 14px;
+    }
+
+    .maintenance-hidden-status-controls {
+      display: none;
     }
 
     #maintenanceInspectionSearchInput {
@@ -1000,7 +1026,7 @@
 
     <div id="adminCategoryButtons" class="rooms-grid"></div>
 
-    <div class="app-version-label">Updated: 2026-05-17 3:52 PM</div>
+    <div class="app-version-label">Updated: 2026-05-17 4:11 PM</div>
 
   </div>
 
@@ -1436,19 +1462,14 @@
 
     <div id="maintenanceInspectionSelectedArea" class="maintenance-selected-card hidden"></div>
 
-    <div id="maintenanceInspectionActionRow" class="button-row maintenance-pass-fail-row hidden">
-      <button class="green" onclick="saveMaintenanceInspectionResult('Good')">GOOD</button>
-      <button class="red" onclick="saveMaintenanceInspectionResult('Fail')">FAIL</button>
-    </div>
-
-    <div class="maintenance-section-label">Resident Status</div>
-    <div class="button-row">
+    <div class="maintenance-section-label maintenance-hidden-status-controls">Resident Status</div>
+    <div class="button-row maintenance-hidden-status-controls">
       <button id="maintenanceResidentOccupiedBtn" onclick="selectMaintenanceResidentStatus('Occupied')">OCCUPIED</button>
       <button id="maintenanceResidentVacantBtn" onclick="selectMaintenanceResidentStatus('Vacant')">VACANT</button>
     </div>
 
     <div class="maintenance-section-label">Urgency</div>
-    <div class="button-row">
+    <div class="maintenance-urgency-row">
       <button id="maintenanceUrgencyLowBtn" onclick="selectMaintenanceUrgency('Low')">LOW</button>
       <button id="maintenanceUrgencyMedBtn" onclick="selectMaintenanceUrgency('Med')">MED</button>
       <button id="maintenanceUrgencyHighBtn" onclick="selectMaintenanceUrgency('High')">HIGH</button>
@@ -1487,6 +1508,12 @@
 
     <div class="maintenance-section-label">Notes</div>
     <textarea id="maintenanceInspectionNoteInput" placeholder="Inspection notes"></textarea>
+
+    <div id="maintenanceInspectionActionRow" class="maintenance-pass-fail-row hidden">
+      <button class="green" onclick="saveMaintenanceInspectionResult('Good')">GOOD</button>
+      <button class="green" onclick="saveMaintenanceInspectionResult('Complete')">COMPLETE</button>
+      <button class="red" onclick="saveMaintenanceInspectionResult('Fail')">FAIL</button>
+    </div>
 
     <input id="maintenanceInspectionNewReasonInput" class="hidden">
     <input id="maintenanceInspectionNewItemInput" class="hidden">
@@ -6488,7 +6515,12 @@
 
   function selectMaintenanceInspectionMaterial(material) {
     const cleanMaterial = String(material || "").trim();
+    const select = document.getElementById("maintenanceInspectionMaterialsSelect");
     const materialsBox = document.getElementById("maintenanceInspectionMaterialsInput");
+
+    if (select) {
+      select.value = cleanMaterial;
+    }
 
     if (materialsBox) {
       materialsBox.value = cleanMaterial;
@@ -6993,7 +7025,7 @@
     selectedBox.classList.remove("hidden");
     selectedBox.innerHTML =
       '<div class="maintenance-selected-room-number">' + escapeHtml(foundLabel + ': ' + (area.areaName || "Area")) + '</div>' +
-      '<div class="maintenance-selected-settings">' + escapeHtml(residentStatus) + '</div>';
+      '<div class="maintenance-selected-settings">Resident Status: ' + escapeHtml(residentStatus) + '</div>';
 
     if (actionRow) actionRow.classList.remove("hidden");
   }
