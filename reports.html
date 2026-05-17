@@ -487,15 +487,23 @@
       const taskSnap = await getDocs(taskQuery);
       const issueSnap = await getDocs(issueQuery);
 
+      const roomSettings = await loadReportRoomSettings();
+
       const taskRows = taskSnap.docs.map(function(docSnap) {
-        return normalizeHistoryRow(docSnap.id, docSnap.data());
+        const rowData = docSnap.data();
+        const row = normalizeHistoryRow(docSnap.id, rowData);
+        row.roomKey = rowData.roomKey || "";
+        return row;
       });
 
       const issueRows = issueSnap.docs.map(function(docSnap) {
-        return normalizeIssueRow(docSnap.id, docSnap.data());
+        const rowData = docSnap.data();
+        const row = normalizeIssueRow(docSnap.id, rowData);
+        row.roomKey = rowData.roomKey || "";
+        return row;
       });
 
-      loadedRows = taskRows.concat(issueRows);
+      loadedRows = dedupeOneDoorReportRows(taskRows.concat(issueRows), roomSettings);
 
       applyFiltersAndDraw();
     } catch (error) {
@@ -506,6 +514,84 @@
     hideLoading();
   }
 
+  async function loadReportRoomSettings() {
+    const snap = await getDocs(collection(db, "room_settings"));
+    const settings = {};
+
+    snap.docs.forEach(function(docSnap) {
+      const setting = docSnap.data();
+      const roomKey = getReportRoomKey(setting);
+      const schedule = String(setting.schedule || "");
+
+      if (!roomKey) return;
+
+      if (schedule) {
+        settings[schedule + "|" + roomKey] = setting;
+      }
+
+      if (!settings[roomKey]) {
+        settings[roomKey] = setting;
+      }
+    });
+
+    return settings;
+  }
+
+  function dedupeOneDoorReportRows(rows, roomSettings) {
+    const groups = {};
+    const output = [];
+
+    rows.forEach(function(row) {
+      const category = String(row.area_type || "");
+      const roomKey = getReportRoomKey(row);
+      const isRoomCategory = row.rowType === "Task" && (category === "Weekly Room" || category === "Daily Room");
+
+      if (!isRoomCategory || !roomKey || !row.schedule) {
+        output.push(row);
+        return;
+      }
+
+      const groupKey = row.schedule + "|" + roomKey;
+      if (!groups[groupKey]) {
+        groups[groupKey] = [];
+      }
+
+      groups[groupKey].push(row);
+    });
+
+    Object.keys(groups).forEach(function(groupKey) {
+      const groupRows = groups[groupKey];
+      const weeklyRows = groupRows.filter(function(row) { return row.area_type === "Weekly Room"; });
+      const dailyRows = groupRows.filter(function(row) { return row.area_type === "Daily Room"; });
+      const setting = roomSettings[groupKey] || roomSettings[groupKey.split("|").pop()] || {};
+
+      if (weeklyRows.length > 0) {
+        output.push(weeklyRows[0]);
+
+        if (setting.isDaily === true && dailyRows.length > 0) {
+          output.push(dailyRows[0]);
+        }
+
+        return;
+      }
+
+      if (dailyRows.length > 0) {
+        output.push(dailyRows[0]);
+      }
+    });
+
+    return output;
+  }
+
+  function getReportRoomKey(row) {
+    const value = row.roomKey || row.areaName || row.area_name || row.area_id || row.areaId || "";
+    const text = String(value || "").trim();
+    const numberMatch = text.match(/\d+/);
+
+    if (numberMatch) return numberMatch[0];
+
+    return text.toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "");
+  }
   /* 13 - NORMALIZE DATA */
   function normalizeHistoryRow(id, row) {
     return {
