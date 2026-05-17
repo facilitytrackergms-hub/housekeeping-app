@@ -899,7 +899,7 @@
 
     <div id="adminCategoryButtons" class="rooms-grid"></div>
 
-    <div class="app-version-label">Updated: 2026-05-17 12:05 PM</div>
+    <div class="app-version-label">Updated: 2026-05-17 12:20 PM</div>
 
   </div>
 
@@ -1334,11 +1334,11 @@
       oninput="drawMaintenanceInspectionAreaList()"
     >
 
-    <div id="maintenanceInspectionSelectedArea" class="maintenance-selected-card hidden"></div>
-    <div id="maintenanceInspectionActionRow" class="button-row maintenance-pass-fail-row hidden">
-      <button class="green" onclick="saveMaintenanceInspectionResult('Pass')">PASS</button>
+    <div id="maintenanceInspectionActionRow" class="button-row maintenance-pass-fail-row">
+      <button class="green" onclick="saveMaintenanceInspectionResult('Good')">GOOD</button>
       <button class="red" onclick="saveMaintenanceInspectionResult('Fail')">FAIL</button>
     </div>
+    <div id="maintenanceInspectionSelectedArea" class="maintenance-selected-card hidden"></div>
     <div id="maintenanceInspectionAreaList" class="rooms-grid"></div>
 
     <label>Thing Being Inspected</label>
@@ -1357,6 +1357,9 @@
       <option value="">Select fail reason</option>
     </select>
     <div id="maintenanceInspectionReasonButtons" class="inspection-reason-grid"></div>
+
+    <label>New Fail Reason</label>
+    <input id="maintenanceInspectionNewReasonInput" placeholder="Type new fail reason">
 
     <p id="maintenanceInspectionMessage"></p>
 
@@ -1678,6 +1681,7 @@
     updateDoc,
     deleteDoc,
     serverTimestamp,
+    arrayUnion,
     writeBatch
   } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
@@ -6135,6 +6139,7 @@
     document.getElementById("maintenanceInspectionSearchInput").value = "";
     document.getElementById("maintenanceInspectionNoteInput").value = "";
     document.getElementById("maintenanceInspectionMaterialsInput").value = "";
+    document.getElementById("maintenanceInspectionNewReasonInput").value = "";
     document.getElementById("maintenanceInspectionMessage").innerText = "";
 
     fillMaintenanceInspectionItemSelect();
@@ -6286,14 +6291,11 @@
 
   function clearMaintenanceInspectionSelectedArea() {
     const selectedBox = document.getElementById("maintenanceInspectionSelectedArea");
-    const actionRow = document.getElementById("maintenanceInspectionActionRow");
 
     if (selectedBox) {
       selectedBox.innerText = "";
       selectedBox.classList.add("hidden");
     }
-
-    if (actionRow) actionRow.classList.add("hidden");
   }
 
   function getSelectedMaintenanceInspectionItem() {
@@ -6397,9 +6399,12 @@
     const item = getSelectedMaintenanceInspectionItem();
     const noteBox = document.getElementById("maintenanceInspectionNoteInput");
     const materialsBox = document.getElementById("maintenanceInspectionMaterialsInput");
+    const newReasonBox = document.getElementById("maintenanceInspectionNewReasonInput");
     const messageBox = document.getElementById("maintenanceInspectionMessage");
-    const result = resultValue === "Fail" ? "Fail" : "Pass";
-    const failReason = selectedMaintenanceInspectionReason || String(document.getElementById("maintenanceInspectionReasonSelect")?.value || "").trim();
+    const result = resultValue === "Fail" ? "Fail" : "Good";
+    const typedFailReason = String(newReasonBox ? newReasonBox.value : "").trim();
+    const selectedFailReason = selectedMaintenanceInspectionReason || String(document.getElementById("maintenanceInspectionReasonSelect")?.value || "").trim();
+    const failReason = typedFailReason || selectedFailReason;
 
     if (!area) {
       showAppMessage("Select a room or area.");
@@ -6412,16 +6417,19 @@
     }
 
     if (result === "Fail" && !failReason) {
-      showAppMessage("Select fail reason.");
+      showAppMessage("Select or type fail reason.");
       return;
     }
 
     const now = new Date();
     const savedDate = getTodayISO();
+    const savedWeekday = getWeekdayName(savedDate);
     const savedTime = now.toLocaleTimeString([], {
       hour: "numeric",
       minute: "2-digit"
     });
+    const savedDateText = savedWeekday + " " + savedDate;
+    const savedDateTimeText = savedDateText + " - " + savedTime;
 
     const employeeName = sessionData.employeeName || sessionData.name ||
       [sessionData.firstName, sessionData.lastName].filter(Boolean).join(" ") ||
@@ -6430,7 +6438,10 @@
     const inspectionData = {
       workDateISO: savedDate,
       createdDate: savedDate,
+      createdWeekday: savedWeekday,
       createdTime: savedTime,
+      createdDateText: savedDateText,
+      createdDateTimeText: savedDateTimeText,
       employeeId: sessionData.employeeId || sessionData.id || "",
       employeeName: employeeName,
       areaId: area.workId || area.areaId || area.id || "",
@@ -6451,12 +6462,16 @@
       photoCount: 0,
       photoUrls: [],
       openIssue: result === "Fail" && item.openIssueOnFail === true,
-      status: result === "Fail" ? "Open" : "Passed",
+      status: result === "Fail" ? "Open" : "Good",
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp()
     };
 
     showLoading();
+
+    if (result === "Fail" && typedFailReason) {
+      await saveNewMaintenanceInspectionFailReason(item, typedFailReason);
+    }
 
     const inspectionRef = await addDoc(collection(db, "maintenance_inspections"), inspectionData);
 
@@ -6464,7 +6479,10 @@
       await addDoc(collection(db, "issue_logs"), {
         workDateISO: inspectionData.workDateISO,
         createdDate: inspectionData.createdDate,
+        createdWeekday: inspectionData.createdWeekday,
         createdTime: inspectionData.createdTime,
+        createdDateText: inspectionData.createdDateText,
+        createdDateTimeText: inspectionData.createdDateTimeText,
         employeeId: inspectionData.employeeId,
         employeeName: inspectionData.employeeName,
         areaId: inspectionData.areaId,
@@ -6488,16 +6506,40 @@
     }
 
     if (messageBox) {
-      messageBox.innerText = result === "Fail" ? "Saved fail inspection." : "Saved pass inspection.";
+      messageBox.innerText = result === "Fail" ? "Saved fail inspection." : "Saved good inspection.";
     }
 
-    document.getElementById("maintenanceInspectionNoteInput").value = "";
+    if (noteBox) noteBox.value = "";
+    if (newReasonBox) newReasonBox.value = "";
     selectedMaintenanceInspectionReason = "";
     drawMaintenanceInspectionFailReasons(item);
 
     hideLoading();
   }
 
+  async function saveNewMaintenanceInspectionFailReason(item, failReason) {
+    const cleanReason = String(failReason || "").trim();
+    if (!item || !item.id || !cleanReason) return;
+
+    const existingReasons = getMaintenanceInspectionFailReasons(item).map(function(reason) {
+      return String(reason || "").trim().toLowerCase();
+    });
+
+    if (existingReasons.includes(cleanReason.toLowerCase())) {
+      return;
+    }
+
+    await updateDoc(doc(db, "maintenance_inspection_items", item.id), {
+      failReasons: arrayUnion(cleanReason),
+      updatedAt: serverTimestamp()
+    });
+
+    if (!Array.isArray(item.failReasons)) {
+      item.failReasons = [];
+    }
+
+    item.failReasons.push(cleanReason);
+  }
 
   /* =========================
      45 - OPEN NEW EMPLOYEE
