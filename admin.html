@@ -631,6 +631,16 @@
       margin: 0;
     }
 
+    .daily-report-date-box {
+      text-align: center;
+      margin: 0 0 10px;
+      text-align: center;
+      font-size: 18px;
+      font-weight: 900;
+      padding: 9px;
+      margin: 0 0 10px;
+    }
+
     .daily-report-mode {
       text-align: center;
       font-size: 14px;
@@ -837,7 +847,7 @@
 
     <div id="adminCategoryButtons" class="rooms-grid"></div>
 
-    <div class="app-version-label">Updated: 2026-05-17 10:11 AM</div>
+    <div class="app-version-label">Updated: 2026-05-17 10:18 AM</div>
 
   </div>
 
@@ -1108,7 +1118,7 @@
     <input
       type="date"
       id="dailyReportDatePicker"
-      class="hidden"
+      class="daily-report-date-box"
       onchange="changeDailyReportDate()"
     >
 
@@ -4383,7 +4393,6 @@
 
     const title = document.createElement("div");
     title.innerHTML =
-      '<div class="daily-report-mode">Date: ' + escapeHtml(formatDailyDateWithWeekday(selectedDate)) + '</div>' +
       '<div class="daily-report-mode">Active Mode: ' + escapeHtml(getDailyReportModeLabel()) + '</div>';
     box.appendChild(title);
 
