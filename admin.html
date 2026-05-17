@@ -968,7 +968,7 @@
 
     <div id="adminCategoryButtons" class="rooms-grid"></div>
 
-    <div class="app-version-label">Updated: 2026-05-17 3:43 PM</div>
+    <div class="app-version-label">Updated: 2026-05-17 3:46 PM</div>
 
   </div>
 
@@ -7472,6 +7472,20 @@
       getMaintenanceInspectionRecordSearchText(record).includes(searchText);
   }
 
+  function getMaintenanceInspectionReportDateISO(record) {
+    const directDate = String(record.workDateISO || record.createdDate || "").slice(0, 10);
+    if (/^\d{4}-\d{2}-\d{2}$/.test(directDate)) return directDate;
+
+    const millis = getTimestampMillis(record);
+    if (!millis) return directDate;
+
+    const date = new Date(millis);
+    const yyyy = date.getFullYear();
+    const mm = String(date.getMonth() + 1).padStart(2, "0");
+    const dd = String(date.getDate()).padStart(2, "0");
+    return yyyy + "-" + mm + "-" + dd;
+  }
+
   function drawMaintenanceInspectionReport() {
     try {
       const box = document.getElementById("maintenanceReportList");
@@ -7491,7 +7505,7 @@
 
       let records = allMaintenanceInspectionRecords.filter(function(record) {
         const roomMatches = maintenanceInspectionRecordMatchesSearch(record, searchText);
-        const dateMatches = String(record.workDateISO || record.createdDate || "").slice(0, 10) === selectedDate;
+        const dateMatches = getMaintenanceInspectionReportDateISO(record) === selectedDate;
         if (!roomMatches || !dateMatches) return false;
 
         const result = String(record.result || "").toLowerCase();
@@ -7502,7 +7516,7 @@
         if (reportType === "Open") return result === "fail" && openStatus !== "resolved";
         return true;
       }).sort(function(a, b) {
-        return getRecordSortTime(b) - getRecordSortTime(a);
+        return getRecordSortValue(b) - getRecordSortValue(a);
       });
 
       if (records.length === 0) {
@@ -7510,7 +7524,14 @@
         return;
       }
 
-      box.innerHTML = records.map(buildMaintenanceInspectionReportCard).join("");
+      box.innerHTML = records.map(function(record) {
+        try {
+          return buildMaintenanceInspectionReportCard(record);
+        } catch (cardError) {
+          console.error("Inspection report card failed", cardError, record);
+          return buildMaintenanceInspectionFallbackCard(record);
+        }
+      }).join("");
     } catch (error) {
       console.error("Inspection report draw failed", error);
       const box = document.getElementById("maintenanceReportList");
@@ -7568,6 +7589,17 @@
         '<div>Open / Resolved: ' + escapeHtml(openStatus) + '</div>' +
         (issueParts.length ? '<div>' + escapeHtml(issueParts.join(" | ")) + '</div>' : '') +
         (isOpen ? '<button class="yellow" onclick="reinspectMaintenanceIssue(\'' + escapeHtml(record.id) + '\')">RE-INSPECT</button>' : '') +
+      '</div>';
+  }
+
+  function buildMaintenanceInspectionFallbackCard(record) {
+    return '' +
+      '<div class="room-report-card">' +
+        '<h3>' + escapeHtml(record.areaName || record.roomKey || "Inspection") + '</h3>' +
+        '<div>Status: ' + escapeHtml(record.result || record.status || "Saved") + '</div>' +
+        '<div>Item: ' + escapeHtml(record.inspectionItem || record.taskName || "Inspection") + '</div>' +
+        '<div>Saved: ' + escapeHtml(record.createdDateTimeText || record.createdDate || record.workDateISO || "") + '</div>' +
+        '<div>Employee: ' + escapeHtml(record.employeeName || "Admin") + '</div>' +
       '</div>';
   }
 
