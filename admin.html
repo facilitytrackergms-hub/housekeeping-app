@@ -1072,7 +1072,7 @@
 
     <div id="adminCategoryButtons" class="rooms-grid"></div>
 
-    <div class="app-version-label">Updated: 2026-05-17 5:55 PM</div>
+    <div class="app-version-label">Updated: 2026-05-17 6:05 PM</div>
 
   </div>
 
@@ -1670,6 +1670,120 @@
       <option value="">Select active</option>
       <option value="true">true</option>
       <option value="false">false</option>
+    </select>
+
+    <h3>Permissions</h3>
+
+    <label>Can View Housekeeping</label>
+    <select id="empCanViewHousekeeping">
+      <option value="">Select</option>
+      <option value="true">Yes</option>
+      <option value="false">No</option>
+    </select>
+
+    <label>Can View Laundry</label>
+    <select id="empCanViewLaundry">
+      <option value="">Select</option>
+      <option value="true">Yes</option>
+      <option value="false">No</option>
+    </select>
+
+    <label>Can View PTAC</label>
+    <select id="empCanViewPTAC">
+      <option value="">Select</option>
+      <option value="true">Yes</option>
+      <option value="false">No</option>
+    </select>
+
+    <label>Can View Maintenance Inspection</label>
+    <select id="empCanViewMaintenanceInspection">
+      <option value="">Select</option>
+      <option value="true">Yes</option>
+      <option value="false">No</option>
+    </select>
+
+    <label>Can View Maintenance Work Board</label>
+    <select id="empCanViewMaintenanceWorkBoard">
+      <option value="">Select</option>
+      <option value="true">Yes</option>
+      <option value="false">No</option>
+    </select>
+
+    <label>Can View Materials Needed</label>
+    <select id="empCanViewMaterialsNeeded">
+      <option value="">Select</option>
+      <option value="true">Yes</option>
+      <option value="false">No</option>
+    </select>
+
+    <label>Can View Reports</label>
+    <select id="empCanViewReports">
+      <option value="">Select</option>
+      <option value="true">Yes</option>
+      <option value="false">No</option>
+    </select>
+
+    <label>Can View Activity History</label>
+    <select id="empCanViewActivityHistory">
+      <option value="">Select</option>
+      <option value="true">Yes</option>
+      <option value="false">No</option>
+    </select>
+
+    <label>Can View Admin Dashboard</label>
+    <select id="empCanViewAdminDashboard">
+      <option value="">Select</option>
+      <option value="true">Yes</option>
+      <option value="false">No</option>
+    </select>
+
+    <label>Can Edit Employees</label>
+    <select id="empCanEditEmployees">
+      <option value="">Select</option>
+      <option value="true">Yes</option>
+      <option value="false">No</option>
+    </select>
+
+    <label>Can Edit Schedules</label>
+    <select id="empCanEditSchedules">
+      <option value="">Select</option>
+      <option value="true">Yes</option>
+      <option value="false">No</option>
+    </select>
+
+    <label>Can Edit Room Settings</label>
+    <select id="empCanEditRoomSettings">
+      <option value="">Select</option>
+      <option value="true">Yes</option>
+      <option value="false">No</option>
+    </select>
+
+    <label>Can Edit Issue Reasons</label>
+    <select id="empCanEditIssueReasons">
+      <option value="">Select</option>
+      <option value="true">Yes</option>
+      <option value="false">No</option>
+    </select>
+
+    <label>Can View Daily Status</label>
+    <select id="empCanViewDailyStatus">
+      <option value="">Select</option>
+      <option value="true">Yes</option>
+      <option value="false">No</option>
+    </select>
+
+    <label>Can View Issues</label>
+    <select id="empCanViewIssues">
+      <option value="">Select</option>
+      <option value="true">Yes</option>
+      <option value="false">No</option>
+    </select>
+
+    <label>Can Change Schedule Mode</label>
+    <select id="empCanChangeScheduleMode">
+      <option value="">Select</option>
+      <option value="true">Yes</option>
+      <option value="false">No</option>
     </select>
 
     <div class="button-row">
@@ -8647,6 +8761,122 @@
     }
   }
 
+  function setEmployeePermissionSelects(emp) {
+    const permissions = emp.permissions || {};
+
+    setPermissionSelectValue_("empCanViewHousekeeping", permissions.housekeeping, emp.canViewHousekeeping);
+    setPermissionSelectValue_("empCanViewLaundry", permissions.laundry, emp.canViewLaundry);
+    setPermissionSelectValue_("empCanViewPTAC", permissions.ptac, emp.canViewPTAC);
+    setPermissionSelectValue_("empCanViewMaintenanceInspection", permissions.maintenanceInspection, emp.canViewMaintenanceInspection);
+    setPermissionSelectValue_("empCanViewMaintenanceWorkBoard", permissions.maintenanceWorkBoard, emp.canViewMaintenanceWorkBoard);
+    setPermissionSelectValue_("empCanViewMaterialsNeeded", permissions.materialsNeeded, emp.canViewMaterialsNeeded);
+    setPermissionSelectValue_("empCanViewReports", permissions.reports, emp.canViewReports);
+    setPermissionSelectValue_("empCanViewActivityHistory", permissions.activityHistory, emp.canViewActivityHistory);
+    setPermissionSelectValue_("empCanViewAdminDashboard", permissions.adminDashboard, emp.canViewAdminDashboard);
+    setPermissionSelectValue_("empCanEditEmployees", permissions.editEmployees, emp.canEditEmployees);
+    setPermissionSelectValue_("empCanEditSchedules", permissions.editSchedules, emp.canEditSchedules);
+    setPermissionSelectValue_("empCanEditRoomSettings", permissions.editRoomSettings, emp.canEditRoomSettings);
+    setPermissionSelectValue_("empCanEditIssueReasons", permissions.editIssueReasons, emp.canEditIssueReasons);
+    setPermissionSelectValue_("empCanViewDailyStatus", permissions.dailyStatus, emp.canViewDailyStatus);
+    setPermissionSelectValue_("empCanViewIssues", permissions.issues, emp.canViewIssues);
+    setPermissionSelectValue_("empCanChangeScheduleMode", permissions.changeScheduleMode, emp.canChangeScheduleMode);
+  }
+
+  function clearEmployeePermissionSelects() {
+    setEmployeePermissionSelects({});
+  }
+
+  function setPermissionSelectValue_(id, permissionValue, fallbackValue) {
+    const select = document.getElementById(id);
+    if (!select) return;
+
+    if (permissionValue === true || fallbackValue === true) {
+      select.value = "true";
+      return;
+    }
+
+    if (permissionValue === false || fallbackValue === false) {
+      select.value = "false";
+      return;
+    }
+
+    const permissionText = String(permissionValue || "").trim().toLowerCase();
+    const fallbackText = String(fallbackValue || "").trim().toLowerCase();
+
+    if (permissionText === "yes" || permissionText === "true" || permissionText === "1" || fallbackText === "yes" || fallbackText === "true" || fallbackText === "1") {
+      select.value = "true";
+      return;
+    }
+
+    if (permissionText === "no" || permissionText === "false" || permissionText === "0" || fallbackText === "no" || fallbackText === "false" || fallbackText === "0") {
+      select.value = "false";
+      return;
+    }
+
+    select.value = "";
+  }
+
+  function getEmployeePermissionData() {
+    const canViewHousekeeping = getPermissionSelectBoolean_("empCanViewHousekeeping");
+    const canViewLaundry = getPermissionSelectBoolean_("empCanViewLaundry");
+    const canViewPTAC = getPermissionSelectBoolean_("empCanViewPTAC");
+    const canViewMaintenanceInspection = getPermissionSelectBoolean_("empCanViewMaintenanceInspection");
+    const canViewMaintenanceWorkBoard = getPermissionSelectBoolean_("empCanViewMaintenanceWorkBoard");
+    const canViewMaterialsNeeded = getPermissionSelectBoolean_("empCanViewMaterialsNeeded");
+    const canViewReports = getPermissionSelectBoolean_("empCanViewReports");
+    const canViewActivityHistory = getPermissionSelectBoolean_("empCanViewActivityHistory");
+    const canViewAdminDashboard = getPermissionSelectBoolean_("empCanViewAdminDashboard");
+    const canEditEmployees = getPermissionSelectBoolean_("empCanEditEmployees");
+    const canEditSchedules = getPermissionSelectBoolean_("empCanEditSchedules");
+    const canEditRoomSettings = getPermissionSelectBoolean_("empCanEditRoomSettings");
+    const canEditIssueReasons = getPermissionSelectBoolean_("empCanEditIssueReasons");
+    const canViewDailyStatus = getPermissionSelectBoolean_("empCanViewDailyStatus");
+    const canViewIssues = getPermissionSelectBoolean_("empCanViewIssues");
+    const canChangeScheduleMode = getPermissionSelectBoolean_("empCanChangeScheduleMode");
+
+    return {
+      canViewHousekeeping: canViewHousekeeping,
+      canViewLaundry: canViewLaundry,
+      canViewPTAC: canViewPTAC,
+      canViewMaintenanceInspection: canViewMaintenanceInspection,
+      canViewMaintenanceWorkBoard: canViewMaintenanceWorkBoard,
+      canViewMaterialsNeeded: canViewMaterialsNeeded,
+      canViewReports: canViewReports,
+      canViewActivityHistory: canViewActivityHistory,
+      canViewAdminDashboard: canViewAdminDashboard,
+      canEditEmployees: canEditEmployees,
+      canEditSchedules: canEditSchedules,
+      canEditRoomSettings: canEditRoomSettings,
+      canEditIssueReasons: canEditIssueReasons,
+      canViewDailyStatus: canViewDailyStatus,
+      canViewIssues: canViewIssues,
+      canChangeScheduleMode: canChangeScheduleMode,
+      permissions: {
+        housekeeping: canViewHousekeeping,
+        laundry: canViewLaundry,
+        ptac: canViewPTAC,
+        maintenanceInspection: canViewMaintenanceInspection,
+        maintenanceWorkBoard: canViewMaintenanceWorkBoard,
+        materialsNeeded: canViewMaterialsNeeded,
+        reports: canViewReports,
+        activityHistory: canViewActivityHistory,
+        adminDashboard: canViewAdminDashboard,
+        editEmployees: canEditEmployees,
+        editSchedules: canEditSchedules,
+        editRoomSettings: canEditRoomSettings,
+        editIssueReasons: canEditIssueReasons,
+        dailyStatus: canViewDailyStatus,
+        issues: canViewIssues,
+        changeScheduleMode: canChangeScheduleMode
+      }
+    };
+  }
+
+  function getPermissionSelectBoolean_(id) {
+    const select = document.getElementById(id);
+    return select && select.value === "true";
+  }
+
   /* =========================
      45 - OPEN NEW EMPLOYEE
   ========================== */
@@ -8661,6 +8891,7 @@
     document.getElementById("empDefaultSchedule").value = "";
     document.getElementById("empRole").value = "";
     document.getElementById("empActive").value = "";
+    clearEmployeePermissionSelects();
     document.getElementById("employeeMessage").innerText = "";
     updateAssignmentTitles();
     showAdminView("adminEmployeeEditView");
@@ -8682,6 +8913,7 @@
     document.getElementById("empDefaultSchedule").value = emp.defaultSchedule || emp.default_schedule || "";
     document.getElementById("empRole").value = emp.role || "";
     document.getElementById("empActive").value = emp.active === false ? "false" : "true";
+    setEmployeePermissionSelects(emp);
     document.getElementById("employeeMessage").innerText = "";
 
     updateAssignmentTitles();
@@ -8717,6 +8949,7 @@
       defaultSchedule: defaultSchedule,
       role: role,
       active: active,
+      ...getEmployeePermissionData(),
       updatedAt: serverTimestamp()
     };
 
