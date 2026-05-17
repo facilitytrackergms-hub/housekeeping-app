@@ -968,7 +968,7 @@
 
     <div id="adminCategoryButtons" class="rooms-grid"></div>
 
-    <div class="app-version-label">Updated: 2026-05-17 3:05 PM</div>
+    <div class="app-version-label">Updated: 2026-05-17 3:31 PM</div>
 
   </div>
 
@@ -7330,13 +7330,66 @@
   }
 
   async function loadMaintenanceInspectionRecords() {
-    const snap = await getDocs(collection(db, "maintenance_inspections"));
-    allMaintenanceInspectionRecords = snap.docs.map(function(recordDoc) {
-      return {
-        id: recordDoc.id,
-        ...recordDoc.data()
-      };
-    });
+    try {
+      const snap = await getDocs(collection(db, "maintenance_inspections"));
+      allMaintenanceInspectionRecords = snap.docs.map(function(recordDoc) {
+        return {
+          id: recordDoc.id,
+          ...recordDoc.data()
+        };
+      });
+      return;
+    } catch (error) {
+      console.warn("maintenance_inspections read failed, using issue_logs fallback", error);
+    }
+
+    const issueSnap = await getDocs(collection(db, "issue_logs"));
+    allMaintenanceInspectionRecords = issueSnap.docs
+      .map(function(issueDoc) {
+        return {
+          id: issueDoc.id,
+          ...issueDoc.data()
+        };
+      })
+      .filter(function(issue) {
+        return issue.source === "maintenance_inspection" ||
+          issue.category === "Maintenance Inspection";
+      })
+      .map(function(issue) {
+        return {
+          id: issue.sourceInspectionId || issue.id,
+          workDateISO: issue.workDateISO || issue.createdDate || "",
+          createdDate: issue.createdDate || issue.workDateISO || "",
+          createdWeekday: issue.createdWeekday || "",
+          createdTime: issue.createdTime || "",
+          createdDateText: issue.createdDateText || "",
+          createdDateTimeText: issue.createdDateTimeText || "",
+          employeeId: issue.employeeId || "",
+          employeeName: issue.employeeName || "",
+          areaId: issue.areaId || "",
+          areaDocId: issue.areaDocId || "",
+          areaName: issue.areaName || "",
+          roomKey: issue.roomKey || getRoomKey(issue.areaName || ""),
+          category: "Maintenance Inspection",
+          schedule: issue.schedule || "",
+          inspectionItemId: issue.taskId || "",
+          inspectionItem: issue.taskName || "Inspection",
+          result: "Fail",
+          failReason: issue.issueReason || "",
+          note: issue.issueNote || "",
+          materialsNeeded: issue.materialsNeeded || "",
+          urgency: issue.urgency || "",
+          residentStatus: issue.residentStatus || "",
+          openStatus: issue.status || "Open",
+          status: issue.status || "Open",
+          sourceIssueId: issue.id,
+          updatedAt: issue.updatedAt || issue.createdAt || null,
+          createdAt: issue.createdAt || null
+        };
+      })
+      .filter(function(record) {
+        return record.sourceIssueId;
+      });
   }
 
   async function loadMaintenanceManualMaterials() {
@@ -7444,8 +7497,10 @@
       }
 
       box.innerHTML = records.map(buildMaintenanceInspectionReportCard).join("");
-    } finally {
-      // Keep draw safe when called after a loading refresh.
+    } catch (error) {
+      console.error("Inspection report draw failed", error);
+      const box = document.getElementById("maintenanceReportList");
+      if (box) box.innerHTML = '<div class="room-report-card">Could not show inspection records.</div>';
     }
   }
 
