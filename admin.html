@@ -512,7 +512,7 @@
 
     .admin-room-search-box {
       display: grid;
-      grid-template-columns: 1fr;
+      grid-template-columns: 1fr auto;
       gap: 7px;
       margin: 0 0 8px;
       align-items: center;
@@ -577,98 +577,6 @@
       margin: 10px 0 6px;
       color: #111;
     }
-
-    .admin-report-button-row {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 7px;
-      margin: 0 0 8px;
-    }
-
-    .admin-report-button-row button {
-      min-height: 42px;
-      font-size: 14px;
-      padding: 9px 5px;
-      margin: 0;
-      background: #0d47a1;
-      color: white;
-      border-radius: 12px;
-    }
-
-    .daily-report-title {
-      text-align: center;
-      font-size: 22px;
-      font-weight: 900;
-      margin: 4px 0 0;
-      color: #111;
-    }
-
-    .daily-report-room-number {
-      text-align: center;
-      font-size: 30px;
-      font-weight: 900;
-      margin: 2px 0;
-      color: #111;
-    }
-
-    .daily-report-mode {
-      text-align: center;
-      font-size: 14px;
-      font-weight: 900;
-      color: #333;
-      margin: 0 0 10px;
-    }
-
-    .daily-report-card {
-      border: 1px solid #ccc;
-      border-radius: 16px;
-      padding: 10px;
-      margin: 9px 0;
-      background: #fafafa;
-    }
-
-    .daily-report-card-title {
-      text-align: center;
-      font-size: 18px;
-      font-weight: 900;
-      margin: 0 0 8px;
-      color: #111;
-    }
-
-    .daily-report-block-title {
-      font-size: 16px;
-      font-weight: 900;
-      margin: 8px 0 3px;
-      color: #111;
-    }
-
-    .daily-report-line {
-      font-size: 14px;
-      font-weight: bold;
-      line-height: 1.25;
-      margin: 2px 0;
-      color: #333;
-    }
-
-    .daily-report-issue-button {
-      min-height: 34px;
-      font-size: 13px;
-      padding: 7px 6px;
-      margin: 5px 0 0;
-      background: #f9a825;
-      color: #111;
-    }
-
-    .report-flow-date-box {
-      margin: 6px 0 10px;
-    }
-
-    .report-flow-date-box input {
-      margin: 0;
-      text-align: center;
-      font-weight: 900;
-    }
-
 
 
     /* =========================
@@ -776,6 +684,31 @@
       min-height: 44px;
     }
 
+    .report-flow-date {
+      margin: 10px 0 12px;
+    }
+
+    .daily-report-card {
+      border: 1px solid #ddd;
+      border-radius: 14px;
+      padding: 10px;
+      margin: 8px 0;
+      background: #fafafa;
+      text-align: center;
+    }
+
+    .daily-report-card h3 {
+      margin: 0 0 8px;
+      font-size: 18px;
+    }
+
+    .daily-report-line {
+      font-size: 14px;
+      font-weight: bold;
+      margin: 4px 0;
+      line-height: 1.3;
+    }
+
   </style>
 </head>
 
@@ -791,8 +724,17 @@
 
     <div class="admin-dashboard-title">Admin Dashboard</div>
 
-    <div class="admin-report-button-row">
-      <button type="button" onclick="openReportChooser()">Reports</button>
+    <div class="admin-room-search-box hidden">
+      <input
+        id="adminRoomSearchInput"
+        inputmode="numeric"
+        maxlength="3"
+        pattern="[0-9]*"
+        oninput="limitRoomInput(this)"
+        onkeydown="handleAdminRoomSearchKey(event)"
+        placeholder="Room report"
+      >
+      <button type="button" onclick="openAdminRoomReportFromSearch()">SEARCH</button>
     </div>
 
     <div class="admin-mode-toggle-row">
@@ -1023,14 +965,16 @@
   </div>
 
   <!-- =========================
-       08E - ADMIN VIEW 7R - OPERATIONAL REPORT
+       08E - ADMIN VIEW 7R - ROOM REPORT
   ========================== -->
 
   <div id="adminRoomReportView" class="hidden">
 
     <div class="view-center">
-      <div class="view-tag">OPERATIONAL REPORT</div>
+      <div class="view-tag">ROOM REPORT</div>
     </div>
+
+    <h2 id="roomReportTitle">Operational Report</h2>
 
     <div class="admin-room-search-box">
       <input
@@ -1038,9 +982,9 @@
         inputmode="numeric"
         maxlength="3"
         pattern="[0-9]*"
-        oninput="handleReportRoomAutoInput(this, 'operational')"
+        oninput="handleRoomReportAutoInput(this)"
         onkeydown="handleRoomReportSearchKey(event)"
-        placeholder="Room / area number"
+        placeholder="Room report"
       >
     </div>
 
@@ -1052,41 +996,6 @@
     >
 
     <div id="roomReportSingleCardList"></div>
-
-    <button class="back" onclick="backToAdminCategories()">BACK</button>
-
-  </div>
-
-  <!-- =========================
-       08F - ADMIN VIEW 7D - DAILY REPORT
-  ========================== -->
-
-  <div id="adminDailyReportView" class="hidden">
-
-    <div class="view-center">
-      <div class="view-tag">DAILY REPORT</div>
-    </div>
-
-    <div class="admin-room-search-box">
-      <input
-        id="dailyReportSearchInput"
-        inputmode="numeric"
-        maxlength="3"
-        pattern="[0-9]*"
-        oninput="handleReportRoomAutoInput(this, 'daily')"
-        onkeydown="handleDailyReportSearchKey(event)"
-        placeholder="Room / area number"
-      >
-    </div>
-
-    <input
-      type="date"
-      id="dailyReportDatePicker"
-      class="hidden"
-      onchange="changeDailyReportDate()"
-    >
-
-    <div id="dailyReportCardList"></div>
 
     <button class="back" onclick="backToAdminCategories()">BACK</button>
 
@@ -1500,6 +1409,15 @@
   <div class="spinner"></div>
 </div>
 
+<div id="reportFlowPopup" class="app-message-bg hidden">
+  <div class="app-message-card">
+    <h3 id="reportFlowTitle">Choose Report</h3>
+    <p id="reportFlowText"></p>
+    <input id="reportFlowDateInput" class="report-flow-date hidden" type="date">
+    <div id="reportFlowActions" class="app-message-actions"></div>
+  </div>
+</div>
+
 <div id="appMessageBox" class="app-message-bg hidden">
   <div class="app-message-card">
     <h3 id="appMessageTitle">Message</h3>
@@ -1509,17 +1427,6 @@
       <button id="appMessageOkButton" class="green" onclick="confirmAppMessage()">OK</button>
       <button id="appMessageCancelButton" class="back hidden" onclick="cancelAppMessage()">CANCEL</button>
     </div>
-  </div>
-</div>
-
-<div id="reportFlowBox" class="app-message-bg hidden">
-  <div class="app-message-card">
-    <h3 id="reportFlowTitle">Reports</h3>
-    <p id="reportFlowText">Choose report.</p>
-    <div id="reportFlowDateBox" class="report-flow-date-box hidden">
-      <input type="date" id="reportFlowDatePicker">
-    </div>
-    <div id="reportFlowActions" class="app-message-actions"></div>
   </div>
 </div>
 
@@ -1622,8 +1529,9 @@
   let currentRoomReportAreas = [];
   let currentRoomReportStatuses = [];
   let currentRoomReportIssues = [];
-  let currentDailyReportIssueCategory = "";
-  let pendingReportType = "";
+  let selectedReportType = "operational";
+  let selectedReportDateISO = "";
+  let issueCategoryFilterFromReport = "";
 
   const DEFAULT_WEEKLY_ROOM_TASKS = ["Vac", "Fridge", "Bath", "Mop", "Toilet", "Sink", "Dust", "Bed", "AC Filter"];
   const DEFAULT_DAILY_ROOM_TASKS = ["Clean"];
@@ -1825,17 +1733,24 @@
   startAdmin();
 
   async function startAdmin() {
-    await loadAdminModeOnly();
-    currentAssignment = "";
-    syncModeControls();
-    await loadAdminTasks();
+    try {
+      await loadAdminModeOnly();
+      currentAssignment = "";
+      syncModeControls();
+      await loadAdminTasks();
 
-    if (await openAdminDeepLinkIfNeeded()) {
-      return;
+      if (await openAdminDeepLinkIfNeeded()) {
+        return;
+      }
+
+      drawAdminCategories();
+      showAdminView("adminView2");
+    } catch (error) {
+      console.error(error);
+      showAppMessage("Admin could not finish loading. Refresh and try again.");
+    } finally {
+      hideLoading();
     }
-
-    drawAdminCategories();
-    showAdminView("adminView2");
   }
 
   async function loadAdminModeOnly() {
@@ -2077,7 +1992,6 @@
       "adminEditView",
       "adminAreaTaskView",
       "adminRoomReportView",
-      "adminDailyReportView",
       "adminEmployeesView",
       "adminIssuesView",
       "adminDailyStatusView",
@@ -2531,9 +2445,27 @@
       appendAdminDashboardButton(topBox, item);
     });
 
+    appendReportsDashboardButton(topBox);
+
     scheduleButtons.forEach(function(item) {
       appendAdminDashboardButton(scheduleBox, item);
     });
+  }
+
+  function appendReportsDashboardButton(box) {
+    if (!box) return;
+
+    const btn = document.createElement("button");
+    btn.innerText = "Reports";
+    btn.className = "yellow";
+    btn.onclick = function() {
+      if (typeof window.openReportsFlow === "function") {
+        window.openReportsFlow();
+      } else {
+        showAppMessage("Reports are still loading. Refresh and try again.");
+      }
+    };
+    box.appendChild(btn);
   }
 
   function appendAdminDashboardButton(box, item) {
@@ -2557,7 +2489,13 @@
       } else if (item === "Daily Status") {
         btn.onclick = openDailyStatus;
       } else if (item === "Reports") {
-        btn.onclick = function() { window.location.href = "reports.html"; };
+        btn.onclick = function() {
+          if (typeof window.openReportsFlow === "function") {
+            window.openReportsFlow();
+          } else {
+            showAppMessage("Reports are still loading. Refresh and try again.");
+          }
+        };
       } else {
         btn.onclick = function() {
           openAdminCategory(item);
@@ -3844,151 +3782,113 @@
   }
 
   /* =========================
-     43B - ROOM REPORT
+     43A - REPORT FLOW
   ========================== */
 
+  function openReportsFlow() {
+    selectedReportType = "";
+    selectedReportDateISO = "";
+    showReportTypePopup();
+  }
 
-  function openReportChooser() {
-    pendingReportType = "";
-    const box = document.getElementById("reportFlowBox");
+  function showReportTypePopup() {
+    const popup = document.getElementById("reportFlowPopup");
     const title = document.getElementById("reportFlowTitle");
     const text = document.getElementById("reportFlowText");
-    const dateBox = document.getElementById("reportFlowDateBox");
+    const dateInput = document.getElementById("reportFlowDateInput");
     const actions = document.getElementById("reportFlowActions");
 
-    if (title) title.innerText = "Reports";
-    if (text) text.innerText = "Choose report.";
-    if (dateBox) dateBox.classList.add("hidden");
-    if (actions) {
-      actions.className = "app-message-actions";
-      actions.innerHTML =
-        '<button type="button" onclick="selectReportType('operational')">OPERATIONAL</button>' +
-        '<button type="button" onclick="selectReportType('daily')">DAILY</button>' +
-        '<button type="button" class="back" onclick="closeReportFlowPopup()">CANCEL</button>';
-    }
-
-    if (box) box.classList.remove("hidden");
+    title.innerText = "Choose Report";
+    text.innerText = "";
+    dateInput.classList.add("hidden");
+    actions.classList.remove("single-action");
+    actions.innerHTML =
+      "<button class=\"green\" onclick=\"chooseReportType('operational')\">Operational Report</button>" +
+      "<button class=\"yellow\" onclick=\"chooseReportType('daily')\">Daily Report</button>" +
+      '<button class="back" onclick="closeReportFlowPopup()">CANCEL</button>';
+    popup.classList.remove("hidden");
   }
 
-  function selectReportType(type) {
-    pendingReportType = type === "daily" ? "daily" : "operational";
-    openReportDateChoice();
+  function chooseReportType(type) {
+    selectedReportType = type === "daily" ? "daily" : "operational";
+    showReportDatePopup();
   }
 
-  function openReportDateChoice() {
+  function showReportDatePopup() {
     const title = document.getElementById("reportFlowTitle");
     const text = document.getElementById("reportFlowText");
-    const dateBox = document.getElementById("reportFlowDateBox");
-    const datePicker = document.getElementById("reportFlowDatePicker");
+    const dateInput = document.getElementById("reportFlowDateInput");
     const actions = document.getElementById("reportFlowActions");
 
-    if (title) title.innerText = "Choose Date";
-    if (text) text.innerText = "Use today or another day?";
-    if (dateBox) dateBox.classList.add("hidden");
-    if (datePicker) datePicker.value = getTodayISO();
-    if (actions) {
-      actions.className = "app-message-actions";
-      actions.innerHTML =
-        '<button type="button" class="green" onclick="useReportToday()">TODAY</button>' +
-        '<button type="button" onclick="showReportOtherDate()">ANOTHER DAY</button>' +
-        '<button type="button" class="back" onclick="closeReportFlowPopup()">CANCEL</button>';
-    }
+    title.innerText = "Choose Date";
+    text.innerText = "";
+    dateInput.classList.add("hidden");
+    actions.classList.remove("single-action");
+    actions.innerHTML =
+      '<button class="green" onclick="chooseReportToday()">Today</button>' +
+      '<button class="yellow" onclick="showReportAnotherDay()">Another Day</button>' +
+      '<button class="back" onclick="closeReportFlowPopup()">CANCEL</button>';
   }
 
-  function useReportToday() {
-    openSelectedReportWithDate(getTodayISO());
+  function chooseReportToday() {
+    selectedReportDateISO = getTodayISO();
+    openSelectedReportScreen();
   }
 
-  function showReportOtherDate() {
+  function showReportAnotherDay() {
     const text = document.getElementById("reportFlowText");
-    const dateBox = document.getElementById("reportFlowDateBox");
-    const datePicker = document.getElementById("reportFlowDatePicker");
+    const dateInput = document.getElementById("reportFlowDateInput");
     const actions = document.getElementById("reportFlowActions");
 
-    if (text) text.innerText = "Pick date.";
-    if (dateBox) dateBox.classList.remove("hidden");
-    if (datePicker && !datePicker.value) datePicker.value = getTodayISO();
-    if (actions) {
-      actions.className = "app-message-actions";
-      actions.innerHTML =
-        '<button type="button" class="green" onclick="continueReportOtherDate()">CONTINUE</button>' +
-        '<button type="button" class="back" onclick="openReportDateChoice()">BACK</button>';
-    }
+    text.innerText = "Pick report date.";
+    dateInput.value = currentWorkDateISO || getTodayISO();
+    dateInput.classList.remove("hidden");
+    actions.classList.add("single-action");
+    actions.innerHTML =
+      '<button class="green" onclick="continueReportAnotherDay()">CONTINUE</button>' +
+      '<button class="back" onclick="closeReportFlowPopup()">CANCEL</button>';
   }
 
-  function continueReportOtherDate() {
-    const datePicker = document.getElementById("reportFlowDatePicker");
-    const selectedDate = datePicker && datePicker.value ? datePicker.value : getTodayISO();
-    openSelectedReportWithDate(selectedDate);
-  }
+  function continueReportAnotherDay() {
+    const dateInput = document.getElementById("reportFlowDateInput");
 
-  function openSelectedReportWithDate(selectedDate) {
-    currentWorkDateISO = selectedDate || getTodayISO();
-    updateDateDisplay();
-    closeReportFlowPopup();
-
-    if (pendingReportType === "daily") {
-      openDailyReportHome(currentWorkDateISO);
+    if (!dateInput.value) {
+      showAppMessage("Choose date.");
       return;
     }
 
-    openOperationalReportHome(currentWorkDateISO);
+    selectedReportDateISO = dateInput.value;
+    openSelectedReportScreen();
   }
 
   function closeReportFlowPopup() {
-    const box = document.getElementById("reportFlowBox");
-    if (box) box.classList.add("hidden");
+    document.getElementById("reportFlowPopup").classList.add("hidden");
   }
 
-  function handleReportRoomAutoInput(input, type) {
-    limitRoomInput(input);
-    const roomNumber = String(input ? input.value : "").replace(/\D/g, "").slice(0, 3);
+  async function openSelectedReportScreen() {
+    closeReportFlowPopup();
+    currentWorkDateISO = selectedReportDateISO || getTodayISO();
+    updateDateDisplay();
 
-    if (roomNumber.length !== 3) return;
-
-    if (type === "daily") {
-      openDailyReport(roomNumber);
-      return;
-    }
-
-    openRoomReport(roomNumber);
-  }
-
-  function openOperationalReportHome(selectedDate) {
-    currentRoomReportNumber = "";
-    currentRoomReportAreas = [];
-    currentRoomReportStatuses = [];
-    currentRoomReportIssues = [];
-
-    const searchInput = document.getElementById("roomReportSearchInput");
-    const picker = document.getElementById("roomReportDatePicker");
+    const title = document.getElementById("roomReportTitle");
+    const input = document.getElementById("roomReportSearchInput");
+    const datePicker = document.getElementById("roomReportDatePicker");
     const box = document.getElementById("roomReportSingleCardList");
 
-    if (searchInput) searchInput.value = "";
-    if (picker) picker.value = selectedDate || currentWorkDateISO;
-    if (box) box.innerHTML = '<div class="room-report-card"><h3 class="room-report-main-title">Operational Report</h3><div class="room-report-line">Search a room to build the report.</div></div>';
+    if (title) title.innerText = selectedReportType === "daily" ? "Daily Report" : "Operational Report";
+    if (input) {
+      input.value = "";
+      setTimeout(function() { input.focus(); }, 80);
+    }
+    if (datePicker) datePicker.value = currentWorkDateISO;
+    if (box) box.innerHTML = "";
 
     showAdminView("adminRoomReportView");
-    setTimeout(function() { if (searchInput) searchInput.focus(); }, 50);
   }
 
-  function openDailyReportHome(selectedDate) {
-    currentRoomReportNumber = "";
-    currentRoomReportAreas = [];
-    currentRoomReportStatuses = [];
-    currentRoomReportIssues = [];
-
-    const searchInput = document.getElementById("dailyReportSearchInput");
-    const picker = document.getElementById("dailyReportDatePicker");
-    const box = document.getElementById("dailyReportCardList");
-
-    if (searchInput) searchInput.value = "";
-    if (picker) picker.value = selectedDate || currentWorkDateISO;
-    if (box) box.innerHTML = '<div class="daily-report-card"><div class="daily-report-card-title">Daily Report</div><div class="daily-report-line">Search a room to build the report.</div></div>';
-
-    showAdminView("adminDailyReportView");
-    setTimeout(function() { if (searchInput) searchInput.focus(); }, 50);
-  }
+  /* =========================
+     43B - ROOM REPORT
+  ========================== */
 
   function handleAdminRoomSearchKey(event) {
     if (event && event.key === "Enter") {
@@ -3998,6 +3898,8 @@
   }
 
   async function openAdminRoomReportFromSearch() {
+    selectedReportType = "operational";
+    selectedReportDateISO = currentWorkDateISO;
     const input = document.getElementById("adminRoomSearchInput");
     const roomNumber = String(input ? input.value : "").replace(/\D/g, "").slice(0, 3);
 
@@ -4016,7 +3918,18 @@
     }
   }
 
+  async function handleRoomReportAutoInput(input) {
+    limitRoomInput(input);
+
+    const roomNumber = String(input ? input.value : "").replace(/\D/g, "").slice(0, 3);
+    if (roomNumber.length === 3) {
+      await openRoomReport(roomNumber);
+    }
+  }
+
   async function openRoomReportFromReportSearch() {
+    if (!selectedReportType) selectedReportType = "operational";
+    if (!selectedReportDateISO) selectedReportDateISO = currentWorkDateISO;
     const input = document.getElementById("roomReportSearchInput");
     const roomNumber = String(input ? input.value : "").replace(/\D/g, "").slice(0, 3);
 
@@ -4039,6 +3952,9 @@
     if (allAreas.length === 0 || allSubTasks.length === 0) {
       await loadAllAdminData();
     }
+
+    currentWorkDateISO = selectedReportDateISO || currentWorkDateISO || getTodayISO();
+    updateDateDisplay();
 
     currentRoomReportAreas = getRoomReportAreas(currentRoomReportNumber);
 
@@ -4144,6 +4060,11 @@
 
     box.innerHTML = "";
 
+    if (selectedReportType === "daily") {
+      drawDailyRoomReportCard(box, selectedDate);
+      return;
+    }
+
     const card = document.createElement("div");
     card.className = "room-report-card";
 
@@ -4204,407 +4125,139 @@
     box.appendChild(card);
   }
 
-  function handleDailyReportSearchKey(event) {
-    if (event && event.key === "Enter") {
-      event.preventDefault();
-      openDailyReportFromSearch();
-    }
-  }
-
-  async function openDailyReportFromSearch() {
-    const input = document.getElementById("dailyReportSearchInput");
-    const roomNumber = String(input ? input.value : "").replace(/\D/g, "").slice(0, 3);
-
-    if (!roomNumber) {
-      showAppMessage("Enter room number.");
-      return;
-    }
-
-    await openDailyReport(roomNumber);
-  }
-
-  async function openDailyReport(roomNumber) {
-    currentRoomReportNumber = String(roomNumber || "").replace(/\D/g, "").slice(0, 3);
-
-    if (!currentRoomReportNumber) {
-      showAppMessage("Enter room number.");
-      return;
-    }
-
-    if (allAreas.length === 0 || allSubTasks.length === 0) {
-      await loadAllAdminData();
-    }
-
-    currentRoomReportAreas = getRoomReportAreas(currentRoomReportNumber);
-
-    const searchInput = document.getElementById("dailyReportSearchInput");
-    if (searchInput) searchInput.value = currentRoomReportNumber;
-
-    const picker = document.getElementById("dailyReportDatePicker");
-    if (picker && !picker.value) picker.value = currentWorkDateISO;
-
-    await loadDailyReportSummary();
-    showAdminView("adminDailyReportView");
-  }
-
-  async function changeDailyReportDate() {
-    if (!currentRoomReportNumber) return;
-    await loadDailyReportSummary();
-  }
-
-  async function loadDailyReportSummary() {
-    showLoading();
-
-    const statusSnap = await getDocs(collection(db, "task_area_status"));
-
-    currentRoomReportStatuses = statusSnap.docs
-      .map(function(statusDoc) {
-        return {
-          id: statusDoc.id,
-          ...statusDoc.data()
-        };
-      })
-      .filter(function(record) {
-        return isRoomReportRecordMatch(record);
-      })
-      .sort(function(a, b) {
-        return getRecordSortValue(b) - getRecordSortValue(a);
-      });
-
-    const issueSnap = await getDocs(collection(db, "issue_logs"));
-
-    currentRoomReportIssues = issueSnap.docs
-      .map(function(issueDoc) {
-        return {
-          id: issueDoc.id,
-          ...issueDoc.data()
-        };
-      })
-      .filter(function(issue) {
-        return isRoomReportRecordMatch(issue);
-      })
-      .sort(function(a, b) {
-        return getRecordSortValue(b) - getRecordSortValue(a);
-      });
-
-    drawDailyReportCard();
-    hideLoading();
-  }
-
-  function drawDailyReportCard() {
-    const box = document.getElementById("dailyReportCardList");
-    const picker = document.getElementById("dailyReportDatePicker");
-    const selectedDate = picker && picker.value ? picker.value : currentWorkDateISO;
-
-    if (!box) return;
-    box.innerHTML = "";
-
-    const title = document.createElement("div");
-    title.innerHTML =
-      '<div class="daily-report-title">Daily Report</div>' +
-      '<div class="daily-report-room-number">' + escapeHtml(currentRoomReportNumber) + '</div>' +
-      '<div class="daily-report-mode">Active Mode: ' + escapeHtml(getDailyReportModeLabel()) + '</div>';
-    box.appendChild(title);
-
-    box.appendChild(buildDailyReportSection("Room Settings", buildDailyRoomSettingsHtml()));
-    box.appendChild(buildDailyReportSection("Laundry", buildDailyCategoryHtml("Laundry", selectedDate)));
-    box.appendChild(buildDailyReportSection("Housekeeping", buildDailyCategoryHtml("Housekeeping", selectedDate)));
-
-    if (hasDailyReportDehumidifier()) {
-      box.appendChild(buildDailyReportSection("Dehumidifier", buildDailyDehumidifierHtml(selectedDate)));
-    }
-  }
-
-  function buildDailyReportSection(title, bodyHtml) {
+  function drawDailyRoomReportCard(box, selectedDate) {
     const card = document.createElement("div");
-    card.className = "daily-report-card";
-    card.innerHTML =
-      '<div class="daily-report-card-title">' + escapeHtml(title) + '</div>' +
-      bodyHtml;
-    return card;
-  }
+    card.className = "room-report-card";
 
-  function getDailyReportModeLabel() {
-    return housekeepingMode === "three" ? "Mode 3" : "Mode 2";
-  }
-
-  function buildDailyRoomSettingsHtml() {
-    if (!isDailyReportDailyRoom()) {
-      return '<div class="daily-report-line">N/A</div>';
-    }
-
-    const residentStatus = getRoomResidentStatus();
-    const settingParts = [residentStatus, "Daily Room"];
-
-    if (hasDailyReportDehumidifier()) {
-      settingParts.push("Dehumidifier");
-    } else {
-      settingParts.push("No Dehumidifier");
-    }
-
-    return '<div class="daily-report-line">' + escapeHtml(settingParts.join(" · ")) + '</div>';
-  }
-
-  function isDailyReportDailyRoom() {
-    const roomKey = getRoomKey(currentRoomReportNumber);
-
-    if (currentRoomReportAreas.some(function(area) {
-      return String(area.category || "") === "Daily Room";
-    })) {
-      return true;
-    }
-
-    return Object.keys(roomSettingsData || {}).some(function(key) {
-      const setting = roomSettingsData[key] || {};
-      return getRoomKey(setting.roomKey || setting.roomName || "") === roomKey && setting.isDaily === true;
+    const selectedDateStatuses = currentRoomReportStatuses.filter(function(record) {
+      return getRecordDateISO(record) === selectedDate;
     });
-  }
 
-  function hasDailyReportDehumidifier() {
-    return currentRoomReportAreas.some(function(area) {
+    const selectedDateIssues = currentRoomReportIssues.filter(function(issue) {
+      return getRecordDateISO(issue) === selectedDate;
+    });
+
+    const hasDehumidifierSetup = currentRoomReportAreas.some(function(area) {
       return String(area.category || "") === "Dehumidifier";
+    }) || selectedDateStatuses.some(function(record) {
+      return isDehumidifierStatus(record);
     });
+
+    card.innerHTML =
+      '<h3 class="room-report-main-title">Daily Report</h3>' +
+      '<div class="room-report-line">Room ' + escapeHtml(currentRoomReportNumber) + '</div>' +
+      '<div class="room-report-line">Active Mode: ' + escapeHtml(housekeepingMode === "three" ? "Mode 3" : "Mode 2") + '</div>' +
+      buildDailyReportSection("Room Settings", [], [], "Settings") +
+      buildDailyReportSection(
+        "Laundry",
+        selectedDateStatuses.filter(function(record) { return isLaundryStatus(record); }),
+        selectedDateIssues.filter(function(issue) { return isLaundryStatus(issue); }),
+        "Laundry"
+      ) +
+      buildDailyReportSection(
+        "Housekeeping",
+        selectedDateStatuses.filter(function(record) { return isHousekeepingStatus(record); }),
+        selectedDateIssues.filter(function(issue) { return isHousekeepingStatus(issue); }),
+        "Housekeeping"
+      ) +
+      (hasDehumidifierSetup
+        ? buildDailyReportSection(
+            "Dehumidifier",
+            selectedDateStatuses.filter(function(record) { return isDehumidifierStatus(record); }),
+            selectedDateIssues.filter(function(issue) { return isDehumidifierStatus(issue); }),
+            "Dehumidifier"
+          )
+        : "");
+
+    box.appendChild(card);
   }
 
-  function buildDailyCategoryHtml(type, selectedDate) {
-    let html = "";
+  function buildDailyReportSection(title, records, issues, categoryFilter) {
+    if (title === "Room Settings") {
+      return '<div class="daily-report-card">' +
+        '<h3>Room Settings</h3>' +
+        '<div class="daily-report-line">Resident Status: ' + escapeHtml(getRoomResidentStatus()) + '</div>' +
+        '<div class="daily-report-line">' + escapeHtml(formatDailyReportSetupSummary()) + '</div>' +
+      '</div>';
+    }
 
-    const weeklyRecords = getDailyReportRecords(type, "weekly", selectedDate);
-    const dailyRecords = getDailyReportRecords(type, "daily", selectedDate);
-    const weeklyAreas = getDailyReportAreas(type, "weekly");
-    const dailyAreas = getDailyReportAreas(type, "daily");
+    let html = '<div class="daily-report-card"><h3>' + escapeHtml(title) + '</h3>';
 
-    html += buildDailyScheduleBlock(
-      getDailyReportWeeklyTitle(type, weeklyAreas),
-      weeklyRecords[0] || null,
-      type,
-      selectedDate,
-      "weekly"
-    );
+    if (records.length === 0) {
+      html += '<div class="daily-report-line">No completed record found.</div>';
+    }
 
-    html += buildDailyScheduleBlock(
-      "Daily",
-      dailyRecords[0] || null,
-      type,
-      selectedDate,
-      "daily"
-    );
+    records.forEach(function(record) {
+      html += '<div class="daily-report-line">' + escapeHtml(formatDailyReportStatusLine(record)) + '</div>';
+      html += '<div class="daily-report-line">' + escapeHtml(formatDailyReportEmployeeLine(record)) + '</div>';
+    });
 
+    html += '<div class="daily-report-line">' + escapeHtml(title + " Issues: " + formatDailyReportIssues(issues)) + '</div>';
+
+    if (issues.length > 0) {
+      html += "<button class=\"yellow\" onclick=\"openRoomReportIssues('" + escapeHtml(categoryFilter) + "')\">OPEN ISSUES</button>";
+    }
+
+    html += '</div>';
     return html;
   }
 
-  function buildDailyDehumidifierHtml(selectedDate) {
-    const amRecords = currentRoomReportStatuses.filter(function(record) {
-      return getRecordDateISO(record) === selectedDate && isDehumidifierStatus(record) && getDehumidifierPeriod(record) === "AM";
+  function formatDailyReportSetupSummary() {
+    const setupAreas = currentRoomReportAreas.filter(function(area) {
+      return String(area.category || "") !== "Dehumidifier";
     });
 
-    const pmRecords = currentRoomReportStatuses.filter(function(record) {
-      return getRecordDateISO(record) === selectedDate && isDehumidifierStatus(record) && getDehumidifierPeriod(record) === "PM";
-    });
+    if (setupAreas.length === 0) return "No room setup found.";
 
-    return buildDailyScheduleBlock("AM", amRecords[0] || null, "Dehumidifier", selectedDate, "am") +
-      buildDailyScheduleBlock("PM", pmRecords[0] || null, "Dehumidifier", selectedDate, "pm");
+    return setupAreas.map(function(area) {
+      return formatRoomSettingLine(area);
+    }).join(" | ");
   }
 
-  function getDailyReportAreas(type, scheduleType) {
-    return currentRoomReportAreas.filter(function(area) {
-      const category = String(area.category || "");
-      const schedule = String(getAreaAssignment(area) || "");
-
-      if (type === "Laundry") {
-        if (!(category.includes("Laundry") || schedule === "Laundry")) return false;
-      } else if (type === "Housekeeping") {
-        if (!["Weekly Room", "Daily Room"].includes(category)) return false;
-      }
-
-      if (scheduleType === "weekly") return isWeeklyCategory(category);
-      return !isWeeklyCategory(category);
-    });
-  }
-
-  function getDailyReportRecords(type, scheduleType, selectedDate) {
-    return currentRoomReportStatuses.filter(function(record) {
-      if (getRecordDateISO(record) !== selectedDate) return false;
-
-      if (type === "Laundry" && !isLaundryStatus(record)) return false;
-      if (type === "Housekeeping" && !isHousekeepingStatus(record)) return false;
-
-      const category = String(record.category || "");
-      if (scheduleType === "weekly") return isWeeklyCategory(category);
-      return !isWeeklyCategory(category);
-    });
-  }
-
-  function getDailyReportWeeklyTitle(type, weeklyAreas) {
-    const firstArea = weeklyAreas[0] || null;
-    const day = firstArea ? String(firstArea.scheduleDay || firstArea.day || "").trim() : "";
-    return day ? "Weekly " + day : "Weekly";
-  }
-
-  function buildDailyScheduleBlock(title, record, type, selectedDate, scheduleType) {
-    const statusLine = record ? getDailyReportStatusLine(record) : "No Save";
-    const employeeLine = record ? getDailyReportEmployeeLine(record) : "No record found";
-    const issueHtml = buildDailyIssuesLine(type, selectedDate, scheduleType);
-
-    return '<div class="daily-report-block-title">' + escapeHtml(title) + '</div>' +
-      '<div class="daily-report-line">' + escapeHtml(statusLine) + '</div>' +
-      '<div class="daily-report-line">' + escapeHtml(employeeLine) + '</div>' +
-      issueHtml;
-  }
-
-  function getDailyReportStatusLine(record) {
-    const completed = Number(record.completedCount || 0);
+  function formatDailyReportStatusLine(record) {
+    const taskLabel = getDailyReportTaskLabel(record);
     const incomplete = Number(record.incompleteCount || 0);
-    const total = Number(record.totalCount || completed + incomplete || 0);
-    const statusText = incomplete > 0 ? "Not Done / Issue" : "Done";
-    const doneBySchedule = isDailyReportDoneBySchedule(record) ? "By schedule" : "Outside schedule";
-    const doneInTime = isDailyReportDoneInTime(record) ? "On time" : "Late";
-    const countText = total > 0 ? " · " + completed + "/" + total : "";
-
-    return statusText + " · " + doneInTime + " · " + doneBySchedule + countText;
+    const statusText = incomplete > 0 ? "Issue" : "Done";
+    return taskLabel + " - " + statusText + " \u00b7 On time \u00b7 By schedule";
   }
 
-  function getDailyReportEmployeeLine(record) {
-    return (record.employeeName || "Unknown") + " · " + formatDailyReportDateTime(record);
+  function formatDailyReportEmployeeLine(record) {
+    const employee = record.employeeName || "No employee";
+    return employee + " \u00b7 " + getRecordDateTimeText(record).replace(" - ", " at ");
   }
 
-  function formatDailyReportDateTime(record) {
-    const isoDate = getRecordDateISO(record);
-    const dateText = formatDailyDateWithWeekday(isoDate);
-    const directTime = String(
-      record.completedTime ||
-      record.savedTime ||
-      record.createdTime ||
-      record.updatedTime ||
-      record.timeCompleted ||
-      record.time ||
-      ""
-    ).trim();
+  function getDailyReportTaskLabel(record) {
+    const category = String(record.category || "");
+    const weekday = getWeekdayName(getRecordDateISO(record) || currentWorkDateISO);
 
-    if (directTime) return dateText + " at " + directTime;
+    if (category === "Weekly Room") return "Weekly " + weekday;
+    if (category === "Daily Room") return "Daily Room";
+    if (category.includes("Laundry")) return category;
+    if (category === "Dehumidifier") return "Dehumidifier " + (getDehumidifierPeriod(record) || "");
 
-    const millis = getTimestampMillis(record);
-    if (!millis) return dateText;
-
-    const timeText = new Date(millis).toLocaleTimeString([], {
-      hour: "numeric",
-      minute: "2-digit"
-    });
-
-    return dateText + " at " + timeText;
+    return getRecordTaskLabel(record);
   }
 
-  function formatDailyDateWithWeekday(isoDate) {
-    const cleanDate = String(isoDate || "").slice(0, 10);
-    if (!cleanDate) return "No date";
+  function formatDailyReportIssues(issues) {
+    if (!issues || issues.length === 0) return "None";
 
-    const parts = cleanDate.split("-");
-    if (parts.length !== 3) return cleanDate;
-
-    return getWeekdayName(cleanDate) + " " + parts[1] + "/" + parts[2] + "/" + parts[0];
+    return issues.map(function(issue) {
+      return [
+        issue.taskName || "Issue",
+        issue.issueReason || "",
+        issue.issueNote || issue.followUpNote || ""
+      ].filter(function(item) {
+        return String(item || "").trim() !== "";
+      }).join(" - ");
+    }).join(" | ");
   }
 
-  function isDailyReportDoneBySchedule(record) {
-    const recordDay = getWeekdayName(getRecordDateISO(record));
-    const scheduleDay = String(record.scheduleDay || record.day || "").trim();
-
-    if (!scheduleDay || scheduleDay.toLowerCase() === "daily") return true;
-    return scheduleDay.toLowerCase() === recordDay.toLowerCase();
-  }
-
-  function isDailyReportDoneInTime(record) {
-    return isDailyReportDoneBySchedule(record);
-  }
-
-  function buildDailyIssuesLine(type, selectedDate, scheduleType) {
-    const issues = getDailyIssuesForBlock(type, selectedDate, scheduleType);
-    const label = getDailyIssueLabel(type);
-
-    if (issues.length === 0) {
-      return '<div class="daily-report-line">' + escapeHtml(label + ': None') + '</div>';
-    }
-
-    const firstIssue = issues[0];
-    const text = [
-      label + ': ' + (firstIssue.taskName || "Issue"),
-      firstIssue.issueReason || "",
-      firstIssue.issueNote || ""
-    ].filter(function(item) { return String(item || "").trim() !== ""; }).join(" - ");
-
-    return '<div class="daily-report-line">' + escapeHtml(text) + '</div>' +
-      '<button class="daily-report-issue-button" onclick="openIssuesForRoomCategory(\'' + escapeHtml(type) + '\')">OPEN ISSUES</button>';
-  }
-
-  function getDailyIssuesForBlock(type, selectedDate, scheduleType) {
-    return currentRoomReportIssues.filter(function(issue) {
-      if (getRecordDateISO(issue) !== selectedDate) return false;
-
-      const category = String(issue.category || "");
-
-      if (type === "Laundry") {
-        if (!(category.includes("Laundry") || String(issue.schedule || "") === "Laundry")) return false;
-      } else if (type === "Housekeeping") {
-        if (!["Weekly Room", "Daily Room"].includes(category)) return false;
-      } else if (type === "Dehumidifier") {
-        if (!isDehumidifierStatus(issue)) return false;
-      }
-
-      if (scheduleType === "weekly") return isWeeklyCategory(category);
-      if (scheduleType === "daily") return !isWeeklyCategory(category);
-      if (scheduleType === "am") return getDehumidifierPeriod(issue) === "AM";
-      if (scheduleType === "pm") return getDehumidifierPeriod(issue) === "PM";
-
-      return true;
-    });
-  }
-
-  function getDailyIssueLabel(type) {
-    if (type === "Laundry") return "Laundry Issues";
-    if (type === "Dehumidifier") return "Dehum Issues";
-    return "HK Issues";
-  }
-
-  async function openIssuesForRoomCategory(type) {
-    const picker = document.getElementById("dailyReportDatePicker");
-    const selectedDate = picker && picker.value ? picker.value : currentWorkDateISO;
-    const roomKey = getRoomKey(currentRoomReportNumber);
-
-    showLoading();
-
-    const snap = await getDocs(collection(db, "issue_logs"));
-
-    allIssues = snap.docs
-      .map(function(issueDoc) {
-        return {
-          id: issueDoc.id,
-          ...issueDoc.data()
-        };
-      })
-      .filter(function(issue) {
-        if (getRecordDateISO(issue) !== selectedDate) return false;
-        if (getRoomKey(issue.areaName) !== roomKey) return false;
-
-        const category = String(issue.category || "");
-
-        if (type === "Laundry") return category.includes("Laundry") || String(issue.schedule || "") === "Laundry";
-        if (type === "Dehumidifier") return isDehumidifierStatus(issue);
-        return ["Weekly Room", "Daily Room"].includes(category);
-      })
-      .sort(function(a, b) {
-        return getRecordSortValue(b) - getRecordSortValue(a);
-      });
-
-    const datePicker = document.getElementById("issueDatePicker");
-    const statusFilter = document.getElementById("issueStatusFilter");
-    const searchInput = document.getElementById("issueSearchInput");
-
-    if (datePicker) datePicker.value = selectedDate;
-    if (statusFilter) statusFilter.value = "All";
-    if (searchInput) searchInput.value = currentRoomReportNumber;
-
-    currentDailyReportIssueCategory = type;
-    drawIssueList();
-    hideLoading();
+  async function openRoomReportIssues(categoryFilter) {
+    issueCategoryFilterFromReport = categoryFilter || "";
+    document.getElementById("issueDatePicker").value = selectedReportDateISO || currentWorkDateISO;
+    document.getElementById("issueStatusFilter").value = "All";
+    document.getElementById("issueSearchInput").value = currentRoomReportNumber;
+    await loadFilteredIssues();
     updateAssignmentTitles();
     showAdminView("adminIssuesView");
   }
@@ -5049,6 +4702,7 @@
   ========================== */
 
   async function openIssues() {
+    issueCategoryFilterFromReport = "";
     document.getElementById("issueDatePicker").value = currentWorkDateISO;
     document.getElementById("issueStatusFilter").value = "Open";
     document.getElementById("issueSearchInput").value = "";
@@ -5131,6 +4785,20 @@
 
     let issues = allIssues.filter(function(issue) {
       if (statusFilter !== "All" && String(issue.status || "Open") !== statusFilter) return false;
+
+      if (issueCategoryFilterFromReport) {
+        const categoryText = String(issue.category || "");
+        const isMatch =
+          issueCategoryFilterFromReport === "Housekeeping"
+            ? ["Weekly Room", "Daily Room"].includes(categoryText)
+            : issueCategoryFilterFromReport === "Laundry"
+              ? categoryText.includes("Laundry") || String(issue.schedule || "") === "Laundry"
+              : issueCategoryFilterFromReport === "Dehumidifier"
+                ? categoryText === "Dehumidifier" || String(issue.taskName || "").toLowerCase().includes("dehum")
+                : true;
+
+        if (!isMatch) return false;
+      }
 
       if (searchText) {
         const combined = [
@@ -6662,25 +6330,19 @@
   ========================== */
 
   window.changeAdminWorkDateFromBigPicker = changeAdminWorkDateFromBigPicker;
-  window.openReportChooser = openReportChooser;
-  window.selectReportType = selectReportType;
-  window.openReportDateChoice = openReportDateChoice;
-  window.useReportToday = useReportToday;
-  window.showReportOtherDate = showReportOtherDate;
-  window.continueReportOtherDate = continueReportOtherDate;
-  window.closeReportFlowPopup = closeReportFlowPopup;
-  window.handleReportRoomAutoInput = handleReportRoomAutoInput;
-  window.openOperationalReportHome = openOperationalReportHome;
-  window.openDailyReportHome = openDailyReportHome;
   window.handleAdminRoomSearchKey = handleAdminRoomSearchKey;
   window.openAdminRoomReportFromSearch = openAdminRoomReportFromSearch;
   window.handleRoomReportSearchKey = handleRoomReportSearchKey;
+  window.handleRoomReportAutoInput = handleRoomReportAutoInput;
   window.openRoomReportFromReportSearch = openRoomReportFromReportSearch;
   window.changeRoomReportDate = changeRoomReportDate;
-  window.handleDailyReportSearchKey = handleDailyReportSearchKey;
-  window.openDailyReportFromSearch = openDailyReportFromSearch;
-  window.changeDailyReportDate = changeDailyReportDate;
-  window.openIssuesForRoomCategory = openIssuesForRoomCategory;
+  window.openReportsFlow = openReportsFlow;
+  window.chooseReportType = chooseReportType;
+  window.chooseReportToday = chooseReportToday;
+  window.showReportAnotherDay = showReportAnotherDay;
+  window.continueReportAnotherDay = continueReportAnotherDay;
+  window.closeReportFlowPopup = closeReportFlowPopup;
+  window.openRoomReportIssues = openRoomReportIssues;
   window.setAdminAreaWeekday = setAdminAreaWeekday;
   window.changeAdminAssignment = changeAdminAssignment;
   window.searchAdminAreas = searchAdminAreas;
