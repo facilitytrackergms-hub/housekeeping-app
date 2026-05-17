@@ -529,26 +529,38 @@
 
 
     .maintenance-selected-card {
-      border: 2px solid #2e7d32;
-      border-radius: 14px;
-      padding: 8px 10px;
+      border: 1px solid #2e7d32;
+      border-left: 5px solid #2e7d32;
+      border-radius: 10px;
+      padding: 8px 9px;
       margin: 6px 0 8px;
       background: #f7fff8;
       color: #111;
-      text-align: center;
+      text-align: left;
       font-weight: 900;
       box-shadow: none;
     }
 
     .maintenance-selected-room-number {
-      font-size: 20px;
+      font-size: 18px;
       line-height: 1.1;
+      text-align: center;
     }
 
     .maintenance-selected-room-label {
       font-size: 12px;
-      margin-top: 2px;
+      margin-top: 3px;
       color: #333;
+      text-align: center;
+      line-height: 1.25;
+    }
+
+    .maintenance-selected-settings {
+      font-size: 12px;
+      color: #333;
+      text-align: center;
+      line-height: 1.25;
+      margin-top: 3px;
     }
 
     .maintenance-pass-fail-row {
@@ -567,7 +579,7 @@
 
     .maintenance-inline-row {
       display: grid;
-      grid-template-columns: 1fr 74px;
+      grid-template-columns: 1fr 58px 52px;
       gap: 7px;
       align-items: stretch;
       margin: 4px 0 8px;
@@ -582,8 +594,8 @@
     .maintenance-small-action {
       margin: 0;
       min-height: 46px;
-      font-size: 13px;
-      padding: 8px 5px;
+      font-size: 12px;
+      padding: 8px 4px;
       background: #0d47a1;
       color: white;
     }
@@ -951,7 +963,7 @@
 
     <div id="adminCategoryButtons" class="rooms-grid"></div>
 
-    <div class="app-version-label">Updated: 2026-05-17 12:48 PM</div>
+    <div class="app-version-label">Updated: 2026-05-17 12:58 PM</div>
 
   </div>
 
@@ -1400,6 +1412,7 @@
         <option value="">Select item</option>
       </select>
       <button type="button" onclick="openMaintenanceNewItemPopup()">ADD</button>
+      <button type="button" class="red" onclick="deleteSelectedMaintenanceInspectionItem()">DEL</button>
     </div>
 
     <div class="maintenance-section-label">Fail Reason</div>
@@ -1408,13 +1421,19 @@
         <option value="">Select fail reason</option>
       </select>
       <button type="button" onclick="openMaintenanceNewReasonPopup()">ADD</button>
+      <button type="button" class="red" onclick="deleteSelectedMaintenanceInspectionReason()">DEL</button>
     </div>
-    <div id="maintenanceInspectionReasonButtons" class="inspection-reason-grid"></div>
+    <div id="maintenanceInspectionReasonButtons" class="inspection-reason-grid hidden"></div>
 
     <textarea id="maintenanceInspectionMaterialsInput" class="hidden" placeholder="Materials needed"></textarea>
     <div class="maintenance-section-label">Materials Needed</div>
-    <div id="maintenanceInspectionMaterialsSummary" class="maintenance-materials-label">No materials added.</div>
-    <button type="button" class="maintenance-small-action" onclick="openMaintenanceMaterialsPopup()">ADD / EDIT MATERIALS</button>
+    <div class="maintenance-inline-row">
+      <select id="maintenanceInspectionMaterialsSelect" onchange="selectMaintenanceInspectionMaterial(this.value)">
+        <option value="">Select material</option>
+      </select>
+      <button type="button" onclick="openMaintenanceMaterialsPopup()">ADD</button>
+      <button type="button" class="red" onclick="deleteSelectedMaintenanceInspectionMaterial()">DEL</button>
+    </div>
 
     <div class="maintenance-section-label">Notes</div>
     <textarea id="maintenanceInspectionNoteInput" placeholder="Inspection notes"></textarea>
@@ -1755,6 +1774,7 @@
     deleteDoc,
     serverTimestamp,
     arrayUnion,
+    arrayRemove,
     writeBatch
   } from "https://www.gstatic.com/firebasejs/10.8.0/firebase-firestore.js";
 
@@ -6280,29 +6300,108 @@
   }
 
   function openMaintenanceMaterialsPopup() {
-    const materialsBox = document.getElementById("maintenanceInspectionMaterialsInput");
-    const currentValue = materialsBox ? materialsBox.value : "";
+    const item = getSelectedMaintenanceInspectionItem();
+
+    if (!item) {
+      showAppMessage("Select thing being inspected first.");
+      return;
+    }
 
     openMaintenanceTextPopup(
       "Materials Needed",
-      "Type materials needed.",
-      "Example: Wax ring, bolts, caulk",
-      currentValue,
-      function(value) {
-        if (materialsBox) materialsBox.value = value;
-        updateMaintenanceInspectionMaterialsSummary();
+      "Type material needed.",
+      "Example: Wax ring",
+      "",
+      async function(value) {
+        if (!value) {
+          showAppMessage("Type material.");
+          return;
+        }
+
+        showLoading();
+        await saveNewMaintenanceInspectionMaterial(item, value);
+        drawMaintenanceInspectionMaterials(item);
+        selectMaintenanceInspectionMaterial(value);
+        hideLoading();
       }
     );
   }
 
-  function updateMaintenanceInspectionMaterialsSummary() {
-    const materialsBox = document.getElementById("maintenanceInspectionMaterialsInput");
-    const summaryBox = document.getElementById("maintenanceInspectionMaterialsSummary");
-    const value = String(materialsBox ? materialsBox.value : "").trim();
+  function getMaintenanceInspectionMaterials(item) {
+    const materials = [];
 
-    if (summaryBox) {
-      summaryBox.innerText = value || "No materials added.";
+    if (!item) return materials;
+
+    if (Array.isArray(item.materialOptions)) {
+      item.materialOptions.forEach(function(material) {
+        const cleanMaterial = String(material || "").trim();
+        if (cleanMaterial && !materials.includes(cleanMaterial)) materials.push(cleanMaterial);
+      });
     }
+
+    const defaultMaterial = String(item.materialsNeeded || "").trim();
+    if (defaultMaterial && !materials.includes(defaultMaterial)) {
+      materials.push(defaultMaterial);
+    }
+
+    return materials;
+  }
+
+  function drawMaintenanceInspectionMaterials(item) {
+    const select = document.getElementById("maintenanceInspectionMaterialsSelect");
+    const materialsBox = document.getElementById("maintenanceInspectionMaterialsInput");
+
+    if (select) {
+      select.innerHTML = '<option value="">Select material</option>';
+    }
+
+    if (materialsBox) {
+      materialsBox.value = "";
+    }
+
+    if (!item) return;
+
+    getMaintenanceInspectionMaterials(item).forEach(function(material) {
+      if (select) {
+        const option = document.createElement("option");
+        option.value = material;
+        option.innerText = material;
+        select.appendChild(option);
+      }
+    });
+  }
+
+  function selectMaintenanceInspectionMaterial(material) {
+    const cleanMaterial = String(material || "").trim();
+    const materialsBox = document.getElementById("maintenanceInspectionMaterialsInput");
+
+    if (materialsBox) {
+      materialsBox.value = cleanMaterial;
+    }
+  }
+
+  async function saveNewMaintenanceInspectionMaterial(item, material) {
+    const cleanMaterial = String(material || "").trim();
+    if (!item || !item.id || !cleanMaterial) return;
+
+    const existingMaterials = getMaintenanceInspectionMaterials(item).map(function(value) {
+      return String(value || "").trim().toLowerCase();
+    });
+
+    if (existingMaterials.includes(cleanMaterial.toLowerCase())) {
+      return;
+    }
+
+    await updateDoc(doc(db, "maintenance_inspection_items", item.id), {
+      materialOptions: arrayUnion(cleanMaterial),
+      updatedAt: serverTimestamp()
+    });
+
+    if (!Array.isArray(item.materialOptions)) {
+      item.materialOptions = [];
+    }
+
+    item.materialOptions.push(cleanMaterial);
   }
 
   async function openMaintenanceInspection() {
@@ -6340,7 +6439,7 @@
     document.getElementById("maintenanceInspectionNewReasonInput").value = "";
     document.getElementById("maintenanceInspectionNewItemInput").value = "";
     document.getElementById("maintenanceInspectionMessage").innerText = "";
-    updateMaintenanceInspectionMaterialsSummary();
+    drawMaintenanceInspectionMaterials(null);
 
     fillMaintenanceInspectionItemSelect();
     drawMaintenanceInspectionAreaList();
@@ -6494,13 +6593,82 @@
 
     const roomKey = getRoomKey(area.areaName || "");
     const foundLabel = roomKey ? "ROOM FOUND" : "AREA FOUND";
+    const settingLines = getMaintenanceInspectionRoomSettingLines(area);
 
     selectedBox.classList.remove("hidden");
     selectedBox.innerHTML =
       '<div class="maintenance-selected-room-number">' + escapeHtml(foundLabel + ': ' + (area.areaName || "Area")) + '</div>' +
-      '<div class="maintenance-selected-room-label">' + escapeHtml((area.category || "") + " - " + (getAreaAssignment(area) || "")) + '</div>';
+      '<div class="maintenance-selected-room-label">' + escapeHtml((area.category || "") + " - " + (getAreaAssignment(area) || "")) + '</div>' +
+      '<div class="maintenance-selected-settings">' + escapeHtml(settingLines.join(" · ")) + '</div>';
 
     if (actionRow) actionRow.classList.remove("hidden");
+  }
+
+  function getMaintenanceInspectionRoomSettingLines(area) {
+    const lines = [];
+    const roomKey = getRoomKey(area.areaName || "");
+
+    if (!roomKey) {
+      lines.push(area.category || "Area");
+      if (getAreaAssignment(area)) lines.push(getAreaAssignment(area));
+      return lines;
+    }
+
+    const matchingAreas = allAreas.filter(function(item) {
+      return getRoomKey(item.areaName || "") === roomKey;
+    });
+
+    const residentStatus = getMaintenanceInspectionResidentStatus(matchingAreas);
+
+    if (residentStatus) {
+      lines.push(residentStatus);
+    }
+
+    if (matchingAreas.some(function(item) { return String(item.category || "") === "Daily Room"; }) ||
+        Object.keys(roomSettingsData || {}).some(function(key) {
+          const setting = roomSettingsData[key] || {};
+          return getRoomKey(setting.roomKey || setting.roomName || "") === roomKey && setting.isDaily === true;
+        })) {
+      lines.push("Daily Room");
+    }
+
+    if (matchingAreas.some(function(item) { return String(item.category || "") === "Weekly Room"; })) {
+      lines.push("Weekly Room");
+    }
+
+    if (matchingAreas.some(function(item) { return String(item.category || "") === "Dehumidifier"; })) {
+      lines.push("Dehumidifier");
+    }
+
+    if (matchingAreas.some(function(item) { return String(item.category || "").includes("Laundry") || getAreaAssignment(item) === "Laundry"; })) {
+      lines.push("Laundry");
+    }
+
+    return lines.length > 0 ? lines : [area.category || "Active"];
+  }
+
+  function getMaintenanceInspectionResidentStatus(areas) {
+    const statusFields = [
+      "residentStatus",
+      "roomStatus",
+      "occupancyStatus",
+      "occupancy",
+      "residentState",
+      "status"
+    ];
+
+    for (let a = 0; a < areas.length; a++) {
+      for (let f = 0; f < statusFields.length; f++) {
+        const value = String((areas[a] || {})[statusFields[f]] || "").trim();
+        const lower = value.toLowerCase();
+
+        if (["vacant", "occupied", "hospital", "assisted"].includes(lower)) {
+          return value;
+        }
+      }
+    }
+
+    return areas.length > 0 ? "Occupied / Active" : "";
   }
 
   function clearMaintenanceInspectionSelectedArea() {
@@ -6530,10 +6698,7 @@
     let item = getSelectedMaintenanceInspectionItem();
     selectedMaintenanceInspectionReason = "";
 
-    const materials = document.getElementById("maintenanceInspectionMaterialsInput");
-    if (materials) materials.value = item ? String(item.materialsNeeded || "") : "";
-    updateMaintenanceInspectionMaterialsSummary();
-
+    drawMaintenanceInspectionMaterials(item);
     drawMaintenanceInspectionFailReasons(item);
   }
 
@@ -6547,28 +6712,17 @@
 
     if (buttonBox) {
       buttonBox.innerHTML = "";
+      buttonBox.classList.add("hidden");
     }
 
     if (!item) return;
 
-    const reasons = getMaintenanceInspectionFailReasons(item);
-
-    reasons.forEach(function(reason) {
+    getMaintenanceInspectionFailReasons(item).forEach(function(reason) {
       if (select) {
         const option = document.createElement("option");
         option.value = reason;
         option.innerText = reason;
         select.appendChild(option);
-      }
-
-      if (buttonBox) {
-        const btn = document.createElement("button");
-        btn.type = "button";
-        btn.innerText = reason;
-        btn.onclick = function() {
-          selectMaintenanceInspectionReason(reason);
-        };
-        buttonBox.appendChild(btn);
       }
     });
   }
@@ -6596,10 +6750,6 @@
 
     const select = document.getElementById("maintenanceInspectionReasonSelect");
     if (select) select.value = selectedMaintenanceInspectionReason;
-
-    Array.from(document.querySelectorAll("#maintenanceInspectionReasonButtons button")).forEach(function(button) {
-      button.classList.toggle("selected-inspection-reason", button.innerText === selectedMaintenanceInspectionReason);
-    });
   }
 
   function findMaintenanceInspectionAreaFromSearch() {
@@ -6680,6 +6830,153 @@
 
     allMaintenanceInspectionItems.push(newItem);
     return newItem;
+  }
+
+  async function deleteSelectedMaintenanceInspectionItem() {
+    const item = getSelectedMaintenanceInspectionItem();
+
+    if (!item || !item.id) {
+      showAppMessage("Select thing being inspected.");
+      return;
+    }
+
+    const ok = await showAppConfirmMessage("Delete " + (item.inspectionItem || "this item") + " from the dropdown?", "Delete Item");
+    if (!ok) return;
+
+    showLoading();
+
+    await updateDoc(doc(db, "maintenance_inspection_items", item.id), {
+      active: false,
+      updatedAt: serverTimestamp()
+    });
+
+    allMaintenanceInspectionItems = allMaintenanceInspectionItems.filter(function(currentItem) {
+      return currentItem.id !== item.id;
+    });
+
+    fillMaintenanceInspectionItemSelect();
+    drawMaintenanceInspectionMaterials(null);
+    selectedMaintenanceInspectionReason = "";
+
+    hideLoading();
+  }
+
+  async function deleteSelectedMaintenanceInspectionReason() {
+    const item = getSelectedMaintenanceInspectionItem();
+    const select = document.getElementById("maintenanceInspectionReasonSelect");
+    const reason = selectedMaintenanceInspectionReason || String(select ? select.value : "").trim();
+
+    if (!item || !item.id) {
+      showAppMessage("Select thing being inspected first.");
+      return;
+    }
+
+    if (!reason) {
+      showAppMessage("Select fail reason.");
+      return;
+    }
+
+    const ok = await showAppConfirmMessage("Delete " + reason + " from the dropdown?", "Delete Reason");
+    if (!ok) return;
+
+    const updateData = {
+      failReasons: arrayRemove(reason),
+      updatedAt: serverTimestamp()
+    };
+
+    for (let i = 1; i <= 12; i++) {
+      if (String(item["defaultFailReason" + i] || "").trim().toLowerCase() === reason.toLowerCase()) {
+        updateData["defaultFailReason" + i] = "";
+        item["defaultFailReason" + i] = "";
+      }
+    }
+
+    showLoading();
+
+    await updateDoc(doc(db, "maintenance_inspection_items", item.id), updateData);
+
+    if (Array.isArray(item.failReasons)) {
+      item.failReasons = item.failReasons.filter(function(currentReason) {
+        return String(currentReason || "").trim().toLowerCase() !== reason.toLowerCase();
+      });
+    }
+
+    selectedMaintenanceInspectionReason = "";
+    drawMaintenanceInspectionFailReasons(item);
+
+    hideLoading();
+  }
+
+  async function deleteSelectedMaintenanceInspectionMaterial() {
+    const item = getSelectedMaintenanceInspectionItem();
+    const select = document.getElementById("maintenanceInspectionMaterialsSelect");
+    const material = String(select ? select.value : "").trim();
+
+    if (!item || !item.id) {
+      showAppMessage("Select thing being inspected first.");
+      return;
+    }
+
+    if (!material) {
+      showAppMessage("Select material.");
+      return;
+    }
+
+    const ok = await showAppConfirmMessage("Delete " + material + " from the dropdown?", "Delete Material");
+    if (!ok) return;
+
+    const updateData = {
+      materialOptions: arrayRemove(material),
+      updatedAt: serverTimestamp()
+    };
+
+    if (String(item.materialsNeeded || "").trim().toLowerCase() === material.toLowerCase()) {
+      updateData.materialsNeeded = "";
+      item.materialsNeeded = "";
+    }
+
+    showLoading();
+
+    await updateDoc(doc(db, "maintenance_inspection_items", item.id), updateData);
+
+    if (Array.isArray(item.materialOptions)) {
+      item.materialOptions = item.materialOptions.filter(function(currentMaterial) {
+        return String(currentMaterial || "").trim().toLowerCase() !== material.toLowerCase();
+      });
+    }
+
+    drawMaintenanceInspectionMaterials(item);
+
+    hideLoading();
+  }
+
+  function resetMaintenanceInspectionForm() {
+    selectedMaintenanceInspectionArea = null;
+    selectedMaintenanceInspectionReason = "";
+
+    const searchInput = document.getElementById("maintenanceInspectionSearchInput");
+    const itemSelect = document.getElementById("maintenanceInspectionItemSelect");
+    const reasonSelect = document.getElementById("maintenanceInspectionReasonSelect");
+    const materialSelect = document.getElementById("maintenanceInspectionMaterialsSelect");
+    const noteBox = document.getElementById("maintenanceInspectionNoteInput");
+    const materialsBox = document.getElementById("maintenanceInspectionMaterialsInput");
+    const newReasonBox = document.getElementById("maintenanceInspectionNewReasonInput");
+    const newItemBox = document.getElementById("maintenanceInspectionNewItemInput");
+    const messageBox = document.getElementById("maintenanceInspectionMessage");
+    const listBox = document.getElementById("maintenanceInspectionAreaList");
+
+    if (searchInput) searchInput.value = "";
+    if (itemSelect) itemSelect.value = "";
+    if (reasonSelect) reasonSelect.innerHTML = '<option value="">Select fail reason</option>';
+    if (materialSelect) materialSelect.innerHTML = '<option value="">Select material</option>';
+    if (noteBox) noteBox.value = "";
+    if (materialsBox) materialsBox.value = "";
+    if (newReasonBox) newReasonBox.value = "";
+    if (newItemBox) newItemBox.value = "";
+    if (messageBox) messageBox.innerText = "";
+    if (listBox) listBox.innerHTML = "";
+
+    clearMaintenanceInspectionSelectedArea();
   }
 
   async function saveMaintenanceInspectionResult(resultValue) {
@@ -6793,17 +7090,7 @@
       });
     }
 
-    if (messageBox) {
-      messageBox.innerText = result === "Fail" ? "Saved fail inspection." : "Saved good inspection.";
-    }
-
-    if (noteBox) noteBox.value = "";
-    if (newReasonBox) newReasonBox.value = "";
-    const newItemBox = document.getElementById("maintenanceInspectionNewItemInput");
-    if (newItemBox) newItemBox.value = "";
-    selectedMaintenanceInspectionReason = "";
-    drawMaintenanceInspectionFailReasons(item);
-    updateMaintenanceInspectionMaterialsSummary();
+    resetMaintenanceInspectionForm();
 
     hideLoading();
   }
@@ -7787,6 +8074,10 @@
   window.openMaintenanceNewItemPopup = openMaintenanceNewItemPopup;
   window.openMaintenanceNewReasonPopup = openMaintenanceNewReasonPopup;
   window.openMaintenanceMaterialsPopup = openMaintenanceMaterialsPopup;
+  window.selectMaintenanceInspectionMaterial = selectMaintenanceInspectionMaterial;
+  window.deleteSelectedMaintenanceInspectionItem = deleteSelectedMaintenanceInspectionItem;
+  window.deleteSelectedMaintenanceInspectionReason = deleteSelectedMaintenanceInspectionReason;
+  window.deleteSelectedMaintenanceInspectionMaterial = deleteSelectedMaintenanceInspectionMaterial;
   window.confirmMaintenanceTextPopup = confirmMaintenanceTextPopup;
   window.cancelMaintenanceTextPopup = cancelMaintenanceTextPopup;
   window.saveMaintenanceInspectionResult = saveMaintenanceInspectionResult;
