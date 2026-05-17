@@ -1108,7 +1108,7 @@
 
     <div id="adminCategoryButtons" class="rooms-grid"></div>
 
-    <div class="app-version-label">Updated: 2026-05-17 6:35 PM</div>
+    <div class="app-version-label">Updated: 2026-05-17 6:50 PM</div>
 
   </div>
 
@@ -1193,7 +1193,7 @@
     <label>Area Name</label>
     <input id="adminEditAreaInput">
 
-    <label>Assignment</label>
+    <label id="adminEditAssignmentLabel">Assignment</label>
     <select id="adminEditAssignmentInput">
       <option value="">Select assignment</option>
       <option>HK1</option>
@@ -1231,7 +1231,7 @@
     </div>
 
     <div class="button-row">
-      <button class="green" onclick="saveAdminAreaOnly()">SAVE AREA</button>
+      <button id="adminSaveAreaButton" class="green" onclick="saveAdminAreaOnly()">SAVE AREA</button>
       <button id="openAreaTasksButton" onclick="openAdminAreaTasks()">TASKS</button>
     </div>
 
@@ -2728,6 +2728,24 @@ async function startAdmin() {
     document.getElementById("appMessageBox").classList.remove("hidden");
   }
 
+  function showAppInputConfirmMessage(message, callback, cancelCallback, title) {
+    const input = document.getElementById("appMessageInput");
+    appMessageInputCallback = callback;
+    appMessageCancelCallback = cancelCallback || function() {};
+    setAppMessageButtons(true);
+
+    document.getElementById("appMessageTitle").innerText = title || "Notice";
+    document.getElementById("appMessageText").innerText = message;
+
+    if (input) {
+      input.value = "";
+      input.classList.remove("hidden");
+      setTimeout(function() { input.focus(); }, 50);
+    }
+
+    document.getElementById("appMessageBox").classList.remove("hidden");
+  }
+
   function showAppConfirmMessage(message, title) {
     const input = document.getElementById("appMessageInput");
     const okButton = document.getElementById("appMessageOkButton");
@@ -3539,7 +3557,10 @@ async function startAdmin() {
 
     if (box.innerHTML === "") {
       const empty = document.createElement("h3");
-      empty.innerText = "No areas found.";
+      empty.innerText =
+        category === "Dehumidifier"
+          ? "No dehumidifier found in this room."
+          : "No areas found.";
       box.appendChild(empty);
     }
   }
@@ -3594,9 +3615,17 @@ async function startAdmin() {
       return;
     }
 
-    showAppInputMessage("Move dehumi " + fromArea.areaName + " to what room?", async function(toRoom) {
-      await moveDehumidifierToRoom(fromArea, toRoom);
-    });
+    showAppInputConfirmMessage(
+      "Move dehumi " + fromArea.areaName + " to what room?",
+      async function(toRoom) {
+        await moveDehumidifierToRoom(fromArea, toRoom);
+      },
+      function() {
+        dehumidifierReassignStep = "from";
+        dehumidifierFromAreaId = "";
+        drawAdminAreaButtons("Dehumidifier");
+      }
+    );
   }
 
   /* =========================
@@ -3941,6 +3970,23 @@ async function startAdmin() {
   }
 
   /* =========================
+     29B - AREA EDITOR DISPLAY MODE
+  ========================== */
+
+  function setAdminAreaEditorMode(isNewDehumidifier) {
+    const assignmentLabel = document.getElementById("adminEditAssignmentLabel");
+    const assignmentInput = document.getElementById("adminEditAssignmentInput");
+    const saveButton = document.getElementById("adminSaveAreaButton");
+    const deleteButton = document.getElementById("deleteAreaButton");
+
+    if (assignmentLabel) assignmentLabel.classList.toggle("hidden", isNewDehumidifier);
+    if (assignmentInput) assignmentInput.classList.toggle("hidden", isNewDehumidifier);
+
+    if (saveButton) saveButton.innerText = isNewDehumidifier ? "SAVE" : "SAVE AREA";
+    if (deleteButton) deleteButton.classList.toggle("hidden", isNewDehumidifier);
+  }
+
+  /* =========================
      30 - OPEN EXISTING AREA EDITOR
   ========================== */
 
@@ -3971,6 +4017,7 @@ async function startAdmin() {
     setAdminSingleTaskBoxVisibility(selectedCategory);
     closeAdminSubTaskEditor();
     drawAdminSubTaskButtons();
+    setAdminAreaEditorMode(false);
     document.getElementById("openAreaTasksButton").classList.remove("hidden");
     showAdminView("adminEditView");
   }
@@ -3986,7 +4033,8 @@ async function startAdmin() {
     currentAreaTasks = [];
     selectedAreaScheduleDay = isWeeklyCategory(selectedCategory) ? currentWorkDayName : "daily";
 
-    document.getElementById("adminEditTitle").innerText = "New Area";
+    document.getElementById("adminEditTitle").innerText =
+      selectedCategory === "Dehumidifier" ? "New Dehumidifier" : "New Area";
     document.getElementById("adminEditAreaInput").value = "";
     document.getElementById("adminEditAssignmentInput").value = currentAssignment;
     document.getElementById("adminEditCategoryInput").value = selectedCategory;
@@ -3998,6 +4046,7 @@ async function startAdmin() {
     setAdminSingleTaskBoxVisibility(selectedCategory);
     closeAdminSubTaskEditor();
     drawAdminSubTaskButtons();
+    setAdminAreaEditorMode(selectedCategory === "Dehumidifier");
     document.getElementById("openAreaTasksButton").classList.add("hidden");
     showAdminView("adminEditView");
   }
