@@ -605,18 +605,22 @@
 
     .daily-report-title {
       text-align: center;
-      font-size: 22px;
+      font-size: 26px;
       font-weight: 900;
-      margin: 4px 0 0;
+      margin: 0 0 6px;
       color: #111;
     }
 
-    .daily-report-room-number {
+    .daily-report-search-box {
+      margin: 0 0 10px;
+    }
+
+    .daily-report-search-box input {
       text-align: center;
-      font-size: 30px;
+      font-size: 28px;
       font-weight: 900;
-      margin: 2px 0;
-      color: #111;
+      padding: 10px;
+      margin: 0;
     }
 
     .daily-report-mode {
@@ -1076,10 +1080,10 @@
   <div id="adminDailyReportView" class="hidden">
 
     <div class="view-center">
-      <div class="view-tag">DAILY REPORT</div>
+      <div class="daily-report-title">Daily Report</div>
     </div>
 
-    <div class="admin-room-search-box">
+    <div class="admin-room-search-box daily-report-search-box">
       <input
         id="dailyReportSearchInput"
         inputmode="numeric"
@@ -4369,8 +4373,6 @@
 
     const title = document.createElement("div");
     title.innerHTML =
-      '<div class="daily-report-title">Daily Report</div>' +
-      '<div class="daily-report-room-number">' + escapeHtml(currentRoomReportNumber) + '</div>' +
       '<div class="daily-report-mode">Date: ' + escapeHtml(formatDailyDateWithWeekday(selectedDate)) + '</div>' +
       '<div class="daily-report-mode">Active Mode: ' + escapeHtml(getDailyReportModeLabel()) + '</div>';
     box.appendChild(title);
@@ -4492,16 +4494,30 @@
   }
 
   function getDailyReportRecords(type, scheduleType, selectedDate) {
+    const exactRecords = getDailyReportRecordsForDateMode(type, scheduleType, selectedDate, false);
+
+    if (exactRecords.length > 0) {
+      return exactRecords;
+    }
+
+    return getDailyReportRecordsForDateMode(type, scheduleType, selectedDate, true);
+  }
+
+  function getDailyReportRecordsForDateMode(type, scheduleType, selectedDate, allowWeekdayFallback) {
     return currentRoomReportStatuses.filter(function(record) {
-      if (!isDailyReportRecordForSelectedDate(record, selectedDate)) return false;
-
-      if (type === "Laundry" && !isLaundryStatus(record)) return false;
-      if (type === "Housekeeping" && !isHousekeepingStatus(record)) return false;
-
-      const category = String(record.category || "");
-      if (scheduleType === "weekly") return isWeeklyCategory(category);
-      return !isWeeklyCategory(category);
+      if (!isDailyReportRecordForSelectedDate(record, selectedDate, allowWeekdayFallback)) return false;
+      if (!isDailyReportRecordTypeMatch(record, type, scheduleType)) return false;
+      return true;
     });
+  }
+
+  function isDailyReportRecordTypeMatch(record, type, scheduleType) {
+    if (type === "Laundry" && !isLaundryStatus(record)) return false;
+    if (type === "Housekeeping" && !isHousekeepingStatus(record)) return false;
+
+    const category = String(record.category || "");
+    if (scheduleType === "weekly") return isWeeklyCategory(category);
+    return !isWeeklyCategory(category);
   }
 
   function getDailyReportWeeklyTitle(type, weeklyAreas) {
@@ -4605,8 +4621,18 @@
   }
 
   function getDailyIssuesForBlock(type, selectedDate, scheduleType) {
+    const exactIssues = getDailyIssuesForBlockDateMode(type, selectedDate, scheduleType, false);
+
+    if (exactIssues.length > 0) {
+      return exactIssues;
+    }
+
+    return getDailyIssuesForBlockDateMode(type, selectedDate, scheduleType, true);
+  }
+
+  function getDailyIssuesForBlockDateMode(type, selectedDate, scheduleType, allowWeekdayFallback) {
     return currentRoomReportIssues.filter(function(issue) {
-      if (!isDailyReportRecordForSelectedDate(issue, selectedDate)) return false;
+      if (!isDailyReportRecordForSelectedDate(issue, selectedDate, allowWeekdayFallback)) return false;
 
       const category = String(issue.category || "");
 
@@ -4627,13 +4653,21 @@
     });
   }
 
-  function isDailyReportRecordForSelectedDate(record, selectedDate) {
+  function isDailyReportRecordForSelectedDate(record, selectedDate, allowWeekdayFallback) {
     const recordDate = getRecordDateISO(record);
 
     if (recordDate) {
-      return recordDate === selectedDate;
+      if (recordDate === selectedDate) return true;
+      if (!allowWeekdayFallback) return false;
+      return isDailyReportRecordForSelectedWeekday(record, selectedDate);
     }
 
+    if (!allowWeekdayFallback) return false;
+
+    return isDailyReportRecordForSelectedWeekday(record, selectedDate);
+  }
+
+  function isDailyReportRecordForSelectedWeekday(record, selectedDate) {
     const selectedDay = getWeekdayName(selectedDate).toLowerCase();
     const recordDay = String(record.scheduleDay || record.day || record.weekday || "").trim().toLowerCase();
 
