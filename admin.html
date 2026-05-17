@@ -3570,7 +3570,11 @@
       : null;
     const dailyDeleteSetting = roomSettingsData[dailyDeleteAssignment + "|" + dailyDeleteRoomKey] || roomSettingsData[dailyDeleteRoomKey] || {};
 
-    if (dailyDeleteRoomKey && dailyDeleteWeeklyBase && dailyDeleteSetting.isDaily === true) {
+    if (
+      dailyDeleteRoomKey &&
+      dailyDeleteWeeklyBase &&
+      (selectedCategory === "Daily Room" || dailyDeleteSetting.isDaily === true)
+    ) {
       const okDaily = confirm("Remove Daily label from room " + selectedArea + "?");
       if (!okDaily) return;
 
