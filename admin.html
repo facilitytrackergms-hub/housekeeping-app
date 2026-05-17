@@ -968,7 +968,7 @@
 
     <div id="adminCategoryButtons" class="rooms-grid"></div>
 
-    <div class="app-version-label">Updated: 2026-05-17 3:31 PM</div>
+    <div class="app-version-label">Updated: 2026-05-17 3:40 PM</div>
 
   </div>
 
@@ -7343,53 +7343,58 @@
       console.warn("maintenance_inspections read failed, using issue_logs fallback", error);
     }
 
-    const issueSnap = await getDocs(collection(db, "issue_logs"));
-    allMaintenanceInspectionRecords = issueSnap.docs
-      .map(function(issueDoc) {
-        return {
-          id: issueDoc.id,
-          ...issueDoc.data()
-        };
-      })
-      .filter(function(issue) {
-        return issue.source === "maintenance_inspection" ||
-          issue.category === "Maintenance Inspection";
-      })
-      .map(function(issue) {
-        return {
-          id: issue.sourceInspectionId || issue.id,
-          workDateISO: issue.workDateISO || issue.createdDate || "",
-          createdDate: issue.createdDate || issue.workDateISO || "",
-          createdWeekday: issue.createdWeekday || "",
-          createdTime: issue.createdTime || "",
-          createdDateText: issue.createdDateText || "",
-          createdDateTimeText: issue.createdDateTimeText || "",
-          employeeId: issue.employeeId || "",
-          employeeName: issue.employeeName || "",
-          areaId: issue.areaId || "",
-          areaDocId: issue.areaDocId || "",
-          areaName: issue.areaName || "",
-          roomKey: issue.roomKey || getRoomKey(issue.areaName || ""),
-          category: "Maintenance Inspection",
-          schedule: issue.schedule || "",
-          inspectionItemId: issue.taskId || "",
-          inspectionItem: issue.taskName || "Inspection",
-          result: "Fail",
-          failReason: issue.issueReason || "",
-          note: issue.issueNote || "",
-          materialsNeeded: issue.materialsNeeded || "",
-          urgency: issue.urgency || "",
-          residentStatus: issue.residentStatus || "",
-          openStatus: issue.status || "Open",
-          status: issue.status || "Open",
-          sourceIssueId: issue.id,
-          updatedAt: issue.updatedAt || issue.createdAt || null,
-          createdAt: issue.createdAt || null
-        };
-      })
-      .filter(function(record) {
-        return record.sourceIssueId;
-      });
+    try {
+      const issueSnap = await getDocs(collection(db, "issue_logs"));
+      allMaintenanceInspectionRecords = issueSnap.docs
+        .map(function(issueDoc) {
+          return {
+            id: issueDoc.id,
+            ...issueDoc.data()
+          };
+        })
+        .filter(function(issue) {
+          return issue.source === "maintenance_inspection" ||
+            issue.category === "Maintenance Inspection";
+        })
+        .map(function(issue) {
+          return {
+            id: issue.sourceInspectionId || issue.id,
+            workDateISO: issue.workDateISO || issue.createdDate || "",
+            createdDate: issue.createdDate || issue.workDateISO || "",
+            createdWeekday: issue.createdWeekday || "",
+            createdTime: issue.createdTime || "",
+            createdDateText: issue.createdDateText || "",
+            createdDateTimeText: issue.createdDateTimeText || "",
+            employeeId: issue.employeeId || "",
+            employeeName: issue.employeeName || "",
+            areaId: issue.areaId || "",
+            areaDocId: issue.areaDocId || "",
+            areaName: issue.areaName || "",
+            roomKey: issue.roomKey || getRoomKey(issue.areaName || ""),
+            category: "Maintenance Inspection",
+            schedule: issue.schedule || "",
+            inspectionItemId: issue.taskId || "",
+            inspectionItem: issue.taskName || "Inspection",
+            result: "Fail",
+            failReason: issue.issueReason || "",
+            note: issue.issueNote || "",
+            materialsNeeded: issue.materialsNeeded || "",
+            urgency: issue.urgency || "",
+            residentStatus: issue.residentStatus || "",
+            openStatus: issue.status || "Open",
+            status: issue.status || "Open",
+            sourceIssueId: issue.id,
+            updatedAt: issue.updatedAt || issue.createdAt || null,
+            createdAt: issue.createdAt || null
+          };
+        })
+        .filter(function(record) {
+          return record.sourceIssueId;
+        });
+    } catch (fallbackError) {
+      console.error("Maintenance inspection fallback read failed", fallbackError);
+      allMaintenanceInspectionRecords = allMaintenanceInspectionRecords || [];
+    }
   }
 
   async function loadMaintenanceManualMaterials() {
@@ -7416,6 +7421,11 @@
 
       updateAssignmentTitles();
       showAdminView("adminMaintenanceReportView");
+      if (searchInput) {
+        searchInput.oninput = handleMaintenanceInspectionReportInput;
+        searchInput.onkeyup = handleMaintenanceInspectionReportInput;
+        searchInput.onchange = refreshMaintenanceInspectionReport;
+      }
       await loadMaintenanceInspectionRecords();
       drawMaintenanceInspectionReport();
       if (searchInput) searchInput.focus();
@@ -7505,9 +7515,15 @@
   }
 
   function handleMaintenanceInspectionReportInput() {
+    drawMaintenanceInspectionReport();
+
     if (maintenanceReportRefreshTimer) {
       clearTimeout(maintenanceReportRefreshTimer);
     }
+
+    const searchInput = document.getElementById("maintenanceReportSearchInput");
+    const searchText = String(searchInput ? searchInput.value : "").trim();
+    if (searchText.length < 2) return;
 
     maintenanceReportRefreshTimer = setTimeout(function() {
       refreshMaintenanceInspectionReport();
