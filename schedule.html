@@ -956,7 +956,20 @@
 
     allAreasForSchedule.forEach(function(area) {
       if (String(area.modeType || "") !== String(modeType || "")) return;
-      if (!isCorrectDay(area.day)) return;
+
+      const areaName = area.areaName || area.area || area.name || "";
+      const roomKey = getRoomKey(areaName);
+      const roomSetting = getRoomSettingByRoomKey(roomKey);
+      const category = String(area.category || "");
+      const dayText = String(area.day || area.scheduleDay || "").trim().toLowerCase();
+      const isWeeklyRoomDay = weekdayNames[dayText] === true;
+      const isDailyWeeklyOriginRoom =
+        !!roomKey &&
+        roomSetting.isDaily === true &&
+        (category === "Weekly Room" || category === "Daily Room") &&
+        isWeeklyRoomDay;
+
+      if (!isCorrectDay(area.day) && !isDailyWeeklyOriginRoom) return;
       areasById[area.areaId || area.id] = area;
     });
 
@@ -965,7 +978,21 @@
         const area = areasById[task.areaId];
         if (!area) return false;
         if (String(task.modeType || "") !== String(modeType || "")) return false;
-        if (!isCorrectDay(task.day)) return false;
+
+        const areaName = area.areaName || task.areaName || "";
+        const roomKey = getRoomKey(areaName);
+        const roomSetting = getRoomSettingByRoomKey(roomKey);
+        const category = String(area.category || task.category || "");
+        const dayText = String(area.day || task.day || "").trim().toLowerCase();
+        const taskNameKey = cleanId(task.taskName || "");
+        const isDailyWeeklyOriginTask =
+          !!roomKey &&
+          roomSetting.isDaily === true &&
+          (category === "Weekly Room" || category === "Daily Room") &&
+          weekdayNames[dayText] === true &&
+          weeklyRoomTaskNames[taskNameKey] === true;
+
+        if (!isCorrectDay(task.day) && !isDailyWeeklyOriginTask) return false;
         return true;
       })
       .map(function(task) {
@@ -1012,8 +1039,8 @@
         !!task.roomKey &&
         (taskCategory === "Weekly Room" || taskCategory === "Daily Room") &&
         weekdayNames[dayText] === true &&
-        dayText === selectedDayText &&
         weeklyRoomTaskNames[taskNameKey] === true;
+      const isSelectedWeeklyDay = dayText === selectedDayText;
 
       if (isWeeklyOriginRoom) {
         const weeklyTask = {
@@ -1022,13 +1049,15 @@
           categoryKey: "weekly_room"
         };
 
-        addUniqueTask(adjustedTasks, used, weeklyTask);
+        if (isSelectedWeeklyDay) {
+          addUniqueTask(adjustedTasks, used, weeklyTask);
+        }
 
         if (hasRoomSetting && roomIsDaily) {
           const clonedTask = {
             ...weeklyTask,
-          category: "Daily Room",
-          categoryKey: "daily_room"
+            category: "Daily Room",
+            categoryKey: "daily_room"
           };
 
           addUniqueTask(adjustedTasks, used, clonedTask);
@@ -1046,7 +1075,6 @@
 
     return adjustedTasks;
   }
-
   function addUniqueTask(list, used, task) {
     const key = [
       task.category,
