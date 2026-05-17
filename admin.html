@@ -608,6 +608,22 @@
       min-height: 64px;
     }
 
+    #maintenanceInspectionStartButton {
+      min-height: 58px;
+      margin: 4px 0 8px;
+      font-size: 20px;
+    }
+
+    #maintenanceStartInput {
+      width: 100%;
+      margin: 8px 0 10px;
+      font-size: 26px;
+      font-weight: 900;
+      text-align: center;
+      min-height: 58px;
+      border: 2px solid #111;
+    }
+
     .maintenance-inline-row {
       display: grid;
       grid-template-columns: 1fr 58px 52px;
@@ -1026,7 +1042,7 @@
 
     <div id="adminCategoryButtons" class="rooms-grid"></div>
 
-    <div class="app-version-label">Updated: 2026-05-17 4:11 PM</div>
+    <div class="app-version-label">Updated: 2026-05-17 4:24 PM</div>
 
   </div>
 
@@ -1456,9 +1472,12 @@
 
     <input
       id="maintenanceInspectionSearchInput"
+      class="hidden"
       placeholder="Room / Area"
       oninput="handleMaintenanceInspectionSearchInput()"
     >
+
+    <button id="maintenanceInspectionStartButton" onclick="openMaintenanceInspectionStartPopup()">START INSPECTION</button>
 
     <div id="maintenanceInspectionSelectedArea" class="maintenance-selected-card hidden"></div>
 
@@ -1874,6 +1893,24 @@
   </div>
 </div>
 
+<div id="maintenanceStartPopup" class="app-message-bg hidden">
+  <div class="app-message-card">
+    <h3 id="maintenanceStartTitle">Start Inspection</h3>
+    <p id="maintenanceStartText">Choose what you want to inspect.</p>
+    <div id="maintenanceStartChoiceActions" class="app-message-actions">
+      <button class="green" onclick="chooseMaintenanceInspectionSearchType('room')">CHOOSE ROOM</button>
+      <button onclick="chooseMaintenanceInspectionSearchType('area')">CHOOSE AREA</button>
+    </div>
+    <div id="maintenanceStartInputBox" class="hidden">
+      <input id="maintenanceStartInput" placeholder="Room number" oninput="handleMaintenanceStartInput()">
+      <div class="app-message-actions">
+        <button class="green" onclick="confirmMaintenanceInspectionStartPopup()">SELECT</button>
+        <button class="back" onclick="cancelMaintenanceInspectionStartPopup()">CANCEL</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 
 <script type="module">
 
@@ -1972,6 +2009,7 @@
   let selectedMaintenanceInspectionReason = "";
   let selectedMaintenanceResidentStatus = "Occupied";
   let selectedMaintenanceUrgency = "";
+  let maintenanceStartSearchType = "room";
   let maintenanceReinspectIssueId = "";
   let maintenanceReinspectInspectionId = "";
   let maintenanceReportRefreshTimer = null;
@@ -6872,8 +6910,8 @@
     showAdminView("adminMaintenanceInspectionView");
 
     setTimeout(function() {
-      const input = document.getElementById("maintenanceInspectionSearchInput");
-      if (input) input.focus();
+      const startButton = document.getElementById("maintenanceInspectionStartButton");
+      if (startButton) startButton.focus();
     }, 50);
   }
 
@@ -6905,6 +6943,90 @@
     }
 
     drawMaintenanceInspectionAreaList();
+  }
+
+  function openMaintenanceInspectionStartPopup() {
+    maintenanceStartSearchType = "room";
+
+    const popup = document.getElementById("maintenanceStartPopup");
+    const titleBox = document.getElementById("maintenanceStartTitle");
+    const textBox = document.getElementById("maintenanceStartText");
+    const choiceActions = document.getElementById("maintenanceStartChoiceActions");
+    const inputBox = document.getElementById("maintenanceStartInputBox");
+    const input = document.getElementById("maintenanceStartInput");
+
+    if (titleBox) titleBox.innerText = "Start Inspection";
+    if (textBox) textBox.innerText = "Choose what you want to inspect.";
+    if (choiceActions) choiceActions.classList.remove("hidden");
+    if (inputBox) inputBox.classList.add("hidden");
+    if (input) input.value = "";
+    if (popup) popup.classList.remove("hidden");
+  }
+
+  function chooseMaintenanceInspectionSearchType(type) {
+    maintenanceStartSearchType = type === "area" ? "area" : "room";
+
+    const titleBox = document.getElementById("maintenanceStartTitle");
+    const textBox = document.getElementById("maintenanceStartText");
+    const choiceActions = document.getElementById("maintenanceStartChoiceActions");
+    const inputBox = document.getElementById("maintenanceStartInputBox");
+    const input = document.getElementById("maintenanceStartInput");
+
+    if (titleBox) titleBox.innerText = maintenanceStartSearchType === "room" ? "Choose Room" : "Choose Area";
+    if (textBox) textBox.innerText = maintenanceStartSearchType === "room" ? "Type the room number." : "Type the area name.";
+    if (choiceActions) choiceActions.classList.add("hidden");
+    if (inputBox) inputBox.classList.remove("hidden");
+
+    if (input) {
+      input.value = "";
+      input.placeholder = maintenanceStartSearchType === "room" ? "Room number" : "Area name";
+      input.type = maintenanceStartSearchType === "room" ? "tel" : "text";
+      input.inputMode = maintenanceStartSearchType === "room" ? "numeric" : "text";
+      input.maxLength = maintenanceStartSearchType === "room" ? 3 : 40;
+      setTimeout(function() { input.focus(); }, 50);
+    }
+  }
+
+  function handleMaintenanceStartInput() {
+    const input = document.getElementById("maintenanceStartInput");
+    if (!input) return;
+
+    if (maintenanceStartSearchType === "room") {
+      input.value = String(input.value || "").replace(/\D/g, "").slice(0, 3);
+      if (input.value.length === 3) {
+        confirmMaintenanceInspectionStartPopup();
+      }
+    }
+  }
+
+  function confirmMaintenanceInspectionStartPopup() {
+    const startInput = document.getElementById("maintenanceStartInput");
+    const searchInput = document.getElementById("maintenanceInspectionSearchInput");
+    const rawValue = String(startInput ? startInput.value : "").trim();
+    const cleanValue = maintenanceStartSearchType === "room"
+      ? rawValue.replace(/\D/g, "").slice(0, 3)
+      : rawValue;
+
+    if (!cleanValue) {
+      const textBox = document.getElementById("maintenanceStartText");
+      if (textBox) textBox.innerText = maintenanceStartSearchType === "room" ? "Type the room number." : "Type the area name.";
+      return;
+    }
+
+    if (searchInput) {
+      searchInput.value = cleanValue;
+    }
+
+    cancelMaintenanceInspectionStartPopup();
+    handleMaintenanceInspectionSearchInput();
+  }
+
+  function cancelMaintenanceInspectionStartPopup() {
+    const popup = document.getElementById("maintenanceStartPopup");
+    const input = document.getElementById("maintenanceStartInput");
+
+    if (popup) popup.classList.add("hidden");
+    if (input) input.value = "";
   }
 
   function drawMaintenanceInspectionAreaList() {
@@ -9005,6 +9127,11 @@
   window.selectMaintenanceUrgency = selectMaintenanceUrgency;
   window.drawMaintenanceInspectionAreaList = drawMaintenanceInspectionAreaList;
   window.handleMaintenanceInspectionSearchInput = handleMaintenanceInspectionSearchInput;
+  window.openMaintenanceInspectionStartPopup = openMaintenanceInspectionStartPopup;
+  window.chooseMaintenanceInspectionSearchType = chooseMaintenanceInspectionSearchType;
+  window.handleMaintenanceStartInput = handleMaintenanceStartInput;
+  window.confirmMaintenanceInspectionStartPopup = confirmMaintenanceInspectionStartPopup;
+  window.cancelMaintenanceInspectionStartPopup = cancelMaintenanceInspectionStartPopup;
   window.selectMaintenanceInspectionArea = selectMaintenanceInspectionArea;
   window.changeMaintenanceInspectionItem = changeMaintenanceInspectionItem;
   window.selectMaintenanceInspectionReason = selectMaintenanceInspectionReason;
