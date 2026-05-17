@@ -292,6 +292,42 @@
       margin: 0;
     }
 
+    .employee-permission-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 7px;
+      margin: 6px 0 10px;
+    }
+
+    .employee-permission-item label {
+      display: block;
+      font-size: 10px;
+      font-weight: 900;
+      text-align: center;
+      line-height: 1.05;
+      margin: 0 0 3px;
+      color: #111;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .employee-permission-item select {
+      font-size: 13px;
+      font-weight: 900;
+      text-align: center;
+      text-align-last: center;
+      padding: 7px 4px;
+      margin: 0;
+      border-radius: 10px;
+      height: 36px;
+    }
+
+    .employee-permission-title {
+      margin: 8px 0 6px;
+      font-size: 17px;
+    }
+
     /* =========================
        04 - EDIT CARDS
     ========================== */
@@ -1072,7 +1108,7 @@
 
     <div id="adminCategoryButtons" class="rooms-grid"></div>
 
-    <div class="app-version-label">Updated: 2026-05-17 5:30 PM</div>
+    <div class="app-version-label">Updated: 2026-05-17 6:35 PM</div>
 
   </div>
 
@@ -1672,103 +1708,137 @@
       <option value="false">false</option>
     </select>
 
-    <h3>Permissions</h3>
+    <h3 class="employee-permission-title">Permissions</h3>
 
-    <label>Can View Housekeeping</label>
-    <select id="empCanViewHousekeeping">
-      <option value="true">Yes</option>
-      <option value="false">No</option>
-    </select>
+    <div class="employee-permission-grid">
+      <div class="employee-permission-item">
+        <label>Housekeeping</label>
+        <select id="empCanViewHousekeeping">
+          <option value="true">Yes</option>
+          <option value="false">No</option>
+        </select>
+      </div>
 
-    <label>Can View Laundry</label>
-    <select id="empCanViewLaundry">
-      <option value="true">Yes</option>
-      <option value="false">No</option>
-    </select>
+      <div class="employee-permission-item">
+        <label>Laundry</label>
+        <select id="empCanViewLaundry">
+          <option value="true">Yes</option>
+          <option value="false">No</option>
+        </select>
+      </div>
 
-    <label>Can View PTAC</label>
-    <select id="empCanViewPTAC">
-      <option value="true">Yes</option>
-      <option value="false">No</option>
-    </select>
+      <div class="employee-permission-item">
+        <label>PTAC</label>
+        <select id="empCanViewPTAC">
+          <option value="true">Yes</option>
+          <option value="false">No</option>
+        </select>
+      </div>
 
-    <label>Can View Maintenance Inspection</label>
-    <select id="empCanViewMaintenanceInspection">
-      <option value="true">Yes</option>
-      <option value="false">No</option>
-    </select>
+      <div class="employee-permission-item">
+        <label>Maint. Insp.</label>
+        <select id="empCanViewMaintenanceInspection">
+          <option value="true">Yes</option>
+          <option value="false">No</option>
+        </select>
+      </div>
 
-    <label>Can View Maintenance Work Board</label>
-    <select id="empCanViewMaintenanceWorkBoard">
-      <option value="true">Yes</option>
-      <option value="false">No</option>
-    </select>
+      <div class="employee-permission-item">
+        <label>Work Board</label>
+        <select id="empCanViewMaintenanceWorkBoard">
+          <option value="true">Yes</option>
+          <option value="false">No</option>
+        </select>
+      </div>
 
-    <label>Can View Materials Needed</label>
-    <select id="empCanViewMaterialsNeeded">
-      <option value="true">Yes</option>
-      <option value="false">No</option>
-    </select>
+      <div class="employee-permission-item">
+        <label>Materials</label>
+        <select id="empCanViewMaterialsNeeded">
+          <option value="true">Yes</option>
+          <option value="false">No</option>
+        </select>
+      </div>
 
-    <label>Can View Reports</label>
-    <select id="empCanViewReports">
-      <option value="true">Yes</option>
-      <option value="false">No</option>
-    </select>
+      <div class="employee-permission-item">
+        <label>Reports</label>
+        <select id="empCanViewReports">
+          <option value="true">Yes</option>
+          <option value="false">No</option>
+        </select>
+      </div>
 
-    <label>Can View Activity History</label>
-    <select id="empCanViewActivityHistory">
-      <option value="true">Yes</option>
-      <option value="false">No</option>
-    </select>
+      <div class="employee-permission-item">
+        <label>Activity</label>
+        <select id="empCanViewActivityHistory">
+          <option value="true">Yes</option>
+          <option value="false">No</option>
+        </select>
+      </div>
 
-    <label>Can View Admin Dashboard</label>
-    <select id="empCanViewAdminDashboard">
-      <option value="true">Yes</option>
-      <option value="false">No</option>
-    </select>
+      <div class="employee-permission-item">
+        <label>Admin Dash</label>
+        <select id="empCanViewAdminDashboard">
+          <option value="true">Yes</option>
+          <option value="false">No</option>
+        </select>
+      </div>
 
-    <label>Can Edit Employees</label>
-    <select id="empCanEditEmployees">
-      <option value="true">Yes</option>
-      <option value="false">No</option>
-    </select>
+      <div class="employee-permission-item">
+        <label>Employees</label>
+        <select id="empCanEditEmployees">
+          <option value="true">Yes</option>
+          <option value="false">No</option>
+        </select>
+      </div>
 
-    <label>Can Edit Schedules</label>
-    <select id="empCanEditSchedules">
-      <option value="true">Yes</option>
-      <option value="false">No</option>
-    </select>
+      <div class="employee-permission-item">
+        <label>Schedules</label>
+        <select id="empCanEditSchedules">
+          <option value="true">Yes</option>
+          <option value="false">No</option>
+        </select>
+      </div>
 
-    <label>Can Edit Room Settings</label>
-    <select id="empCanEditRoomSettings">
-      <option value="true">Yes</option>
-      <option value="false">No</option>
-    </select>
+      <div class="employee-permission-item">
+        <label>Room Settings</label>
+        <select id="empCanEditRoomSettings">
+          <option value="true">Yes</option>
+          <option value="false">No</option>
+        </select>
+      </div>
 
-    <label>Can Edit Issue Reasons</label>
-    <select id="empCanEditIssueReasons">
-      <option value="true">Yes</option>
-      <option value="false">No</option>
-    </select>
+      <div class="employee-permission-item">
+        <label>Reasons</label>
+        <select id="empCanEditIssueReasons">
+          <option value="true">Yes</option>
+          <option value="false">No</option>
+        </select>
+      </div>
 
-    <label>Can View Daily Status</label>
-    <select id="empCanViewDailyStatus">
-      <option value="true">Yes</option>
-      <option value="false">No</option>
-    </select>
+      <div class="employee-permission-item">
+        <label>Daily Status</label>
+        <select id="empCanViewDailyStatus">
+          <option value="true">Yes</option>
+          <option value="false">No</option>
+        </select>
+      </div>
 
-    <label>Can View Issues</label>
-    <select id="empCanViewIssues">
-      <option value="true">Yes</option>
-      <option value="false">No</option>
-    </select>
+      <div class="employee-permission-item">
+        <label>Issues</label>
+        <select id="empCanViewIssues">
+          <option value="true">Yes</option>
+          <option value="false">No</option>
+        </select>
+      </div>
 
-    <label>Can Change Schedule Mode</label>
-    <select id="empCanChangeScheduleMode">
-      <option value="true">Yes</option>
-      <option value="false">No</option>
-    </select>
+      <div class="employee-permission-item">
+        <label>Mode</label>
+        <select id="empCanChangeScheduleMode">
+          <option value="true">Yes</option>
+          <option value="false">No</option>
+        </select>
+      </div>
+    </div>
 
     <div class="button-row">
       <button class="green" onclick="saveEmployee()">SAVE</button>
