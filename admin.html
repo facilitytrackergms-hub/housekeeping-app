@@ -614,7 +614,8 @@
       font-size: 20px;
     }
 
-    #maintenanceStartInput {
+    #maintenanceStartInput,
+    #maintenanceStartAreaSelect {
       width: 100%;
       margin: 8px 0 10px;
       font-size: 26px;
@@ -1042,7 +1043,7 @@
 
     <div id="adminCategoryButtons" class="rooms-grid"></div>
 
-    <div class="app-version-label">Updated: 2026-05-17 4:41 PM</div>
+    <div class="app-version-label">Updated: 2026-05-17 4:54 PM</div>
 
   </div>
 
@@ -1901,6 +1902,7 @@
     </div>
     <div id="maintenanceStartInputBox" class="hidden">
       <input id="maintenanceStartInput" placeholder="Room number" oninput="handleMaintenanceStartInput()">
+      <select id="maintenanceStartAreaSelect" class="hidden"></select>
       <div class="app-message-actions">
         <button class="green" onclick="confirmMaintenanceInspectionStartPopup()">SELECT</button>
         <button class="back" onclick="cancelMaintenanceInspectionStartPopup()">CANCEL</button>
@@ -6974,12 +6976,14 @@
     const choiceActions = document.getElementById("maintenanceStartChoiceActions");
     const inputBox = document.getElementById("maintenanceStartInputBox");
     const input = document.getElementById("maintenanceStartInput");
+    const areaSelect = document.getElementById("maintenanceStartAreaSelect");
 
     if (titleBox) titleBox.innerText = "Start Inspection";
     if (textBox) textBox.innerText = "Choose what you want to inspect.";
     if (choiceActions) choiceActions.classList.remove("hidden");
     if (inputBox) inputBox.classList.add("hidden");
     if (input) input.value = "";
+    if (areaSelect) areaSelect.value = "";
     if (popup) popup.classList.remove("hidden");
   }
 
@@ -6991,9 +6995,10 @@
     const choiceActions = document.getElementById("maintenanceStartChoiceActions");
     const inputBox = document.getElementById("maintenanceStartInputBox");
     const input = document.getElementById("maintenanceStartInput");
+    const areaSelect = document.getElementById("maintenanceStartAreaSelect");
 
     if (titleBox) titleBox.innerText = maintenanceStartSearchType === "room" ? "Choose Room" : "Choose Area";
-    if (textBox) textBox.innerText = maintenanceStartSearchType === "room" ? "Type the room number." : "Type the area name.";
+    if (textBox) textBox.innerText = maintenanceStartSearchType === "room" ? "Type the room number." : "Choose an area from the list.";
     if (choiceActions) choiceActions.classList.add("hidden");
     if (inputBox) inputBox.classList.remove("hidden");
 
@@ -7003,8 +7008,69 @@
       input.type = maintenanceStartSearchType === "room" ? "tel" : "text";
       input.inputMode = maintenanceStartSearchType === "room" ? "numeric" : "text";
       input.maxLength = maintenanceStartSearchType === "room" ? 3 : 40;
-      setTimeout(function() { input.focus(); }, 50);
+      input.classList.toggle("hidden", maintenanceStartSearchType === "area");
+      if (maintenanceStartSearchType === "room") {
+        setTimeout(function() { input.focus(); }, 50);
+      }
     }
+
+    if (areaSelect) {
+      areaSelect.classList.toggle("hidden", maintenanceStartSearchType !== "area");
+      areaSelect.value = "";
+      if (maintenanceStartSearchType === "area") {
+        fillMaintenanceStartAreaSelect();
+        setTimeout(function() { areaSelect.focus(); }, 50);
+      }
+    }
+  }
+
+  function fillMaintenanceStartAreaSelect() {
+    const areaSelect = document.getElementById("maintenanceStartAreaSelect");
+    if (!areaSelect) return;
+
+    const choices = getMaintenanceStartAreaChoices();
+    areaSelect.innerHTML = '<option value="">Choose area</option>';
+
+    if (choices.length === 0) {
+      areaSelect.innerHTML += '<option value="">No areas found</option>';
+      return;
+    }
+
+    choices.forEach(function(choice) {
+      const option = document.createElement("option");
+      option.value = choice.value;
+      option.innerText = choice.label;
+      areaSelect.appendChild(option);
+    });
+  }
+
+  function getMaintenanceStartAreaChoices() {
+    const groups = {};
+
+    allAreas.forEach(function(area) {
+      const areaName = String(area.areaName || "").trim();
+      if (!areaName) return;
+      if (isMaintenanceRoomName(areaName)) return;
+
+      const groupKey = areaName.toLowerCase();
+      if (!groups[groupKey]) groups[groupKey] = [];
+      groups[groupKey].push(area);
+    });
+
+    return Object.keys(groups).map(function(groupKey) {
+      const areas = groups[groupKey].sort(sortMaintenanceInspectionAreaChoice);
+      const primaryArea = areas[0];
+      return {
+        value: primaryArea.areaName || groupKey,
+        label: primaryArea.areaName || groupKey
+      };
+    }).sort(function(a, b) {
+      return String(a.label || "").localeCompare(String(b.label || ""), undefined, { numeric: true });
+    });
+  }
+
+  function isMaintenanceRoomName(value) {
+    return /^\d{3,4}$/.test(String(value || "").trim());
   }
 
   function handleMaintenanceStartInput() {
@@ -7021,15 +7087,18 @@
 
   function confirmMaintenanceInspectionStartPopup() {
     const startInput = document.getElementById("maintenanceStartInput");
+    const areaSelect = document.getElementById("maintenanceStartAreaSelect");
     const searchInput = document.getElementById("maintenanceInspectionSearchInput");
-    const rawValue = String(startInput ? startInput.value : "").trim();
+    const rawValue = maintenanceStartSearchType === "area"
+      ? String(areaSelect ? areaSelect.value : "").trim()
+      : String(startInput ? startInput.value : "").trim();
     const cleanValue = maintenanceStartSearchType === "room"
       ? rawValue.replace(/\D/g, "").slice(0, 3)
       : rawValue;
 
     if (!cleanValue) {
       const textBox = document.getElementById("maintenanceStartText");
-      if (textBox) textBox.innerText = maintenanceStartSearchType === "room" ? "Type the room number." : "Type the area name.";
+      if (textBox) textBox.innerText = maintenanceStartSearchType === "room" ? "Type the room number." : "Choose an area from the list.";
       return;
     }
 
@@ -7044,9 +7113,11 @@
   function cancelMaintenanceInspectionStartPopup() {
     const popup = document.getElementById("maintenanceStartPopup");
     const input = document.getElementById("maintenanceStartInput");
+    const areaSelect = document.getElementById("maintenanceStartAreaSelect");
 
     if (popup) popup.classList.add("hidden");
     if (input) input.value = "";
+    if (areaSelect) areaSelect.value = "";
   }
 
   function drawMaintenanceInspectionAreaList() {
@@ -7985,7 +8056,7 @@
         if (reportType !== "All") return workflowStatus === reportType;
         return true;
       }).sort(function(a, b) {
-        return getRecordSortValue(b) - getRecordSortValue(a);
+        return getMaintenanceInspectionRecordSortValue(b) - getMaintenanceInspectionRecordSortValue(a);
       });
 
       if (records.length === 0) {
@@ -8006,6 +8077,29 @@
       const box = document.getElementById("maintenanceReportList");
       if (box) box.innerHTML = '<div class="room-report-card">Could not show inspection records.</div>';
     }
+  }
+
+  function getMaintenanceInspectionRecordSortValue(record) {
+    const directSortValue = getRecordSortValue(record);
+    if (directSortValue) return directSortValue;
+
+    const dateTimeText = String(
+      record.createdDateTimeText ||
+      record.completedDateTimeText ||
+      record.savedDateTimeText ||
+      ""
+    ).trim();
+
+    if (dateTimeText) {
+      const normalizedDateTime = dateTimeText.replace(/^[A-Za-z]+\s+/, "").replace(" - ", " ");
+      const parsedDateTime = Date.parse(normalizedDateTime);
+      if (!Number.isNaN(parsedDateTime)) return parsedDateTime;
+    }
+
+    const dateText = String(record.createdDate || record.workDateISO || record.savedDate || "").trim();
+    const timeText = String(record.createdTime || record.savedTime || record.completedTime || "00:00").trim();
+    const parsedFallback = Date.parse((dateText || "1900-01-01") + " " + timeText);
+    return Number.isNaN(parsedFallback) ? 0 : parsedFallback;
   }
 
   function handleMaintenanceInspectionReportInput() {
