@@ -1481,6 +1481,7 @@
   let allIssues = [];
   let allIssueReasons = [];
   let allStatusRecords = [];
+  let roomSettingsData = {};
   let currentAreaTasks = [];
   let currentEmployeeId = "";
   let currentEditingTaskId = "";
@@ -2196,6 +2197,8 @@
       return task.active !== false && task.active !== "No";
     });
 
+    roomSettingsData = await loadAdminRoomSettings();
+
     if (currentAssignment) {
       allAreasForAssignment = allAreas.filter(function(area) {
         return getAreaAssignment(area) === currentAssignment;
@@ -2212,6 +2215,27 @@
     updateTaskNameOptions();
     drawAdminCategories();
     hideLoading();
+  }
+
+  async function loadAdminRoomSettings() {
+    const snap = await getDocs(collection(db, "room_settings"));
+    const data = {};
+
+    snap.docs.forEach(function(item) {
+      const setting = {
+        id: item.id,
+        ...item.data()
+      };
+
+      if (String(setting.schedule || "") !== String(currentAssignment || "")) return;
+
+      const roomKey = getRoomKey(setting.roomKey || setting.roomName || "");
+      if (!roomKey) return;
+
+      data[roomKey] = setting;
+    });
+
+    return data;
   }
 
   function normalizeArea(area) {
@@ -2440,6 +2464,8 @@
       return task.active !== false && task.active !== "No";
     });
 
+    roomSettingsData = await loadAdminRoomSettings();
+
     allAreasForAssignment = currentAssignment
       ? allAreas.filter(function(area) { return getAreaAssignment(area) === currentAssignment; })
       : [];
@@ -2522,6 +2548,34 @@
       areas = allAreas.filter(function(area) {
         return area.category === "Dehumidifier" &&
           activeAssignments.includes(getAreaAssignment(area));
+      });
+    } else if (category === "Daily Room") {
+      const areasByDoor = {};
+
+      allAreasForAssignment.forEach(function(area) {
+        if (area.category !== "Daily Room" && area.category !== "Weekly Room") return;
+        if (area.category === "Weekly Room" && String(area.scheduleDay || "").trim().toLowerCase() !== currentWorkDayName.toLowerCase()) return;
+        if (area.category === "Daily Room" && !isAreaForCurrentDay(area)) return;
+
+        const roomKey = getRoomKey(area.areaName || "");
+        if (!roomKey) return;
+
+        const doorKey = getAreaAssignment(area) + "|" + roomKey;
+        const setting = roomSettingsData[roomKey] || {};
+
+        if (area.category === "Weekly Room") {
+          if (setting.isDaily !== true) return;
+          areasByDoor[doorKey] = area;
+          return;
+        }
+
+        if (!areasByDoor[doorKey]) {
+          areasByDoor[doorKey] = area;
+        }
+      });
+
+      areas = Object.keys(areasByDoor).map(function(key) {
+        return areasByDoor[key];
       });
     } else {
       areas = allAreasForAssignment.filter(function(area) {
