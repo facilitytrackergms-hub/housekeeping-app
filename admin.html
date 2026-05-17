@@ -4151,6 +4151,10 @@
       return true;
     }
 
+    if (isReportRecordIdForRoom(record, roomKey)) {
+      return true;
+    }
+
     return false;
   }
 
@@ -4172,6 +4176,33 @@
     }
 
     return "";
+  }
+
+  function isReportRecordIdForRoom(record, roomKey) {
+    const values = [
+      record.id,
+      record.statusId,
+      record.statusKey,
+      record.areaId,
+      record.workId,
+      record.taskAreaId
+    ];
+
+    return values.some(function(value) {
+      return reportTextContainsRoomKey(value, roomKey);
+    });
+  }
+
+  function reportTextContainsRoomKey(value, roomKey) {
+    const cleanRoomKey = String(roomKey || "").trim().toLowerCase();
+    if (!cleanRoomKey) return false;
+
+    const tokens = String(value || "")
+      .toLowerCase()
+      .split(/[^a-z0-9]+/)
+      .filter(function(token) { return token !== ""; });
+
+    return tokens.includes(cleanRoomKey);
   }
 
   function drawRoomReportSingleCard() {
@@ -4340,6 +4371,7 @@
     title.innerHTML =
       '<div class="daily-report-title">Daily Report</div>' +
       '<div class="daily-report-room-number">' + escapeHtml(currentRoomReportNumber) + '</div>' +
+      '<div class="daily-report-mode">Date: ' + escapeHtml(formatDailyDateWithWeekday(selectedDate)) + '</div>' +
       '<div class="daily-report-mode">Active Mode: ' + escapeHtml(getDailyReportModeLabel()) + '</div>';
     box.appendChild(title);
 
