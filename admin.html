@@ -823,7 +823,7 @@
 
     <div class="admin-dashboard-subtitle">Create report</div>
     <div class="admin-report-button-row">
-      <button type="button" onclick="openReportChooser()">Reports</button>
+      <button type="button" onclick="openReportChooser()">Room / Area Report</button>
     </div>
 
     <div class="admin-dashboard-subtitle">Change schedule mode</div>
@@ -847,7 +847,7 @@
 
     <div id="adminCategoryButtons" class="rooms-grid"></div>
 
-    <div class="app-version-label">Updated: 2026-05-17 10:18 AM</div>
+    <div class="app-version-label">Updated: 2026-05-17 10:33 AM</div>
 
   </div>
 
@@ -1100,7 +1100,7 @@
   <div id="adminDailyReportView" class="hidden">
 
     <div class="view-center">
-      <div class="daily-report-title">Daily Report</div>
+      <div class="daily-report-title">Room / Area Report</div>
     </div>
 
     <div class="admin-room-search-box daily-report-search-box">
@@ -3885,25 +3885,8 @@
 
 
   function openReportChooser() {
-    pendingReportType = "";
-    const box = document.getElementById("reportFlowBox");
-    const title = document.getElementById("reportFlowTitle");
-    const text = document.getElementById("reportFlowText");
-    const dateBox = document.getElementById("reportFlowDateBox");
-    const actions = document.getElementById("reportFlowActions");
-
-    if (title) title.innerText = "Reports";
-    if (text) text.innerText = "Choose report.";
-    if (dateBox) dateBox.classList.add("hidden");
-    if (actions) {
-      actions.className = "app-message-actions";
-      actions.innerHTML =
-        '<button type="button" onclick="selectReportType(\'operational\')">OPERATIONAL</button>' +
-        '<button type="button" onclick="selectReportType(\'daily\')">DAILY</button>' +
-        '<button type="button" class="back" onclick="closeReportFlowPopup()">CANCEL</button>';
-    }
-
-    if (box) box.classList.remove("hidden");
+    pendingReportType = "daily";
+    openDailyReportHome(currentWorkDateISO || getTodayISO());
   }
 
   function selectReportType(type) {
@@ -4020,7 +4003,7 @@
 
     if (searchInput) searchInput.value = "";
     if (picker) picker.value = selectedDate || currentWorkDateISO;
-    if (box) box.innerHTML = '<div class="daily-report-card"><div class="daily-report-card-title">Daily Report</div><div class="daily-report-line">Search a room to build the report.</div></div>';
+    if (box) box.innerHTML = '<div class="daily-report-card"><div class="daily-report-card-title">Room / Area Report</div><div class="daily-report-line">Search a room to build the report.</div></div>';
 
     showAdminView("adminDailyReportView");
     setTimeout(function() { if (searchInput) searchInput.focus(); }, 50);
