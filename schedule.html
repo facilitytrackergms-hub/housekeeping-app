@@ -311,45 +311,53 @@
 .room-status-strip {
   position: absolute;
   inset: 0;
-  display: grid;
-  grid-template-columns: 76px 1fr 76px;
-  align-items: start;
   z-index: 2;
   pointer-events: none;
-  padding: 8px 8px;
 }
+
 .room-status-list {
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-start;
-  gap: 3px;
-  width: 76px;
-  min-width: 0;
+  position: absolute;
+  inset: 0;
+  width: 100%;
 }
 
-.room-status-list.left {
-  align-items: flex-start;
-  text-align: left;
-  grid-column: 1;
-}
-
-.room-status-list.right {
-  align-items: flex-end;
-  text-align: right;
-  grid-column: 3;
-}
 .room-status-chip {
+  position: absolute;
   color: #fff;
   font-size: 10px;
   font-weight: 700;
-  line-height: 12px;
+  line-height: 11px;
   letter-spacing: 0;
-  max-width: 76px;
+  max-width: 82px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: clip;
   text-shadow: none;
   -webkit-font-smoothing: antialiased;
+}
+
+.room-status-list.left .room-status-chip:nth-child(1) {
+  top: 8px;
+  left: 10px;
+  text-align: left;
+}
+
+.room-status-list.left .room-status-chip:nth-child(2) {
+  bottom: 8px;
+  left: 10px;
+  text-align: left;
+}
+
+.room-status-list.right .room-status-chip:nth-child(1) {
+  top: 8px;
+  right: 10px;
+  text-align: right;
+}
+
+.room-status-list.right .room-status-chip:nth-child(2) {
+  bottom: 8px;
+  right: 10px;
+  text-align: right;
 }
     .room-status-chip.blank {
       display: none;
