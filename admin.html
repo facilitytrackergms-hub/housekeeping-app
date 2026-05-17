@@ -1042,7 +1042,7 @@
 
     <div id="adminCategoryButtons" class="rooms-grid"></div>
 
-    <div class="app-version-label">Updated: 2026-05-17 4:33 PM</div>
+    <div class="app-version-label">Updated: 2026-05-17 4:34 PM</div>
 
   </div>
 
@@ -1529,9 +1529,7 @@
     <textarea id="maintenanceInspectionNoteInput" placeholder="Inspection notes"></textarea>
 
     <div id="maintenanceInspectionActionRow" class="maintenance-pass-fail-row hidden">
-      <button class="green" onclick="confirmMaintenanceInspectionResult('Good')">GOOD</button>
-      <button class="green" onclick="confirmMaintenanceInspectionResult('Complete')">COMPLETE</button>
-      <button class="red" onclick="confirmMaintenanceInspectionResult('Fail')">FAIL</button>
+      <button class="green" onclick="openMaintenanceInspectionResultPopup()">COMPLETE</button>
     </div>
 
     <input id="maintenanceInspectionNewReasonInput" class="hidden">
@@ -1908,6 +1906,18 @@
         <button class="back" onclick="cancelMaintenanceInspectionStartPopup()">CANCEL</button>
       </div>
     </div>
+  </div>
+</div>
+
+<div id="maintenanceResultPopup" class="app-message-bg hidden">
+  <div class="app-message-card">
+    <h3>Inspection Result</h3>
+    <p>Did this inspection pass or fail?</p>
+    <div class="app-message-actions">
+      <button class="green" onclick="chooseMaintenanceInspectionResult('Good')">PASS</button>
+      <button class="red" onclick="chooseMaintenanceInspectionResult('Fail')">FAIL</button>
+    </div>
+    <button class="back" onclick="closeMaintenanceInspectionResultPopup()">CANCEL</button>
   </div>
 </div>
 
@@ -2404,12 +2414,17 @@
 
   function showAppConfirmMessage(message, title) {
     const input = document.getElementById("appMessageInput");
+    const okButton = document.getElementById("appMessageOkButton");
+    const cancelButton = document.getElementById("appMessageCancelButton");
     setAppMessageButtons(true);
 
     if (input) {
       input.value = "";
       input.classList.add("hidden");
     }
+
+    if (okButton) okButton.innerText = "CONFIRM";
+    if (cancelButton) cancelButton.innerText = "CANCEL";
 
     document.getElementById("appMessageTitle").innerText = title || "Confirm";
     document.getElementById("appMessageText").innerText = message;
@@ -2456,6 +2471,8 @@
 
   function closeAppMessage() {
     const input = document.getElementById("appMessageInput");
+    const okButton = document.getElementById("appMessageOkButton");
+    const cancelButton = document.getElementById("appMessageCancelButton");
     appMessageInputCallback = null;
     appMessageCancelCallback = null;
     setAppMessageButtons(false);
@@ -2464,6 +2481,9 @@
       input.value = "";
       input.classList.add("hidden");
     }
+
+    if (okButton) okButton.innerText = "OK";
+    if (cancelButton) cancelButton.innerText = "CANCEL";
 
     document.getElementById("appMessageBox").classList.add("hidden");
   }
@@ -7600,6 +7620,21 @@
     await saveMaintenanceInspectionResult(resultValue);
   }
 
+  function openMaintenanceInspectionResultPopup() {
+    const popup = document.getElementById("maintenanceResultPopup");
+    if (popup) popup.classList.remove("hidden");
+  }
+
+  function closeMaintenanceInspectionResultPopup() {
+    const popup = document.getElementById("maintenanceResultPopup");
+    if (popup) popup.classList.add("hidden");
+  }
+
+  async function chooseMaintenanceInspectionResult(resultValue) {
+    closeMaintenanceInspectionResultPopup();
+    await saveMaintenanceInspectionResult(resultValue);
+  }
+
   async function saveMaintenanceInspectionResult(resultValue) {
     const area = findMaintenanceInspectionAreaFromSearch();
     const item = getSelectedMaintenanceInspectionItem();
@@ -9154,6 +9189,9 @@
   window.confirmMaintenanceTextPopup = confirmMaintenanceTextPopup;
   window.cancelMaintenanceTextPopup = cancelMaintenanceTextPopup;
   window.confirmMaintenanceInspectionResult = confirmMaintenanceInspectionResult;
+  window.openMaintenanceInspectionResultPopup = openMaintenanceInspectionResultPopup;
+  window.closeMaintenanceInspectionResultPopup = closeMaintenanceInspectionResultPopup;
+  window.chooseMaintenanceInspectionResult = chooseMaintenanceInspectionResult;
   window.saveMaintenanceInspectionResult = saveMaintenanceInspectionResult;
   window.openEmployees = openEmployees;
   window.openIssues = openIssues;
