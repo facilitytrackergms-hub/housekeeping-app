@@ -1472,6 +1472,7 @@
   let selectedAreaWorkId = "";
   let selectedAreaScheduleDay = "";
   let adminAreaSaveRedirectedToExisting = false;
+  let adminAreaOpenedFromDailyRoomAccess = false;
   let adminAreaSearchTerm = "";
   let adminBulkTaskOpen = false;
 
@@ -2618,6 +2619,7 @@
             return;
           }
 
+          adminAreaOpenedFromDailyRoomAccess = false;
           openAdminEditArea(area.id);
         };
       } else {
@@ -2626,7 +2628,13 @@
           '<div class="room-number">' + escapeHtml(area.areaName) + '</div>' +
           '<div class="room-counter">' + escapeHtml(total + " TASKS") + '</div>';
 
+        const openedFromDailyRoomAccess =
+          category === "Daily Room" &&
+          area.category === "Weekly Room" &&
+          ((roomSettingsData[getRoomKey(area.areaName || "")] || {}).isDaily === true);
+
         btn.onclick = function() {
+          adminAreaOpenedFromDailyRoomAccess = openedFromDailyRoomAccess;
           openAdminEditArea(area.id);
         };
       }
@@ -3547,6 +3555,45 @@
     if (!selectedAreaDocId) {
       backToAdminAreas();
       return;
+    }
+
+    if (adminAreaOpenedFromDailyRoomAccess === true && selectedCategory === "Weekly Room") {
+      const roomKey = getRoomKey(selectedArea || "");
+      const setting = roomSettingsData[roomKey] || {};
+
+      if (roomKey && setting.isDaily === true) {
+        const okDaily = confirm("Remove Daily label from room " + selectedArea + "?");
+        if (!okDaily) return;
+
+        showLoading();
+
+        const assignment = document.getElementById("adminEditAssignmentInput").value.trim() || currentAssignment;
+        const settingRef = doc(db, "room_settings", makeId(assignment + "_" + roomKey));
+
+        await setDoc(settingRef, {
+          roomKey: roomKey,
+          roomName: selectedArea,
+          schedule: assignment,
+          isDaily: false,
+          updatedAt: serverTimestamp()
+        }, { merge: true });
+
+        roomSettingsData[roomKey] = {
+          ...setting,
+          roomKey: roomKey,
+          roomName: selectedArea,
+          schedule: assignment,
+          isDaily: false
+        };
+
+        await loadAdminTasks();
+        adminAreaOpenedFromDailyRoomAccess = false;
+        selectedCategory = "Daily Room";
+        drawAdminAreaButtons("Daily Room");
+        showAdminView("adminAreaView");
+        hideLoading();
+        return;
+      }
     }
 
     if (isWeeklyCategory(selectedCategory)) {
