@@ -1042,7 +1042,7 @@
 
     <div id="adminCategoryButtons" class="rooms-grid"></div>
 
-    <div class="app-version-label">Updated: 2026-05-17 4:24 PM</div>
+    <div class="app-version-label">Updated: 2026-05-17 4:33 PM</div>
 
   </div>
 
@@ -1529,9 +1529,9 @@
     <textarea id="maintenanceInspectionNoteInput" placeholder="Inspection notes"></textarea>
 
     <div id="maintenanceInspectionActionRow" class="maintenance-pass-fail-row hidden">
-      <button class="green" onclick="saveMaintenanceInspectionResult('Good')">GOOD</button>
-      <button class="green" onclick="saveMaintenanceInspectionResult('Complete')">COMPLETE</button>
-      <button class="red" onclick="saveMaintenanceInspectionResult('Fail')">FAIL</button>
+      <button class="green" onclick="confirmMaintenanceInspectionResult('Good')">GOOD</button>
+      <button class="green" onclick="confirmMaintenanceInspectionResult('Complete')">COMPLETE</button>
+      <button class="red" onclick="confirmMaintenanceInspectionResult('Fail')">FAIL</button>
     </div>
 
     <input id="maintenanceInspectionNewReasonInput" class="hidden">
@@ -7591,6 +7591,15 @@
     updateMaintenanceUrgencyButtons();
   }
 
+  async function confirmMaintenanceInspectionResult(resultValue) {
+    const label = resultValue === "Fail" ? "FAIL" : resultValue === "Complete" ? "COMPLETE" : "GOOD";
+    const ok = await showAppConfirmMessage("Save this inspection as " + label + "?", "Confirm Inspection");
+
+    if (!ok) return;
+
+    await saveMaintenanceInspectionResult(resultValue);
+  }
+
   async function saveMaintenanceInspectionResult(resultValue) {
     const area = findMaintenanceInspectionAreaFromSearch();
     const item = getSelectedMaintenanceInspectionItem();
@@ -9144,6 +9153,7 @@
   window.deleteSelectedMaintenanceInspectionMaterial = deleteSelectedMaintenanceInspectionMaterial;
   window.confirmMaintenanceTextPopup = confirmMaintenanceTextPopup;
   window.cancelMaintenanceTextPopup = cancelMaintenanceTextPopup;
+  window.confirmMaintenanceInspectionResult = confirmMaintenanceInspectionResult;
   window.saveMaintenanceInspectionResult = saveMaintenanceInspectionResult;
   window.openEmployees = openEmployees;
   window.openIssues = openIssues;
