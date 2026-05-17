@@ -1565,6 +1565,22 @@ function goToAdminDehumidifierView() {
     currentTaskList = allTasksForDay.filter(function(task) {
       return task.areaId === areaId && task.category === selectedCategory;
     });
+
+    if (selectedCategory === "Daily Room") {
+      const roomKey = getRoomKey(areaName || "");
+      const setting = getRoomSettingByRoomKey(roomKey);
+
+      if (setting.isDaily === true) {
+        const weeklyTaskList = allTasksForDay.filter(function(task) {
+          const taskRoomKey = task.roomKey || getRoomKey(task.areaName || "");
+          return task.category === "Weekly Room" && taskRoomKey === roomKey;
+        });
+
+        if (weeklyTaskList.length > 0) {
+          currentTaskList = weeklyTaskList;
+        }
+      }
+    }
   }
 
   function getCurrentDehumidifierPeriod() {
