@@ -933,6 +933,26 @@
 
   function buildTasksForToday(modeType) {
     const areasById = {};
+    const weekdayNames = {
+      sunday: true,
+      monday: true,
+      tuesday: true,
+      wednesday: true,
+      thursday: true,
+      friday: true,
+      saturday: true
+    };
+    const weeklyRoomTaskNames = {
+      vac: true,
+      fridge: true,
+      bath: true,
+      mop: true,
+      toilet: true,
+      sink: true,
+      dust: true,
+      bed: true,
+      acfilter: true
+    };
 
     allAreasForSchedule.forEach(function(area) {
       if (String(area.modeType || "") !== String(modeType || "")) return;
@@ -984,16 +1004,36 @@
       const roomSetting = task.roomSetting || {};
       const roomIsDaily = roomSetting.isDaily === true;
       const hasRoomSetting = !!task.roomKey && !!roomSettingsData[task.roomKey];
+      const taskCategory = String(task.category || "");
+      const dayText = String(task.day || "").trim().toLowerCase();
+      const selectedDayText = String(selectedWeeklyDayName || currentWorkDayName || "").trim().toLowerCase();
+      const taskNameKey = cleanId(task.taskName || "");
+      const isWeeklyOriginRoom =
+        !!task.roomKey &&
+        (taskCategory === "Weekly Room" || taskCategory === "Daily Room") &&
+        weekdayNames[dayText] === true &&
+        dayText === selectedDayText &&
+        weeklyRoomTaskNames[taskNameKey] === true;
 
-      if (task.category === "Weekly Room" && hasRoomSetting && roomIsDaily) {
-        const clonedTask = {
+      if (isWeeklyOriginRoom) {
+        const weeklyTask = {
           ...task,
-          category: "Daily Room",
-          categoryKey: "daily_room"
+          category: "Weekly Room",
+          categoryKey: "weekly_room"
         };
 
-        addUniqueTask(adjustedTasks, used, task);
-        addUniqueTask(adjustedTasks, used, clonedTask);
+        addUniqueTask(adjustedTasks, used, weeklyTask);
+
+        if (hasRoomSetting && roomIsDaily) {
+          const clonedTask = {
+            ...weeklyTask,
+          category: "Daily Room",
+          categoryKey: "daily_room"
+          };
+
+          addUniqueTask(adjustedTasks, used, clonedTask);
+        }
+
         return;
       }
 
