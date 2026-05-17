@@ -623,6 +623,38 @@
       margin: 8px 0 3px;
     }
 
+    .maintenance-summary-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 7px;
+      margin: 8px 0 10px;
+    }
+
+    .maintenance-summary-tile {
+      border: 1px solid #ccc;
+      border-radius: 12px;
+      padding: 8px 6px;
+      background: #fafafa;
+      text-align: center;
+      font-weight: 900;
+    }
+
+    .maintenance-summary-tile span {
+      display: block;
+      font-size: 22px;
+      margin-top: 2px;
+    }
+
+    .maintenance-status-pill {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 999px;
+      background: #e6e6e6;
+      font-size: 12px;
+      font-weight: 900;
+      margin-bottom: 5px;
+    }
+
     .inspection-reason-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -968,7 +1000,7 @@
 
     <div id="adminCategoryButtons" class="rooms-grid"></div>
 
-    <div class="app-version-label">Updated: 2026-05-17 3:46 PM</div>
+    <div class="app-version-label">Updated: 2026-05-17 3:52 PM</div>
 
   </div>
 
@@ -1468,9 +1500,19 @@
   <div id="adminMaintenanceDashboardView" class="hidden">
     <div class="assignment-title" id="adminMaintenanceDashboardAssignmentTitle"></div>
     <h2>Maintenance Inspection</h2>
+    <div id="maintenanceDashboardSummary" class="maintenance-summary-grid"></div>
     <button class="green" onclick="openMaintenanceInspection()">NEW INSPECTION</button>
+    <button class="yellow" onclick="openMaintenanceWorkBoard()">WORK BOARD</button>
     <button class="yellow" onclick="openMaintenanceInspectionReport()">INSPECTION REPORT</button>
     <button class="back" onclick="backToAdminCategories()">BACK</button>
+  </div>
+
+  <div id="adminMaintenanceWorkBoardView" class="hidden">
+    <div class="assignment-title" id="adminMaintenanceWorkBoardAssignmentTitle"></div>
+    <h2>Maintenance Work Board</h2>
+    <div id="maintenanceWorkBoardSummary" class="maintenance-summary-grid"></div>
+    <div id="maintenanceWorkBoardList"></div>
+    <button class="back" onclick="openMaintenanceDashboard()">BACK</button>
   </div>
 
   <div id="adminMaintenanceReportView" class="hidden">
@@ -1482,7 +1524,11 @@
       <option value="All">All</option>
       <option value="Failed">Failed</option>
       <option value="Passed">Passed</option>
-      <option value="Open">Open / Needs Fixing</option>
+      <option value="Waiting for Inspection">Waiting for Inspection</option>
+      <option value="Needs Material">Needs Material</option>
+      <option value="Needs Repair">Needs Repair</option>
+      <option value="Ready for Re-Inspect">Ready for Re-Inspect</option>
+      <option value="Resolved">Resolved</option>
     </select>
     <button class="yellow" onclick="openMaintenanceMaterialsNeeded()">MATERIALS NEEDED</button>
     <div id="maintenanceReportList"></div>
@@ -2374,6 +2420,7 @@
       "adminDailyStatusView",
       "adminIssueReasonsView",
       "adminMaintenanceDashboardView",
+      "adminMaintenanceWorkBoardView",
       "adminMaintenanceInspectionView",
       "adminMaintenanceReportView",
       "adminMaintenanceMaterialsView",
@@ -2401,6 +2448,7 @@
       "adminDailyStatusAssignmentTitle",
       "adminIssueReasonsAssignmentTitle",
       "adminMaintenanceDashboardAssignmentTitle",
+      "adminMaintenanceWorkBoardAssignmentTitle",
       "adminMaintenanceInspectionAssignmentTitle",
       "adminMaintenanceReportAssignmentTitle",
       "adminMaintenanceMaterialsAssignmentTitle",
@@ -6472,14 +6520,226 @@
   }
 
   async function openMaintenanceDashboard() {
-    if (allAreas.length === 0) {
-      showLoading();
-      await loadAllAdminData();
+    showLoading();
+    try {
+      if (allAreas.length === 0) {
+        await loadAllAdminData();
+      }
+
+      await loadMaintenanceInspectionRecords();
+      drawMaintenanceDashboardSummary();
+      updateAssignmentTitles();
+      showAdminView("adminMaintenanceDashboardView");
+    } finally {
       hideLoading();
     }
+  }
 
-    updateAssignmentTitles();
-    showAdminView("adminMaintenanceDashboardView");
+  function getMaintenanceWorkflowStatus(record) {
+    const savedStatus = String(record.workflowStatus || "").trim();
+    if (savedStatus) return savedStatus;
+
+    const result = String(record.result || "").toLowerCase();
+    const openStatus = String(record.openStatus || record.status || "").toLowerCase();
+    const hasMaterial = String(record.materialsNeeded || "").trim() !== "";
+
+    if (openStatus === "resolved" || openStatus === "good") return "Resolved";
+    if (result === "good") {
+      return record.reinspectionOfIssueId || record.reinspectionOfInspectionId ? "Resolved" : "Passed";
+    }
+    if (result === "fail") {
+      if (hasMaterial) return "Needs Material";
+      return "Needs Repair";
+    }
+
+    return "Waiting for Inspection";
+  }
+
+  function isMaintenanceWorkflowOpen(record) {
+    const status = getMaintenanceWorkflowStatus(record);
+    return status !== "Passed" && status !== "Resolved";
+  }
+
+  function getMaintenanceWorkflowCounts(records) {
+    const today = getTodayISO();
+    const counts = {
+      today: 0,
+      open: 0,
+      materials: 0,
+      ready: 0,
+      waiting: 0,
+      done: 0
+    };
+
+    records.forEach(function(record) {
+      const status = getMaintenanceWorkflowStatus(record);
+      const recordDate = getMaintenanceInspectionReportDateISO(record);
+
+      if (recordDate === today) counts.today++;
+      if (isMaintenanceWorkflowOpen(record)) counts.open++;
+      if (status === "Needs Material") counts.materials++;
+      if (status === "Ready for Re-Inspect") counts.ready++;
+      if (status === "Waiting for Inspection") counts.waiting++;
+      if (recordDate === today && (status === "Passed" || status === "Resolved")) counts.done++;
+    });
+
+    return counts;
+  }
+
+  function buildMaintenanceSummaryHtml(counts) {
+    return '' +
+      '<div class="maintenance-summary-tile">Today<span>' + counts.today + '</span></div>' +
+      '<div class="maintenance-summary-tile">Open<span>' + counts.open + '</span></div>' +
+      '<div class="maintenance-summary-tile">Materials<span>' + counts.materials + '</span></div>' +
+      '<div class="maintenance-summary-tile">Re-Inspect<span>' + counts.ready + '</span></div>';
+  }
+
+  function drawMaintenanceDashboardSummary() {
+    const box = document.getElementById("maintenanceDashboardSummary");
+    if (!box) return;
+    box.innerHTML = buildMaintenanceSummaryHtml(getMaintenanceWorkflowCounts(allMaintenanceInspectionRecords));
+  }
+
+  async function openMaintenanceWorkBoard() {
+    showLoading();
+    try {
+      await loadMaintenanceInspectionRecords();
+      drawMaintenanceWorkBoard();
+      updateAssignmentTitles();
+      showAdminView("adminMaintenanceWorkBoardView");
+    } finally {
+      hideLoading();
+    }
+  }
+
+  function drawMaintenanceWorkBoard() {
+    const summaryBox = document.getElementById("maintenanceWorkBoardSummary");
+    const listBox = document.getElementById("maintenanceWorkBoardList");
+    if (summaryBox) {
+      summaryBox.innerHTML = buildMaintenanceSummaryHtml(getMaintenanceWorkflowCounts(allMaintenanceInspectionRecords));
+    }
+    if (!listBox) return;
+
+    const today = getTodayISO();
+    const openRecords = allMaintenanceInspectionRecords.filter(isMaintenanceWorkflowOpen)
+      .sort(function(a, b) {
+        return getMaintenanceWorkflowPriority(a) - getMaintenanceWorkflowPriority(b) ||
+          getRecordSortValue(b) - getRecordSortValue(a);
+      });
+    const completedToday = allMaintenanceInspectionRecords.filter(function(record) {
+      const status = getMaintenanceWorkflowStatus(record);
+      return getMaintenanceInspectionReportDateISO(record) === today &&
+        (status === "Passed" || status === "Resolved");
+    }).sort(function(a, b) {
+      return getRecordSortValue(b) - getRecordSortValue(a);
+    });
+
+    const usedRecordIds = new Set();
+    function takeRecords(filterFn) {
+      return openRecords.filter(function(record) {
+        if (usedRecordIds.has(record.id)) return false;
+        if (!filterFn(record)) return false;
+        usedRecordIds.add(record.id);
+        return true;
+      });
+    }
+
+    let html = "";
+    html += buildMaintenanceWorkBoardSection("High Urgency", takeRecords(function(record) {
+      return String(record.urgency || "").toLowerCase() === "high";
+    }));
+    html += buildMaintenanceWorkBoardSection("Needs Materials", takeRecords(function(record) {
+      return getMaintenanceWorkflowStatus(record) === "Needs Material";
+    }));
+    html += buildMaintenanceWorkBoardSection("Ready for Re-Inspect", takeRecords(function(record) {
+      return getMaintenanceWorkflowStatus(record) === "Ready for Re-Inspect";
+    }));
+    html += buildMaintenanceWorkBoardSection("Needs Repair", takeRecords(function(record) {
+      return getMaintenanceWorkflowStatus(record) === "Needs Repair";
+    }));
+    html += buildMaintenanceWorkBoardSection("Waiting for Inspection", takeRecords(function(record) {
+      return getMaintenanceWorkflowStatus(record) === "Waiting for Inspection";
+    }));
+    html += buildMaintenanceWorkBoardSection("Completed Today", completedToday);
+
+    listBox.innerHTML = html || '<div class="room-report-card">No maintenance items to show.</div>';
+  }
+
+  function getMaintenanceWorkflowPriority(record) {
+    const status = getMaintenanceWorkflowStatus(record);
+    const urgency = String(record.urgency || "").toLowerCase();
+    if (urgency === "high") return 1;
+    if (status === "Needs Material") return 2;
+    if (status === "Ready for Re-Inspect") return 3;
+    if (urgency === "med") return 4;
+    if (status === "Needs Repair") return 5;
+    if (status === "Waiting for Inspection") return 6;
+    return 9;
+  }
+
+  function buildMaintenanceWorkBoardSection(title, records) {
+    if (!records.length) return "";
+    return '<div class="maintenance-section-label">' + escapeHtml(title) + '</div>' +
+      records.map(buildMaintenanceWorkBoardCard).join("");
+  }
+
+  function buildMaintenanceWorkBoardCard(record) {
+    const status = getMaintenanceWorkflowStatus(record);
+    const result = String(record.result || "").toLowerCase() === "fail" ? "FAIL" : "GOOD";
+    const isOpen = isMaintenanceWorkflowOpen(record);
+    const canMarkReady = status === "Needs Material" || status === "Needs Repair";
+
+    return '' +
+      '<div class="room-report-card">' +
+        '<div class="maintenance-status-pill">' + escapeHtml(status) + '</div>' +
+        '<h3>' + escapeHtml(record.areaName || record.roomKey || "Area") + ' - ' + escapeHtml(record.inspectionItem || "Inspection") + '</h3>' +
+        '<div>Result: ' + escapeHtml(result) + (record.urgency ? ' - ' + escapeHtml(record.urgency) : '') + '</div>' +
+        '<div>Reason: ' + escapeHtml(record.failReason || "None") + '</div>' +
+        '<div>Materials: ' + escapeHtml(record.materialsNeeded || "None") + '</div>' +
+        '<div>Saved: ' + escapeHtml(record.createdDateTimeText || getRecordDateTimeText(record)) + '</div>' +
+        '<div>Employee: ' + escapeHtml(record.employeeName || "Admin") + '</div>' +
+        (canMarkReady ? '<button class="green" onclick="markMaintenanceInspectionReady(\'' + escapeHtml(record.id) + '\')">MARK READY</button>' : '') +
+        (isOpen ? '<button class="yellow" onclick="reinspectMaintenanceIssue(\'' + escapeHtml(record.id) + '\')">RE-INSPECT</button>' : '') +
+      '</div>';
+  }
+
+  async function markMaintenanceInspectionReady(recordId) {
+    if (!recordId) return;
+    showLoading();
+    try {
+      await updateDoc(doc(db, "maintenance_inspections", recordId), {
+        workflowStatus: "Ready for Re-Inspect",
+        openStatus: "Open",
+        status: "Open",
+        updatedAt: serverTimestamp()
+      });
+
+      const record = allMaintenanceInspectionRecords.find(function(item) {
+        return item.id === recordId;
+      });
+      if (record) {
+        record.workflowStatus = "Ready for Re-Inspect";
+        record.openStatus = "Open";
+        record.status = "Open";
+      }
+
+      const issueSnap = await getDocs(collection(db, "issue_logs"));
+      const linkedIssue = issueSnap.docs.find(function(issueDoc) {
+        const issue = issueDoc.data();
+        return issue.sourceInspectionId === recordId;
+      });
+      if (linkedIssue) {
+        await updateDoc(doc(db, "issue_logs", linkedIssue.id), {
+          workflowStatus: "Ready for Re-Inspect",
+          status: "Open",
+          updatedAt: serverTimestamp()
+        });
+      }
+
+      drawMaintenanceWorkBoard();
+    } finally {
+      hideLoading();
+    }
   }
 
   function selectMaintenanceResidentStatus(status) {
@@ -7004,6 +7264,7 @@
     for (let i = 0; i < matches.length; i++) {
       await updateDoc(doc(db, "issue_logs", matches[i].id), {
         status: "Resolved",
+        workflowStatus: "Resolved",
         needsFollowUp: false,
         followUpNote: noteText || "Passed re-inspection.",
         resolvedBy: sessionData.name || sessionData.employeeName || "Admin",
@@ -7015,6 +7276,7 @@
         await updateDoc(doc(db, "maintenance_inspections", matches[i].sourceInspectionId), {
           openStatus: "Resolved",
           status: "Resolved",
+          workflowStatus: "Resolved",
           resolvedAt: serverTimestamp(),
           updatedAt: serverTimestamp()
         });
@@ -7211,6 +7473,10 @@
     });
     const savedDateText = savedWeekday + " " + savedDate;
     const savedDateTimeText = savedDateText + " - " + savedTime;
+    const materialsNeededText = materialsBox ? materialsBox.value.trim() : "";
+    const workflowStatus = result === "Good"
+      ? (maintenanceReinspectIssueId || maintenanceReinspectInspectionId ? "Resolved" : "Passed")
+      : (materialsNeededText ? "Needs Material" : "Needs Repair");
 
     const employeeName = sessionData.employeeName || sessionData.name ||
       [sessionData.firstName, sessionData.lastName].filter(Boolean).join(" ") ||
@@ -7238,7 +7504,7 @@
       result: result,
       failReason: result === "Fail" ? failReason : "",
       note: noteBox ? noteBox.value.trim() : "",
-      materialsNeeded: materialsBox ? materialsBox.value.trim() : "",
+      materialsNeeded: materialsNeededText,
       urgency: selectedMaintenanceUrgency || "",
       residentStatus: selectedMaintenanceResidentStatus || getMaintenanceAreaResidentStatus(area),
       allowPictures: item.allowPictures === true,
@@ -7249,6 +7515,7 @@
       reinspectionOfInspectionId: maintenanceReinspectInspectionId || "",
       openStatus: result === "Fail" ? "Open" : "Resolved",
       status: result === "Fail" ? "Open" : "Good",
+      workflowStatus: workflowStatus,
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp()
     };
@@ -7287,6 +7554,7 @@
         source: "maintenance_inspection",
         sourceInspectionId: inspectionRef.id,
         status: "Open",
+        workflowStatus: workflowStatus,
         needsFollowUp: true,
         photoCount: 0,
         updatedAt: serverTimestamp()
@@ -7385,6 +7653,7 @@
             materialsNeeded: issue.materialsNeeded || "",
             urgency: issue.urgency || "",
             residentStatus: issue.residentStatus || "",
+            workflowStatus: issue.workflowStatus || "",
             openStatus: issue.status || "Open",
             status: issue.status || "Open",
             sourceIssueId: issue.id,
@@ -7510,10 +7779,12 @@
 
         const result = String(record.result || "").toLowerCase();
         const openStatus = String(record.openStatus || record.status || "").toLowerCase();
+        const workflowStatus = getMaintenanceWorkflowStatus(record);
 
         if (reportType === "Failed") return result === "fail";
-        if (reportType === "Passed") return result === "good";
+        if (reportType === "Passed") return workflowStatus === "Passed";
         if (reportType === "Open") return result === "fail" && openStatus !== "resolved";
+        if (reportType !== "All") return workflowStatus === reportType;
         return true;
       }).sort(function(a, b) {
         return getRecordSortValue(b) - getRecordSortValue(a);
@@ -7572,6 +7843,7 @@
     const result = String(record.result || "").toLowerCase() === "fail" ? "FAIL" : "GOOD";
     const openStatus = String(record.openStatus || record.status || (result === "FAIL" ? "Open" : "Resolved"));
     const isOpen = result === "FAIL" && openStatus !== "Resolved";
+    const workflowStatus = getMaintenanceWorkflowStatus(record);
     const dateText = record.createdDateTimeText || getRecordDateTimeText(record);
     const issueParts = [];
 
@@ -7581,6 +7853,7 @@
 
     return '' +
       '<div class="room-report-card">' +
+        '<div class="maintenance-status-pill">' + escapeHtml(workflowStatus) + '</div>' +
         '<h3>' + escapeHtml(record.areaName || record.roomKey || "Area") + ' - ' + escapeHtml(record.inspectionItem || "Inspection") + '</h3>' +
         '<div>Status: ' + escapeHtml(result) + (record.urgency ? ' - ' + escapeHtml(record.urgency) : '') + '</div>' +
         '<div>Resident: ' + escapeHtml(record.residentStatus || "Occupied") + '</div>' +
@@ -7596,7 +7869,7 @@
     return '' +
       '<div class="room-report-card">' +
         '<h3>' + escapeHtml(record.areaName || record.roomKey || "Inspection") + '</h3>' +
-        '<div>Status: ' + escapeHtml(record.result || record.status || "Saved") + '</div>' +
+        '<div>Status: ' + escapeHtml(getMaintenanceWorkflowStatus(record)) + '</div>' +
         '<div>Item: ' + escapeHtml(record.inspectionItem || record.taskName || "Inspection") + '</div>' +
         '<div>Saved: ' + escapeHtml(record.createdDateTimeText || record.createdDate || record.workDateISO || "") + '</div>' +
         '<div>Employee: ' + escapeHtml(record.employeeName || "Admin") + '</div>' +
@@ -7663,10 +7936,8 @@
       if (!box) return;
 
       const failedMaterials = allMaintenanceInspectionRecords.filter(function(record) {
-        const result = String(record.result || "").toLowerCase();
-        const openStatus = String(record.openStatus || record.status || "").toLowerCase();
-        return result === "fail" &&
-          openStatus !== "resolved" &&
+        const workflowStatus = getMaintenanceWorkflowStatus(record);
+        return workflowStatus === "Needs Material" &&
           String(record.materialsNeeded || "").trim();
       }).map(function(record) {
         return {
@@ -8688,6 +8959,7 @@
   ========================== */
 
   window.openMaintenanceDashboard = openMaintenanceDashboard;
+  window.openMaintenanceWorkBoard = openMaintenanceWorkBoard;
   window.openMaintenanceInspection = openMaintenanceInspection;
   window.openMaintenanceInspectionReport = openMaintenanceInspectionReport;
   window.openMaintenanceMaterialsNeeded = openMaintenanceMaterialsNeeded;
@@ -8696,6 +8968,7 @@
   window.refreshMaintenanceInspectionReport = refreshMaintenanceInspectionReport;
   window.handleMaintenanceInspectionReportInput = handleMaintenanceInspectionReportInput;
   window.reinspectMaintenanceIssue = reinspectMaintenanceIssue;
+  window.markMaintenanceInspectionReady = markMaintenanceInspectionReady;
   window.selectMaintenanceResidentStatus = selectMaintenanceResidentStatus;
   window.selectMaintenanceUrgency = selectMaintenanceUrgency;
   window.drawMaintenanceInspectionAreaList = drawMaintenanceInspectionAreaList;
