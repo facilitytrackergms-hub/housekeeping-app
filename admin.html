@@ -615,7 +615,11 @@
     }
 
     #maintenanceStartInput,
-    #maintenanceStartAreaSelect {
+    #maintenanceStartAreaSelect,
+    #maintenanceManualMaterialSelect,
+    #maintenanceManualMaterialInput,
+    #maintenanceManualMaterialRoomInput,
+    #maintenanceManualMaterialAreaSelect {
       width: 100%;
       margin: 8px 0 10px;
       font-size: 26px;
@@ -623,6 +627,31 @@
       text-align: center;
       min-height: 58px;
       border: 2px solid #111;
+    }
+
+    #maintenanceManualMaterialNote {
+      width: 100%;
+      min-height: 90px;
+      margin: 8px 0 10px;
+      font-size: 18px;
+      font-weight: 700;
+      padding: 10px;
+      border: 2px solid #111;
+      border-radius: 12px;
+    }
+
+    .maintenance-material-location-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 7px;
+      margin: 8px 0;
+    }
+
+    .maintenance-material-location-row button {
+      min-height: 42px;
+      margin: 0;
+      padding: 8px 3px;
+      font-size: 13px;
     }
 
     .maintenance-inline-row {
@@ -1043,7 +1072,7 @@
 
     <div id="adminCategoryButtons" class="rooms-grid"></div>
 
-    <div class="app-version-label">Updated: 2026-05-17 4:54 PM</div>
+    <div class="app-version-label">Updated: 2026-05-17 5:15 PM</div>
 
   </div>
 
@@ -1549,6 +1578,7 @@
     <button class="green" onclick="openMaintenanceInspection()">NEW INSPECTION</button>
     <button class="yellow" onclick="openMaintenanceWorkBoard()">WORK BOARD</button>
     <button class="yellow" onclick="openMaintenanceInspectionReport()">INSPECTION REPORT</button>
+    <button class="yellow" onclick="openMaintenanceMaterialsNeeded()">MATERIALS</button>
     <button class="back" onclick="backToAdminCategories()">BACK</button>
   </div>
 
@@ -1583,9 +1613,9 @@
   <div id="adminMaintenanceMaterialsView" class="hidden">
     <div class="assignment-title" id="adminMaintenanceMaterialsAssignmentTitle"></div>
     <h2>Materials Needed</h2>
-    <button class="green" onclick="openMaintenanceManualMaterialPopup()">ADD STOCK ITEM</button>
+    <button class="green" onclick="openMaintenanceManualMaterialPopup()">ADD MATERIAL</button>
     <div id="maintenanceMaterialsNeededList"></div>
-    <button class="back" onclick="openMaintenanceInspectionReport()">BACK</button>
+    <button class="back" onclick="openMaintenanceDashboard()">BACK</button>
   </div>
 
 
@@ -1923,6 +1953,29 @@
   </div>
 </div>
 
+<div id="maintenanceManualMaterialPopup" class="app-message-bg hidden">
+  <div class="app-message-card">
+    <h3>Material Needed</h3>
+    <p>Add something to remember for the store.</p>
+    <select id="maintenanceManualMaterialSelect">
+      <option value="">Choose material</option>
+    </select>
+    <input id="maintenanceManualMaterialInput" placeholder="Or type material">
+    <div class="maintenance-material-location-row">
+      <button class="green" onclick="selectMaintenanceManualMaterialLocation('general')">STOCK</button>
+      <button onclick="selectMaintenanceManualMaterialLocation('room')">ROOM</button>
+      <button onclick="selectMaintenanceManualMaterialLocation('area')">AREA</button>
+    </div>
+    <input id="maintenanceManualMaterialRoomInput" class="hidden" inputmode="numeric" pattern="[0-9]*" placeholder="Room number">
+    <select id="maintenanceManualMaterialAreaSelect" class="hidden"></select>
+    <textarea id="maintenanceManualMaterialNote" placeholder="What is it for?"></textarea>
+    <div class="app-message-actions">
+      <button class="green" onclick="confirmMaintenanceManualMaterialPopup()">SAVE</button>
+      <button class="back" onclick="cancelMaintenanceManualMaterialPopup()">CANCEL</button>
+    </div>
+  </div>
+</div>
+
 
 <script type="module">
 
@@ -2022,6 +2075,7 @@
   let selectedMaintenanceResidentStatus = "Occupied";
   let selectedMaintenanceUrgency = "";
   let maintenanceStartSearchType = "room";
+  let maintenanceManualMaterialLocationType = "general";
   let maintenanceReinspectIssueId = "";
   let maintenanceReinspectInspectionId = "";
   let maintenanceReportRefreshTimer = null;
@@ -6880,13 +6934,7 @@
     return getMaintenanceInspectionResidentStatus([area]).toLowerCase() === "vacant" ? "Vacant" : "Occupied";
   }
 
-  async function openMaintenanceInspection() {
-    showLoading();
-
-    if (allAreas.length === 0) {
-      await loadAllAdminData();
-    }
-
+  async function loadMaintenanceInspectionItems() {
     const snap = await getDocs(collection(db, "maintenance_inspection_items"));
 
     allMaintenanceInspectionItems = snap.docs
@@ -6905,6 +6953,16 @@
         if (aOrder !== bOrder) return aOrder - bOrder;
         return String(a.inspectionItem || "").localeCompare(String(b.inspectionItem || ""));
       });
+  }
+
+  async function openMaintenanceInspection() {
+    showLoading();
+
+    if (allAreas.length === 0) {
+      await loadAllAdminData();
+    }
+
+    await loadMaintenanceInspectionItems();
 
     selectedMaintenanceInspectionArea = null;
     selectedMaintenanceInspectionReason = "";
@@ -7150,6 +7208,7 @@
 
     allAreas.forEach(function(area) {
       const areaRoomKey = getRoomKey(area.areaName);
+      const matchRank = getMaintenanceInspectionAreaMatchRank(area, searchText, exactRoomKey);
       const combined = [
         area.areaName,
         area.category,
@@ -7158,31 +7217,64 @@
         area.floor
       ].join(" ").toLowerCase();
 
-      if (!combined.includes(searchText) && areaRoomKey !== exactRoomKey) return;
+      if (!combined.includes(searchText) && matchRank >= 99 && areaRoomKey !== exactRoomKey) return;
 
       const groupKey = areaRoomKey || String(area.areaName || "").trim().toLowerCase();
       if (!groupKey) return;
 
       if (!groups[groupKey]) {
-        groups[groupKey] = [];
+        groups[groupKey] = {
+          matchRank: matchRank,
+          areas: []
+        };
       }
 
-      groups[groupKey].push(area);
+      groups[groupKey].matchRank = Math.min(groups[groupKey].matchRank, matchRank);
+      groups[groupKey].areas.push(area);
     });
 
     return Object.keys(groups).map(function(groupKey) {
-      const areas = groups[groupKey].sort(sortMaintenanceInspectionAreaChoice);
+      const areas = groups[groupKey].areas.sort(sortMaintenanceInspectionAreaChoice);
       const primaryArea = areas[0];
 
       return {
         groupKey: groupKey,
         label: primaryArea.areaName || groupKey,
         primaryArea: primaryArea,
-        count: areas.length
+        count: areas.length,
+        matchRank: groups[groupKey].matchRank
       };
     }).sort(function(a, b) {
+      if (a.matchRank !== b.matchRank) return a.matchRank - b.matchRank;
       return String(a.label || "").localeCompare(String(b.label || ""), undefined, { numeric: true });
     });
+  }
+
+  function getMaintenanceInspectionAreaMatchRank(area, searchText, exactRoomKey) {
+    const areaName = String(area.areaName || "").trim();
+    const cleanSearch = String(searchText || "").trim().toLowerCase();
+    const areaRoomKey = getRoomKey(areaName);
+    const roomTokens = getMaintenanceRoomTokens(areaName);
+
+    if (exactRoomKey && /^\d+$/.test(exactRoomKey)) {
+      if (areaName.replace(/\D/g, "") === exactRoomKey && roomTokens.length <= 1) return 1;
+      if (roomTokens.includes(exactRoomKey)) return 2;
+      if (areaRoomKey === exactRoomKey) return 3;
+    }
+
+    const combined = [
+      area.areaName,
+      area.category,
+      area.schedule,
+      area.scheduleDay,
+      area.floor
+    ].join(" ").toLowerCase();
+
+    return cleanSearch && combined.includes(cleanSearch) ? 4 : 99;
+  }
+
+  function getMaintenanceRoomTokens(value) {
+    return String(value || "").match(/\d+/g) || [];
   }
 
   function sortMaintenanceInspectionAreaChoice(a, b) {
@@ -8233,25 +8325,33 @@
           String(record.materialsNeeded || "").trim();
       }).map(function(record) {
         return {
+          id: record.id || "",
           urgency: record.urgency || "",
           room: record.areaName || record.roomKey || "",
           material: record.materialsNeeded || "",
           reason: record.failReason || "",
+          note: record.note || "",
+          sortValue: getMaintenanceInspectionRecordSortValue(record),
           source: "Inspection"
         };
       });
 
       const manualMaterials = allMaintenanceManualMaterials.map(function(item) {
         return {
+          id: item.id || "",
           urgency: item.urgency || "",
-          room: item.room || "",
+          room: item.room || item.areaName || "",
           material: item.material || "",
-          reason: item.reason || "",
+          reason: item.reason || item.note || "",
+          note: item.note || item.reason || "",
+          sortValue: getMaintenanceInspectionRecordSortValue(item),
           source: "Manual"
         };
       });
 
-      const materials = failedMaterials.concat(manualMaterials);
+      const materials = failedMaterials.concat(manualMaterials).sort(function(a, b) {
+        return (b.sortValue || 0) - (a.sortValue || 0);
+      });
 
       if (materials.length === 0) {
         box.innerHTML = '<div class="room-report-card">No materials needed.</div>';
@@ -8263,9 +8363,10 @@
           '<div class="room-report-card">' +
             '<h3>' + escapeHtml(item.material || "Material") + '</h3>' +
             '<div>Urgency: ' + escapeHtml(item.urgency || "None") + '</div>' +
-            '<div>Room: ' + escapeHtml(item.room || "Stock") + '</div>' +
-            '<div>Fail Reason: ' + escapeHtml(item.reason || "None") + '</div>' +
+            '<div>For: ' + escapeHtml(item.room || "Stock") + '</div>' +
+            '<div>Note: ' + escapeHtml(item.note || item.reason || "None") + '</div>' +
             '<div>Source: ' + escapeHtml(item.source) + '</div>' +
+            (item.source === "Manual" && item.id ? '<button class="green" onclick="markMaintenanceManualMaterialBought(\'' + escapeHtml(item.id) + '\')">BOUGHT</button>' : '') +
           '</div>';
       }).join("");
     } finally {
@@ -8273,35 +8374,179 @@
     }
   }
 
-  function openMaintenanceManualMaterialPopup() {
-    openMaintenanceTextPopup(
-      "Add Stock Item",
-      "Type material. You can include room and reason if needed.",
-      "Example: Wax ring - Room 211 - High",
-      "",
-      async function(value) {
-        const cleanValue = String(value || "").trim();
-        if (!cleanValue) {
-          showAppMessage("Type material.");
-          return;
-        }
+  function getMaintenanceKnownMaterials() {
+    const map = {};
 
-        showLoading();
-        await addDoc(collection(db, "maintenance_material_entries"), {
-          material: cleanValue,
-          room: "",
-          urgency: "",
-          reason: "",
-          source: "manual",
-          active: true,
-          createdBy: sessionData.name || sessionData.employeeName || "Admin",
-          createdAt: serverTimestamp(),
-          updatedAt: serverTimestamp()
-        });
-        await openMaintenanceMaterialsNeeded();
-        hideLoading();
+    allMaintenanceInspectionItems.forEach(function(item) {
+      getMaintenanceInspectionMaterials(item).forEach(function(material) {
+        const cleanMaterial = String(material || "").trim();
+        if (cleanMaterial) map[cleanMaterial.toLowerCase()] = cleanMaterial;
+      });
+    });
+
+    allMaintenanceInspectionRecords.forEach(function(record) {
+      const cleanMaterial = String(record.materialsNeeded || "").trim();
+      if (cleanMaterial) map[cleanMaterial.toLowerCase()] = cleanMaterial;
+    });
+
+    allMaintenanceManualMaterials.forEach(function(item) {
+      const cleanMaterial = String(item.material || "").trim();
+      if (cleanMaterial) map[cleanMaterial.toLowerCase()] = cleanMaterial;
+    });
+
+    return Object.keys(map).sort().map(function(key) {
+      return map[key];
+    });
+  }
+
+  function fillMaintenanceManualMaterialSelect() {
+    const select = document.getElementById("maintenanceManualMaterialSelect");
+    if (!select) return;
+
+    select.innerHTML = '<option value="">Choose material</option>';
+    getMaintenanceKnownMaterials().forEach(function(material) {
+      const option = document.createElement("option");
+      option.value = material;
+      option.innerText = material;
+      select.appendChild(option);
+    });
+  }
+
+  function fillMaintenanceManualMaterialAreaSelect() {
+    const select = document.getElementById("maintenanceManualMaterialAreaSelect");
+    if (!select) return;
+
+    select.innerHTML = '<option value="">Choose area</option>';
+    getMaintenanceStartAreaChoices().forEach(function(area) {
+      const option = document.createElement("option");
+      option.value = area.areaName;
+      option.innerText = area.areaName;
+      select.appendChild(option);
+    });
+  }
+
+  async function openMaintenanceManualMaterialPopup() {
+    showLoading();
+    try {
+      if (allAreas.length === 0) await loadAllAdminData();
+      if (allMaintenanceInspectionItems.length === 0) await loadMaintenanceInspectionItems();
+      await loadMaintenanceInspectionRecords();
+      await loadMaintenanceManualMaterials();
+
+      maintenanceManualMaterialLocationType = "general";
+      fillMaintenanceManualMaterialSelect();
+      fillMaintenanceManualMaterialAreaSelect();
+
+      const materialInput = document.getElementById("maintenanceManualMaterialInput");
+      const roomInput = document.getElementById("maintenanceManualMaterialRoomInput");
+      const areaSelect = document.getElementById("maintenanceManualMaterialAreaSelect");
+      const noteBox = document.getElementById("maintenanceManualMaterialNote");
+      const materialSelect = document.getElementById("maintenanceManualMaterialSelect");
+      const popup = document.getElementById("maintenanceManualMaterialPopup");
+
+      if (materialInput) materialInput.value = "";
+      if (roomInput) roomInput.value = "";
+      if (areaSelect) areaSelect.value = "";
+      if (noteBox) noteBox.value = "";
+      if (materialSelect) materialSelect.value = "";
+      selectMaintenanceManualMaterialLocation("general");
+      if (popup) popup.classList.remove("hidden");
+    } finally {
+      hideLoading();
+    }
+  }
+
+  function selectMaintenanceManualMaterialLocation(type) {
+    maintenanceManualMaterialLocationType = ["room", "area"].includes(type) ? type : "general";
+
+    const roomInput = document.getElementById("maintenanceManualMaterialRoomInput");
+    const areaSelect = document.getElementById("maintenanceManualMaterialAreaSelect");
+
+    if (roomInput) roomInput.classList.toggle("hidden", maintenanceManualMaterialLocationType !== "room");
+    if (areaSelect) areaSelect.classList.toggle("hidden", maintenanceManualMaterialLocationType !== "area");
+  }
+
+  async function confirmMaintenanceManualMaterialPopup() {
+    const materialSelect = document.getElementById("maintenanceManualMaterialSelect");
+    const materialInput = document.getElementById("maintenanceManualMaterialInput");
+    const roomInput = document.getElementById("maintenanceManualMaterialRoomInput");
+    const areaSelect = document.getElementById("maintenanceManualMaterialAreaSelect");
+    const noteBox = document.getElementById("maintenanceManualMaterialNote");
+
+    const typedMaterial = String(materialInput ? materialInput.value : "").trim();
+    const selectedMaterial = String(materialSelect ? materialSelect.value : "").trim();
+    const material = typedMaterial || selectedMaterial;
+    const roomValue = String(roomInput ? roomInput.value : "").replace(/\D/g, "").slice(0, 3);
+    const areaValue = String(areaSelect ? areaSelect.value : "").trim();
+    const note = String(noteBox ? noteBox.value : "").trim();
+
+    if (!material) {
+      showAppMessage("Choose or type material.");
+      return;
+    }
+
+    let locationText = "Stock";
+    if (maintenanceManualMaterialLocationType === "room") {
+      if (!roomValue) {
+        showAppMessage("Type room number.");
+        return;
       }
-    );
+      locationText = roomValue;
+    }
+    if (maintenanceManualMaterialLocationType === "area") {
+      if (!areaValue) {
+        showAppMessage("Choose area.");
+        return;
+      }
+      locationText = areaValue;
+    }
+
+    showLoading();
+    try {
+      await addDoc(collection(db, "maintenance_material_entries"), {
+        material: material,
+        room: locationText,
+        areaName: locationText,
+        locationType: maintenanceManualMaterialLocationType,
+        urgency: "",
+        reason: note,
+        note: note,
+        source: "manual",
+        active: true,
+        createdBy: sessionData.name || sessionData.employeeName || "Admin",
+        createdAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      });
+      cancelMaintenanceManualMaterialPopup();
+      await openMaintenanceMaterialsNeeded();
+    } finally {
+      hideLoading();
+    }
+  }
+
+  function cancelMaintenanceManualMaterialPopup() {
+    const popup = document.getElementById("maintenanceManualMaterialPopup");
+    if (popup) popup.classList.add("hidden");
+  }
+
+  async function markMaintenanceManualMaterialBought(materialId) {
+    if (!materialId) return;
+
+    const ok = await showAppConfirmMessage("Mark this material as bought?");
+    if (!ok) return;
+
+    showLoading();
+    try {
+      await updateDoc(doc(db, "maintenance_material_entries", materialId), {
+        active: false,
+        boughtBy: sessionData.name || sessionData.employeeName || "Admin",
+        boughtAt: serverTimestamp(),
+        updatedAt: serverTimestamp()
+      });
+      await openMaintenanceMaterialsNeeded();
+    } finally {
+      hideLoading();
+    }
   }
 
   /* =========================
@@ -9256,6 +9501,10 @@
   window.openMaintenanceInspectionReport = openMaintenanceInspectionReport;
   window.openMaintenanceMaterialsNeeded = openMaintenanceMaterialsNeeded;
   window.openMaintenanceManualMaterialPopup = openMaintenanceManualMaterialPopup;
+  window.selectMaintenanceManualMaterialLocation = selectMaintenanceManualMaterialLocation;
+  window.confirmMaintenanceManualMaterialPopup = confirmMaintenanceManualMaterialPopup;
+  window.cancelMaintenanceManualMaterialPopup = cancelMaintenanceManualMaterialPopup;
+  window.markMaintenanceManualMaterialBought = markMaintenanceManualMaterialBought;
   window.drawMaintenanceInspectionReport = drawMaintenanceInspectionReport;
   window.refreshMaintenanceInspectionReport = refreshMaintenanceInspectionReport;
   window.handleMaintenanceInspectionReportInput = handleMaintenanceInspectionReportInput;
