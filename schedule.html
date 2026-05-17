@@ -2330,10 +2330,11 @@ async function saveReasonIfNeeded(reasonText) {
     occupiedButton.classList.remove("yellow", "red", "green", "room-setting-blue");
     occupiedButton.classList.add(isVacant ? "red" : "room-setting-blue");
 
-    setResidentStatusButtonState(assistedButton, !isVacant && residentStatus === "Assisted");
-    setResidentStatusButtonState(dependingButton, !isVacant && residentStatus === "Depending");
-    setResidentStatusButtonState(hospiceButton, !isVacant && residentStatus === "Hospice");
+const residentStatusKey = String(setting.residentStatus || "").trim().toLowerCase();
 
+setResidentStatusButtonState(assistedButton, !isVacant && residentStatusKey === "assisted");
+setResidentStatusButtonState(dependingButton, !isVacant && residentStatusKey === "depending");
+setResidentStatusButtonState(hospiceButton, !isVacant && residentStatusKey === "hospice");
     updateDehumidifierLeadButton(dehumidifierButton, roomKey);
 
     controls.classList.remove("hidden");
