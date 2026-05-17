@@ -1476,9 +1476,9 @@
   <div id="adminMaintenanceReportView" class="hidden">
     <div class="assignment-title" id="adminMaintenanceReportAssignmentTitle"></div>
     <h2>Inspection Report</h2>
-    <input id="maintenanceReportSearchInput" placeholder="Room / Area" oninput="drawMaintenanceInspectionReport()">
-    <input id="maintenanceReportDatePicker" type="date" onchange="drawMaintenanceInspectionReport()">
-    <select id="maintenanceReportTypeSelect" onchange="drawMaintenanceInspectionReport()">
+    <input id="maintenanceReportSearchInput" placeholder="Room / Area" oninput="handleMaintenanceInspectionReportInput()">
+    <input id="maintenanceReportDatePicker" type="date" onchange="refreshMaintenanceInspectionReport()">
+    <select id="maintenanceReportTypeSelect" onchange="refreshMaintenanceInspectionReport()">
       <option value="All">All</option>
       <option value="Failed">Failed</option>
       <option value="Passed">Passed</option>
@@ -1901,6 +1901,7 @@
   let selectedMaintenanceUrgency = "";
   let maintenanceReinspectIssueId = "";
   let maintenanceReinspectInspectionId = "";
+  let maintenanceReportRefreshTimer = null;
   let roomSettingsData = {};
   let currentAreaTasks = [];
   let currentEmployeeId = "";
@@ -7352,68 +7353,122 @@
 
   async function openMaintenanceInspectionReport() {
     showLoading();
+    try {
+      if (allAreas.length === 0) {
+        await loadAllAdminData();
+      }
 
-    if (allAreas.length === 0) {
-      await loadAllAdminData();
+      await loadMaintenanceInspectionRecords();
+
+      const datePicker = document.getElementById("maintenanceReportDatePicker");
+      const typeSelect = document.getElementById("maintenanceReportTypeSelect");
+      const searchInput = document.getElementById("maintenanceReportSearchInput");
+
+      if (datePicker && !datePicker.value) datePicker.value = currentWorkDateISO || getTodayISO();
+      if (typeSelect && !typeSelect.value) typeSelect.value = "All";
+      if (searchInput) searchInput.focus();
+
+      drawMaintenanceInspectionReport();
+      updateAssignmentTitles();
+      showAdminView("adminMaintenanceReportView");
+    } finally {
+      hideLoading();
     }
+  }
 
-    await loadMaintenanceInspectionRecords();
+  function getMaintenanceInspectionRecordSearchText(record) {
+    return [
+      record.id,
+      record.roomKey,
+      record.areaName,
+      record.areaId,
+      record.areaDocId,
+      record.schedule,
+      record.category,
+      record.inspectionItem
+    ].join(" ").toLowerCase();
+  }
 
-    const datePicker = document.getElementById("maintenanceReportDatePicker");
-    const typeSelect = document.getElementById("maintenanceReportTypeSelect");
-    const searchInput = document.getElementById("maintenanceReportSearchInput");
+  function maintenanceInspectionRecordMatchesSearch(record, searchText) {
+    const searchRoomKey = getRoomKey(searchText);
+    const recordRoomKeys = [
+      record.roomKey,
+      record.areaName,
+      record.areaId,
+      record.areaDocId,
+      record.id
+    ].map(function(value) {
+      return getRoomKey(value || "");
+    }).filter(function(value) {
+      return value !== "";
+    });
 
-    if (datePicker && !datePicker.value) datePicker.value = currentWorkDateISO || getTodayISO();
-    if (typeSelect && !typeSelect.value) typeSelect.value = "All";
-    if (searchInput) searchInput.focus();
-
-    drawMaintenanceInspectionReport();
-    hideLoading();
-    updateAssignmentTitles();
-    showAdminView("adminMaintenanceReportView");
+    return recordRoomKeys.includes(searchRoomKey) ||
+      getMaintenanceInspectionRecordSearchText(record).includes(searchText);
   }
 
   function drawMaintenanceInspectionReport() {
-    const box = document.getElementById("maintenanceReportList");
-    const searchInput = document.getElementById("maintenanceReportSearchInput");
-    const datePicker = document.getElementById("maintenanceReportDatePicker");
-    const typeSelect = document.getElementById("maintenanceReportTypeSelect");
-    const searchText = String(searchInput ? searchInput.value : "").trim().toLowerCase();
-    const roomKey = getRoomKey(searchText);
-    const selectedDate = datePicker && datePicker.value ? datePicker.value : currentWorkDateISO;
-    const reportType = typeSelect ? typeSelect.value : "All";
+    try {
+      const box = document.getElementById("maintenanceReportList");
+      const searchInput = document.getElementById("maintenanceReportSearchInput");
+      const datePicker = document.getElementById("maintenanceReportDatePicker");
+      const typeSelect = document.getElementById("maintenanceReportTypeSelect");
+      const searchText = String(searchInput ? searchInput.value : "").trim().toLowerCase();
+      const selectedDate = datePicker && datePicker.value ? datePicker.value : currentWorkDateISO;
+      const reportType = typeSelect ? typeSelect.value : "All";
 
-    if (!box) return;
+      if (!box) return;
 
-    if (!searchText) {
-      box.innerHTML = '<div class="room-report-card">Type a room or area.</div>';
-      return;
+      if (!searchText) {
+        box.innerHTML = '<div class="room-report-card">Type a room or area.</div>';
+        return;
+      }
+
+      let records = allMaintenanceInspectionRecords.filter(function(record) {
+        const roomMatches = maintenanceInspectionRecordMatchesSearch(record, searchText);
+        const dateMatches = String(record.workDateISO || record.createdDate || "").slice(0, 10) === selectedDate;
+        if (!roomMatches || !dateMatches) return false;
+
+        const result = String(record.result || "").toLowerCase();
+        const openStatus = String(record.openStatus || record.status || "").toLowerCase();
+
+        if (reportType === "Failed") return result === "fail";
+        if (reportType === "Passed") return result === "good";
+        if (reportType === "Open") return result === "fail" && openStatus !== "resolved";
+        return true;
+      }).sort(function(a, b) {
+        return getRecordSortTime(b) - getRecordSortTime(a);
+      });
+
+      if (records.length === 0) {
+        box.innerHTML = '<div class="room-report-card">No inspection records found.</div>';
+        return;
+      }
+
+      box.innerHTML = records.map(buildMaintenanceInspectionReportCard).join("");
+    } finally {
+      // Keep draw safe when called after a loading refresh.
+    }
+  }
+
+  function handleMaintenanceInspectionReportInput() {
+    if (maintenanceReportRefreshTimer) {
+      clearTimeout(maintenanceReportRefreshTimer);
     }
 
-    let records = allMaintenanceInspectionRecords.filter(function(record) {
-      const recordRoomKey = getRoomKey(record.roomKey || record.areaName || "");
-      const roomMatches = recordRoomKey === roomKey ||
-        String(record.areaName || "").toLowerCase().includes(searchText);
-      const dateMatches = String(record.workDateISO || record.createdDate || "").slice(0, 10) === selectedDate;
-      if (!roomMatches || !dateMatches) return false;
+    maintenanceReportRefreshTimer = setTimeout(function() {
+      refreshMaintenanceInspectionReport();
+    }, 250);
+  }
 
-      const result = String(record.result || "").toLowerCase();
-      const openStatus = String(record.openStatus || record.status || "").toLowerCase();
-
-      if (reportType === "Failed") return result === "fail";
-      if (reportType === "Passed") return result === "good";
-      if (reportType === "Open") return result === "fail" && openStatus !== "resolved";
-      return true;
-    }).sort(function(a, b) {
-      return getRecordSortTime(b) - getRecordSortTime(a);
-    });
-
-    if (records.length === 0) {
-      box.innerHTML = '<div class="room-report-card">No inspection records found.</div>';
-      return;
+  async function refreshMaintenanceInspectionReport() {
+    showLoading();
+    try {
+      await loadMaintenanceInspectionRecords();
+      drawMaintenanceInspectionReport();
+    } finally {
+      hideLoading();
     }
-
-    box.innerHTML = records.map(buildMaintenanceInspectionReportCard).join("");
   }
 
   function buildMaintenanceInspectionReportCard(record) {
@@ -7483,61 +7538,68 @@
 
   async function openMaintenanceMaterialsNeeded() {
     showLoading();
-    await loadMaintenanceInspectionRecords();
-    await loadMaintenanceManualMaterials();
-    drawMaintenanceMaterialsNeeded();
-    hideLoading();
-    updateAssignmentTitles();
-    showAdminView("adminMaintenanceMaterialsView");
+    try {
+      await loadMaintenanceInspectionRecords();
+      await loadMaintenanceManualMaterials();
+      drawMaintenanceMaterialsNeeded();
+      updateAssignmentTitles();
+      showAdminView("adminMaintenanceMaterialsView");
+    } finally {
+      hideLoading();
+    }
   }
 
   function drawMaintenanceMaterialsNeeded() {
-    const box = document.getElementById("maintenanceMaterialsNeededList");
-    if (!box) return;
+    try {
+      const box = document.getElementById("maintenanceMaterialsNeededList");
+      if (!box) return;
 
-    const failedMaterials = allMaintenanceInspectionRecords.filter(function(record) {
-      const result = String(record.result || "").toLowerCase();
-      const openStatus = String(record.openStatus || record.status || "").toLowerCase();
-      return result === "fail" &&
-        openStatus !== "resolved" &&
-        String(record.materialsNeeded || "").trim();
-    }).map(function(record) {
-      return {
-        urgency: record.urgency || "",
-        room: record.areaName || record.roomKey || "",
-        material: record.materialsNeeded || "",
-        reason: record.failReason || "",
-        source: "Inspection"
-      };
-    });
+      const failedMaterials = allMaintenanceInspectionRecords.filter(function(record) {
+        const result = String(record.result || "").toLowerCase();
+        const openStatus = String(record.openStatus || record.status || "").toLowerCase();
+        return result === "fail" &&
+          openStatus !== "resolved" &&
+          String(record.materialsNeeded || "").trim();
+      }).map(function(record) {
+        return {
+          urgency: record.urgency || "",
+          room: record.areaName || record.roomKey || "",
+          material: record.materialsNeeded || "",
+          reason: record.failReason || "",
+          source: "Inspection"
+        };
+      });
 
-    const manualMaterials = allMaintenanceManualMaterials.map(function(item) {
-      return {
-        urgency: item.urgency || "",
-        room: item.room || "",
-        material: item.material || "",
-        reason: item.reason || "",
-        source: "Manual"
-      };
-    });
+      const manualMaterials = allMaintenanceManualMaterials.map(function(item) {
+        return {
+          urgency: item.urgency || "",
+          room: item.room || "",
+          material: item.material || "",
+          reason: item.reason || "",
+          source: "Manual"
+        };
+      });
 
-    const materials = failedMaterials.concat(manualMaterials);
+      const materials = failedMaterials.concat(manualMaterials);
 
-    if (materials.length === 0) {
-      box.innerHTML = '<div class="room-report-card">No materials needed.</div>';
-      return;
+      if (materials.length === 0) {
+        box.innerHTML = '<div class="room-report-card">No materials needed.</div>';
+        return;
+      }
+
+      box.innerHTML = materials.map(function(item) {
+        return '' +
+          '<div class="room-report-card">' +
+            '<h3>' + escapeHtml(item.material || "Material") + '</h3>' +
+            '<div>Urgency: ' + escapeHtml(item.urgency || "None") + '</div>' +
+            '<div>Room: ' + escapeHtml(item.room || "Stock") + '</div>' +
+            '<div>Fail Reason: ' + escapeHtml(item.reason || "None") + '</div>' +
+            '<div>Source: ' + escapeHtml(item.source) + '</div>' +
+          '</div>';
+      }).join("");
+    } finally {
+      // Keep draw safe when called after a loading refresh.
     }
-
-    box.innerHTML = materials.map(function(item) {
-      return '' +
-        '<div class="room-report-card">' +
-          '<h3>' + escapeHtml(item.material || "Material") + '</h3>' +
-          '<div>Urgency: ' + escapeHtml(item.urgency || "None") + '</div>' +
-          '<div>Room: ' + escapeHtml(item.room || "Stock") + '</div>' +
-          '<div>Fail Reason: ' + escapeHtml(item.reason || "None") + '</div>' +
-          '<div>Source: ' + escapeHtml(item.source) + '</div>' +
-        '</div>';
-    }).join("");
   }
 
   function openMaintenanceManualMaterialPopup() {
@@ -8523,6 +8585,8 @@
   window.openMaintenanceMaterialsNeeded = openMaintenanceMaterialsNeeded;
   window.openMaintenanceManualMaterialPopup = openMaintenanceManualMaterialPopup;
   window.drawMaintenanceInspectionReport = drawMaintenanceInspectionReport;
+  window.refreshMaintenanceInspectionReport = refreshMaintenanceInspectionReport;
+  window.handleMaintenanceInspectionReportInput = handleMaintenanceInspectionReportInput;
   window.reinspectMaintenanceIssue = reinspectMaintenanceIssue;
   window.selectMaintenanceResidentStatus = selectMaintenanceResidentStatus;
   window.selectMaintenanceUrgency = selectMaintenanceUrgency;
