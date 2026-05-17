@@ -1155,12 +1155,11 @@
 
   <div id="adminIssuesView" class="hidden">
 
-    <div class="view-center">
-      <div class="view-tag">ADMIN VIEW 8B - ISSUES</div>
-    </div>
-
     <div class="assignment-title" id="adminIssuesAssignmentTitle"></div>
     <h2>Issues</h2>
+
+    <label>Search Issues</label>
+    <input id="issueSearchInput" placeholder="Room, employee, reason" oninput="drawIssueList()">
 
     <label>Date</label>
     <input
@@ -1182,9 +1181,6 @@
       <button class="green" onclick="loadFilteredIssues()">LOAD</button>
       <button class="yellow" onclick="loadAllIssues()">LOAD ALL</button>
     </div>
-
-    <label>Search</label>
-    <input id="issueSearchInput" placeholder="Room, employee, reason" oninput="drawIssueList()">
 
     <div id="issueList"></div>
 
