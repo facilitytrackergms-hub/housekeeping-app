@@ -90,6 +90,27 @@
     .back { background: #555 !important; color: white !important; }
     .hidden { display: none !important; }
 
+
+    .admin-float-button {
+      position: fixed;
+      top: 8px;
+      right: 8px;
+      z-index: 99998;
+      width: 34px;
+      height: 34px;
+      min-height: 34px;
+      padding: 0;
+      margin: 0;
+      border-radius: 50%;
+      background: #111;
+      color: white;
+      font-size: 16px;
+      font-weight: 900;
+      line-height: 34px;
+      text-align: center;
+      box-shadow: 0 3px 10px rgba(0,0,0,0.28);
+    }
+
     .mini-header {
       width: 100%;
       text-align: center;
@@ -494,6 +515,8 @@
 
 <body>
 
+<button id="adminFloatButton" class="admin-float-button hidden" type="button" onclick="goToAdminDashboard()">A</button>
+
 <div class="card">
 
   <div id="miniHeader" class="mini-header"></div>
@@ -640,6 +663,7 @@
     sessionData.position ||
     "";
 
+  const isAdminUser = isAdminSessionUser(sessionData);
   const isLeadHousekeeper = isLeadHousekeeperRole(employeeRole);
 
   let homeAssignment =
@@ -686,7 +710,41 @@
   document.getElementById("userNameLabel").innerText = employeeName;
   document.getElementById("assignmentTitle").innerText = currentAssignment;
 
+  setupAdminFloatButton();
   startSchedule();
+
+
+
+  function isAdminSessionUser(user) {
+    if (!user) return false;
+
+    const roleText = String(user.role || user.employeeRole || user.position || "").trim().toLowerCase();
+    const assignmentText = String(user.assignment || "").trim().toLowerCase();
+    const defaultScheduleText = String(user.defaultSchedule || user.default_schedule || "").trim().toLowerCase();
+    const permissions = user.permissions || {};
+
+    if (roleText === "admin") return true;
+    if (assignmentText === "admin") return true;
+    if (defaultScheduleText === "admin") return true;
+
+    const adminPermission = permissions.adminDashboard;
+    if (adminPermission === true) return true;
+
+    const adminPermissionText = String(adminPermission || "").trim().toLowerCase();
+    return adminPermissionText === "yes" || adminPermissionText === "true" || adminPermissionText === "1";
+  }
+
+  function setupAdminFloatButton() {
+    const button = document.getElementById("adminFloatButton");
+    if (!button) return;
+
+    button.classList.toggle("hidden", !isAdminUser);
+  }
+
+  function goToAdminDashboard() {
+    if (!isAdminUser) return;
+    window.location.href = "admin.html";
+  }
 
 
   /* 04 - START */
@@ -1529,7 +1587,7 @@ select.appendChild(blankOption);
       return;
     }
 
-    const choice = await showCustomChoice(areaName, "", "SAVE ALL TASK", "SEE ROOM TASKS");
+    const choice = await showCustomChoice(areaName, "", "SAVE", "TASKS");
 
     if (choice === "save") {
       await saveCurrentAreaComplete();
@@ -2662,6 +2720,7 @@ function getResidentStatusText(value) {
   window.customConfirmYes = customConfirmYes;
   window.customConfirmNo = customConfirmNo;
   window.goToAdminDehumidifierView = goToAdminDehumidifierView;
+  window.goToAdminDashboard = goToAdminDashboard;
   window.toggleCurrentRoomDaily = toggleCurrentRoomDaily;
   window.toggleCurrentRoomOccupied = toggleCurrentRoomOccupied;
   window.setCurrentResidentStatus = setCurrentResidentStatus;
