@@ -1108,7 +1108,7 @@
 
     <div id="adminCategoryButtons" class="rooms-grid"></div>
 
-    <div class="app-version-label">Updated: 2026-05-17 7:20 PM</div>
+    <div class="app-version-label">Updated: 2026-05-17 7:35 PM</div>
 
   </div>
 
@@ -3998,6 +3998,7 @@ async function startAdmin() {
     const backButton = document.getElementById("adminEditBackButton");
     const saveRow = saveButton ? saveButton.parentElement : null;
     const deleteRow = deleteButton ? deleteButton.parentElement : null;
+    const isNewDehumidifier = isDehumidifierEditor && !selectedAreaDocId;
 
     if (assignmentLabel) assignmentLabel.classList.toggle("hidden", isDehumidifierEditor);
     if (assignmentInput) assignmentInput.classList.toggle("hidden", isDehumidifierEditor);
@@ -4022,14 +4023,29 @@ async function startAdmin() {
     }
 
     if (saveButton) saveButton.innerText = isDehumidifierEditor ? "SAVE" : "SAVE AREA";
-    if (deleteButton) deleteButton.classList.toggle("hidden", isDehumidifierEditor);
-    if (backButton) backButton.innerText = isDehumidifierEditor ? "CANCEL" : "BACK";
+    if (deleteButton) {
+      deleteButton.innerText = isDehumidifierEditor ? "DELETE" : "DELETE AREA";
+      deleteButton.classList.toggle("hidden", isNewDehumidifier);
+    }
+    if (backButton) backButton.innerText = isNewDehumidifier ? "CANCEL" : "BACK";
 
     if (isDehumidifierEditor) {
-      if (saveRow && backButton && backButton.parentElement !== saveRow) {
+      if (saveRow && deleteButton && !isNewDehumidifier && deleteButton.parentElement !== saveRow) {
+        saveRow.appendChild(deleteButton);
+      }
+      if (saveRow && backButton && isNewDehumidifier && backButton.parentElement !== saveRow) {
         saveRow.appendChild(backButton);
       }
+      if (deleteRow && backButton && !isNewDehumidifier && backButton.parentElement !== deleteRow) {
+        deleteRow.appendChild(backButton);
+      }
     } else {
+      if (saveRow && taskButton && taskButton.parentElement !== saveRow) {
+        saveRow.appendChild(taskButton);
+      }
+      if (deleteRow && deleteButton && deleteButton.parentElement !== deleteRow) {
+        deleteRow.insertBefore(deleteButton, deleteRow.firstChild);
+      }
       if (deleteRow && backButton && backButton.parentElement !== deleteRow) {
         deleteRow.appendChild(backButton);
       }
@@ -4067,8 +4083,8 @@ async function startAdmin() {
     setAdminSingleTaskBoxVisibility(selectedCategory);
     closeAdminSubTaskEditor();
     drawAdminSubTaskButtons();
-    setAdminAreaEditorMode(false);
-    document.getElementById("openAreaTasksButton").classList.remove("hidden");
+    setAdminAreaEditorMode(selectedCategory === "Dehumidifier");
+    document.getElementById("openAreaTasksButton").classList.toggle("hidden", selectedCategory === "Dehumidifier");
     showAdminView("adminEditView");
   }
 
@@ -4086,7 +4102,8 @@ async function startAdmin() {
     document.getElementById("adminEditTitle").innerText =
       selectedCategory === "Dehumidifier" ? "New Dehumidifier" : "New Area";
     document.getElementById("adminEditAreaInput").value = "";
-    document.getElementById("adminEditAssignmentInput").value = currentAssignment;
+    document.getElementById("adminEditAssignmentInput").value =
+      selectedCategory === "Dehumidifier" ? "" : currentAssignment;
     document.getElementById("adminEditCategoryInput").value = selectedCategory;
     document.getElementById("adminAreaScheduleInput").value = selectedAreaScheduleDay;
     document.getElementById("adminMessage").innerText = "";
@@ -4270,12 +4287,9 @@ async function startAdmin() {
       ? document.getElementById("adminAreaScheduleInput").value.trim()
       : "daily";
 
-    if (category === "Dehumidifier" && areaName && !assignment) {
-      const targetArea = findTargetRoomForDehumidifier(areaName);
-      if (targetArea) {
-        assignment = getAreaAssignment(targetArea);
-        document.getElementById("adminEditAssignmentInput").value = assignment;
-      }
+    if (category === "Dehumidifier" && areaName) {
+      assignment = getDehumidifierAssignmentForRoom(areaName);
+      document.getElementById("adminEditAssignmentInput").value = assignment;
     }
 
     if (!areaName) {
@@ -4294,7 +4308,7 @@ async function startAdmin() {
     }
 
     if (!assignment) {
-      await showAppConfirmMessage("No schedule found for this room.");
+      await showAppConfirmMessage("Missing schedule.");
       return false;
     }
 
@@ -4425,7 +4439,7 @@ async function startAdmin() {
       return;
     }
 
-    if (wasNewArea && selectedCategory === "Dehumidifier") {
+    if (selectedCategory === "Dehumidifier") {
       await loadAdminTasks();
       await ensureDefaultDehumidifierTasksForCurrentArea();
     }
@@ -9449,6 +9463,21 @@ async function startAdmin() {
         activeAssignments.includes(getAreaAssignment(area)) &&
         getRoomKey(area.areaName) === roomKey;
     });
+  }
+
+
+  function getDehumidifierAssignmentForRoom(roomValue) {
+    const targetArea = findTargetRoomForDehumidifier(roomValue);
+    if (targetArea) return getAreaAssignment(targetArea);
+
+    const roomKey = getRoomKey(roomValue);
+    const firstDigit = String(roomKey || "").charAt(0);
+
+    if (firstDigit === "1") return "1stfloor";
+    if (firstDigit === "2") return "2ndFloor";
+    if (firstDigit === "3") return "3rdFloor";
+
+    return currentAssignment || "1stfloor";
   }
 
   async function moveDehumidifierToRoom(fromArea, toRoomValue) {
