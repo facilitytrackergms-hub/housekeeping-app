@@ -137,8 +137,10 @@
         type="password"
         inputmode="numeric"
         pattern="[0-9]*"
+        maxlength="4"
         id="pin"
         placeholder="Enter PIN"
+        oninput="handlePinInput(this)"
         autocomplete="off"
         autocorrect="off"
         autocapitalize="off"
@@ -153,7 +155,7 @@
 
     <div id="message"></div>
 
-    <div class="version-label">Updated: 2026-05-18 2:10 PM</div>
+    <div class="version-label">Updated: 2026-05-18 3:03 PM</div>
 
   </div>
 
@@ -191,7 +193,11 @@
 
   /* 05 - LOGIN */
 
+  let loginInProgress = false;
+
   async function checkPin() {
+    if (loginInProgress) return;
+
     const pinInput = document.getElementById("pin").value.trim();
 
     if (!pinInput) {
@@ -199,6 +205,12 @@
       return;
     }
 
+    if (pinInput.length !== 4) {
+      showMessage("Enter 4 digits", false);
+      return;
+    }
+
+    loginInProgress = true;
     showMessage("Checking...", true);
 
     try {
@@ -211,6 +223,7 @@
       const employeeSnap = await getDocs(employeeQuery);
 
       if (employeeSnap.empty) {
+        loginInProgress = false;
         showMessage("Invalid PIN", false);
         return;
       }
@@ -219,6 +232,7 @@
       const emp = docSnap.data();
 
       if (!isEmployeeActive(emp)) {
+        loginInProgress = false;
         showMessage("Inactive employee", false);
         return;
       }
@@ -264,6 +278,7 @@
       }, 500);
 
     } catch (error) {
+      loginInProgress = false;
       console.error("Login error details:", error);
       showMessage("Connection error", false);
     }
@@ -369,6 +384,17 @@
 
 
 
+  function handlePinInput(input) {
+    input.value = String(input.value || "")
+      .replace(/\D/g, "")
+      .slice(0, 4);
+
+    if (input.value.length === 4) {
+      checkPin();
+    }
+  }
+
+
   /* 07 - MESSAGE */
 
   function showMessage(text, success) {
@@ -411,6 +437,7 @@
     });
 
   window.checkPin = checkPin;
+  window.handlePinInput = handlePinInput;
 
 </script>
 
