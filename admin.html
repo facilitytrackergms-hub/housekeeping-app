@@ -1183,13 +1183,8 @@
 
   <div id="adminEditView" class="hidden">
 
-    <div class="view-center">
-      <div class="view-tag">ADMIN VIEW 7</div>
-    </div>
 
-    <div class="assignment-title" id="adminEditAssignmentTitle"></div>
-    <h2 id="adminEditTitle">Edit Area</h2>
-
+<h2 id="adminEditTitle">Edit Area</h2>
     <label>Area Name</label>
     <input id="adminEditAreaInput">
 
@@ -4100,7 +4095,8 @@ async function startAdmin() {
     selectedAreaScheduleDay = isWeeklyCategory(selectedCategory) ? currentWorkDayName : "daily";
 
     document.getElementById("adminEditTitle").innerText =
-      selectedCategory === "Dehumidifier" ? "New Dehumidifier" : "New Area";
+      document.getElementById("adminEditTitle").innerText =
+  selectedCategory === "Dehumidifier" ? "Add Dehumidifier" : "New Area";
     document.getElementById("adminEditAreaInput").value = "";
     document.getElementById("adminEditAssignmentInput").value =
       selectedCategory === "Dehumidifier" ? "" : currentAssignment;
