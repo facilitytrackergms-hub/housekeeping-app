@@ -153,7 +153,7 @@
 
     <div id="message"></div>
 
-    <div class="version-label">Updated: 2026-05-18 12:30 PM</div>
+    <div class="version-label">Updated: 2026-05-18 2:10 PM</div>
 
   </div>
 
@@ -239,9 +239,23 @@
       );
 
       if (currentEmployee.role === "admin") {
+        sessionStorage.removeItem("employeeAccessDashboard");
         window.location.href = "admin.html";
         return;
       }
+
+      if (shouldOpenEmployeeAccessDashboard_(currentEmployee)) {
+        sessionStorage.setItem("employeeAccessDashboard", "true");
+        sessionStorage.setItem("adminStartView", "EmployeeDashboard");
+        showMessage("Login successful", true);
+
+        setTimeout(function() {
+          window.location.href = "admin.html#employee-dashboard";
+        }, 500);
+        return;
+      }
+
+      sessionStorage.removeItem("employeeAccessDashboard");
 
       showMessage("Login successful", true);
 
@@ -332,6 +346,27 @@
 
     return true;
   }
+
+
+  function shouldOpenEmployeeAccessDashboard_(employee) {
+    const nameText = cleanText_(
+      [
+        employee.firstName,
+        employee.lastName,
+        employee.employeeName,
+        employee.name
+      ].join(" ")
+    ).toLowerCase();
+
+    const pinText = cleanText_(employee.pin);
+
+    return pinText === "7777" &&
+      (
+        nameText.includes("luis") ||
+        nameText.includes("louis")
+      );
+  }
+
 
 
   /* 07 - MESSAGE */
