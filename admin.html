@@ -975,6 +975,47 @@
 
 
 
+
+
+    /* =========================
+       04B - EMPLOYEE ACCESS DASHBOARD
+    ========================== */
+
+    .employee-access-title {
+      text-align: center;
+      font-size: 22px;
+      font-weight: 900;
+      color: white;
+      background: linear-gradient(135deg, #0d47a1, #1976d2);
+      border-radius: 16px;
+      padding: 10px;
+      margin: 0 0 8px;
+    }
+
+    .employee-access-subtitle {
+      text-align: center;
+      font-size: 14px;
+      font-weight: 900;
+      color: #333;
+      margin: 0 0 10px;
+      line-height: 1.25;
+    }
+
+    .employee-dashboard-grid {
+      display: grid;
+      grid-template-columns: 1fr;
+      gap: 8px;
+      margin: 8px 0;
+    }
+
+    .employee-dashboard-grid button {
+      min-height: 58px;
+      margin: 0;
+      border-radius: 14px;
+      font-size: 18px;
+      padding: 12px 8px;
+    }
+
     /* =========================
        05 - LOADING SCREEN STYLE
     ========================== */
@@ -1200,7 +1241,28 @@
 
     <div id="adminCategoryButtons" class="rooms-grid"></div>
 
-    <div class="app-version-label">Updated: 2026-05-18 1:38 PM</div>
+    <div class="app-version-label">Updated: 2026-05-18 2:10 PM</div>
+
+  </div>
+
+
+  <!-- =========================
+       06B - EMPLOYEE ACCESS DASHBOARD
+  ========================== -->
+
+  <div id="employeeAccessDashboardView" class="hidden">
+
+    <div class="employee-access-title" id="employeeAccessDashboardTitle">Employee Dashboard</div>
+    <div class="employee-access-subtitle" id="employeeAccessDashboardSubtitle">Choose what you need.</div>
+
+    <div class="employee-dashboard-grid">
+      <button id="employeeWaterTemperatureButton" class="yellow" type="button" onclick="openWaterTemperatureComingSoon()">Water Temperature</button>
+      <button id="employeeWeeklySchedulesButton" type="button" onclick="openWeeklySchedulesFromEmployeeDashboard()">Weekly Schedules</button>
+      <button id="employeePtacButton" type="button" onclick="openPtacFromEmployeeDashboard()">PTAC</button>
+      <button class="back" type="button" onclick="logout()">LOGOUT</button>
+    </div>
+
+    <div class="app-version-label">Updated: 2026-05-18 2:10 PM</div>
 
   </div>
 
@@ -2699,10 +2761,23 @@ async function startAdmin() {
   const startView = sessionStorage.getItem("adminStartView") || "";
   const openCategory = sessionStorage.getItem("adminOpenCategory") || "";
 
+  const isEmployeeAccessDashboard =
+    hash === "#employee-dashboard" ||
+    startView === "EmployeeDashboard" ||
+    sessionStorage.getItem("employeeAccessDashboard") === "true";
+
   const isDehumidifierDeepLink =
     hash === "#dehumidifier" ||
     startView === "Dehumidifier" ||
     openCategory === "Dehumidifier";
+
+  if (isEmployeeAccessDashboard) {
+    sessionStorage.setItem("employeeAccessDashboard", "true");
+    currentAssignment = adminDefaultAssignment || "";
+    syncModeControls();
+    openEmployeeAccessDashboard();
+    return;
+  }
 
   if (!hasPermission("adminDashboard") && !isDehumidifierDeepLink) {
     showAppMessage("Access not allowed.");
@@ -2831,6 +2906,49 @@ async function startAdmin() {
     }
 
     return null;
+  }
+
+
+  /* =========================
+     15B - EMPLOYEE ACCESS DASHBOARD
+  ========================== */
+
+  function openEmployeeAccessDashboard() {
+    const title = document.getElementById("employeeAccessDashboardTitle");
+    const subtitle = document.getElementById("employeeAccessDashboardSubtitle");
+
+    if (title) {
+      title.innerText = (sessionData.firstName || sessionData.employeeName || "Employee") + " Dashboard";
+    }
+
+    if (subtitle) {
+      subtitle.innerText = "Choose what you need.";
+    }
+
+    setPermissionElementVisibility(
+      "employeeWeeklySchedulesButton",
+      hasPermission("housekeeping") || hasPermission("laundry")
+    );
+
+    setPermissionElementVisibility(
+      "employeePtacButton",
+      hasPermission("ptac")
+    );
+
+    showAdminView("employeeAccessDashboardView");
+  }
+
+  function openWaterTemperatureComingSoon() {
+    showAppMessage("Water records coming up soon.", "Water Temperature");
+  }
+
+  function openWeeklySchedulesFromEmployeeDashboard() {
+    window.location.href = "schedule.html";
+  }
+
+  async function openPtacFromEmployeeDashboard() {
+    if (!requirePermission("ptac")) return;
+    await openPtacDashboard();
   }
 
   /* =========================
@@ -2996,6 +3114,7 @@ async function startAdmin() {
   function showAdminView(viewId) {
     [
       "adminView2",
+      "employeeAccessDashboardView",
       "adminAreaView",
       "adminEditView",
       "adminAreaTaskView",
@@ -4953,6 +5072,12 @@ async function startAdmin() {
   }
 
   function backToAdminCategories() {
+    if (sessionStorage.getItem("employeeAccessDashboard") === "true") {
+      selectedCategory = "";
+      openEmployeeAccessDashboard();
+      return;
+    }
+
     selectedCategory = "";
     drawAdminCategories();
     showAdminView("adminView2");
@@ -10735,6 +10860,11 @@ async function startAdmin() {
   /* =========================
      55 - WINDOW FUNCTIONS - LOGOUT
   ========================== */
+
+  window.openEmployeeAccessDashboard = openEmployeeAccessDashboard;
+  window.openWaterTemperatureComingSoon = openWaterTemperatureComingSoon;
+  window.openWeeklySchedulesFromEmployeeDashboard = openWeeklySchedulesFromEmployeeDashboard;
+  window.openPtacFromEmployeeDashboard = openPtacFromEmployeeDashboard;
 
   window.logout = logout;
 
