@@ -1016,6 +1016,86 @@
       padding: 12px 8px;
     }
 
+
+    /* =========================
+       04C - WATER TEMPERATURE
+    ========================== */
+
+    .water-temperature-header {
+      text-align: center;
+      font-size: 22px;
+      font-weight: 900;
+      color: white;
+      background: linear-gradient(135deg, #0d47a1, #1976d2);
+      border-radius: 16px;
+      padding: 10px;
+      margin: 0 0 8px;
+    }
+
+    .water-temperature-subtitle {
+      text-align: center;
+      font-size: 13px;
+      font-weight: 900;
+      color: #333;
+      margin: 0 0 8px;
+      line-height: 1.25;
+    }
+
+    .water-temperature-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 7px;
+      margin: 8px 0;
+    }
+
+    .water-temperature-actions button {
+      min-height: 42px;
+      margin: 0;
+      font-size: 14px;
+      padding: 8px 5px;
+    }
+
+    .water-temperature-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 7px;
+      margin: 8px 0;
+    }
+
+    .water-temperature-button {
+      min-height: 62px;
+      margin: 0;
+      padding: 7px 5px;
+      border-radius: 12px;
+      line-height: 1.1;
+      background: #7f8c8d;
+      color: white;
+    }
+
+    .water-temperature-button strong {
+      display: block;
+      font-size: 18px;
+      margin-bottom: 3px;
+    }
+
+    .water-temperature-button small {
+      display: block;
+      font-size: 12px;
+      font-weight: 900;
+      text-transform: uppercase;
+    }
+
+    .water-temperature-pass {
+      background: #2e7d32 !important;
+      color: white !important;
+    }
+
+    .water-temperature-fail {
+      background: #c62828 !important;
+      color: white !important;
+    }
+
+
     /* =========================
        05 - LOADING SCREEN STYLE
     ========================== */
@@ -1241,7 +1321,7 @@
 
     <div id="adminCategoryButtons" class="rooms-grid"></div>
 
-    <div class="app-version-label">Updated: 2026-05-18 2:10 PM</div>
+    <div class="app-version-label">Updated: 2026-05-18 7:01 PM</div>
 
   </div>
 
@@ -1256,15 +1336,39 @@
     <div class="employee-access-subtitle" id="employeeAccessDashboardSubtitle">Choose what you need.</div>
 
     <div class="employee-dashboard-grid">
-      <button id="employeeWaterTemperatureButton" class="yellow" type="button" onclick="openWaterTemperatureComingSoon()">Water Temperature</button>
+      <button id="employeeWaterTemperatureButton" class="yellow" type="button" onclick="openWaterTemperatureView()">Water Temperature</button>
       <button id="employeeWeeklySchedulesButton" type="button" onclick="openWeeklySchedulesFromEmployeeDashboard()">Weekly Schedules</button>
       <button id="employeePtacButton" type="button" onclick="openPtacFromEmployeeDashboard()">PTAC</button>
       <button class="back" type="button" onclick="logout()">LOGOUT</button>
     </div>
 
-    <div class="app-version-label">Updated: 2026-05-18 2:10 PM</div>
+    <div class="app-version-label">Updated: 2026-05-18 7:01 PM</div>
 
   </div>
+
+
+  <!-- =========================
+       06C - WATER TEMPERATURE VIEW
+  ========================== -->
+
+  <div id="waterTemperatureView" class="hidden">
+
+    <div class="water-temperature-header">Water Temperature</div>
+    <div class="water-temperature-subtitle" id="waterTemperatureDateLabel">Weekly check</div>
+
+    <div class="water-temperature-actions">
+      <button class="red" type="button" onclick="confirmDeleteWaterTemperatureRecords()">DELETE PREVIOUS</button>
+      <button type="button" onclick="loadWaterTemperatureView()">REFRESH</button>
+    </div>
+
+    <div id="waterTemperatureGrid" class="water-temperature-grid"></div>
+
+    <button class="back" type="button" onclick="openEmployeeAccessDashboard()">BACK</button>
+
+    <div class="app-version-label">Updated: 2026-05-18 7:01 PM</div>
+
+  </div>
+
 
   <!-- =========================
        07 - ADMIN VIEW 3 / 4 / 5 / 6 - AREA LIST
@@ -2518,6 +2622,8 @@
   let allMaintenanceInspectionRecords = [];
   let allMaintenanceManualMaterials = [];
   let allPtacRecords = [];
+  let allWaterTemperatureRecords = [];
+  let waterTemperatureLocations = [];
   let currentPtacRoom = "";
   let currentPtacFloor = "";
   let currentPtacQueueStatus = "";
@@ -2938,8 +3044,229 @@ async function startAdmin() {
     showAdminView("employeeAccessDashboardView");
   }
 
-  function openWaterTemperatureComingSoon() {
-    showAppMessage("Water records coming up soon.", "Water Temperature");
+  async function openWaterTemperatureView() {
+    if (allAreas.length === 0) {
+      await loadAllAdminData();
+    }
+
+    const deleteOld = await showAppConfirmMessage(
+      "Delete previous water temperature records? Press OK to delete, or Cancel to continue.",
+      "Water Temperature"
+    );
+
+    if (deleteOld) {
+      await confirmDeleteWaterTemperatureRecords();
+      return;
+    }
+
+    await loadWaterTemperatureView();
+  }
+
+  async function loadWaterTemperatureView() {
+    showLoading();
+
+    if (allAreas.length === 0) {
+      await loadAllAdminData();
+    }
+
+    waterTemperatureLocations = buildWaterTemperatureLocations();
+    await loadWaterTemperatureRecords();
+    drawWaterTemperatureButtons();
+
+    hideLoading();
+    showAdminView("waterTemperatureView");
+  }
+
+  function buildWaterTemperatureLocations() {
+    const map = {};
+
+    allAreas.forEach(function(area) {
+      const roomKey = getRoomKey(area.areaName || "");
+      if (!/^\d{3}$/.test(roomKey)) return;
+      if (String(area.category || "").includes("Laundry")) return;
+
+      map[roomKey] = {
+        locationKey: roomKey,
+        locationName: roomKey,
+        locationType: "Room"
+      };
+    });
+
+    [
+      "Kitchen Sink",
+      "Kitchen Big Sink",
+      "Kitchen Little Sink"
+    ].forEach(function(name) {
+      map[makeId(name)] = {
+        locationKey: makeId(name),
+        locationName: name,
+        locationType: "Kitchen"
+      };
+    });
+
+    return Object.keys(map).map(function(key) {
+      return map[key];
+    }).sort(function(a, b) {
+      return String(a.locationName || "").localeCompare(String(b.locationName || ""), undefined, { numeric: true });
+    });
+  }
+
+  async function loadWaterTemperatureRecords() {
+    const snap = await getDocs(collection(db, "water_temperature_records"));
+
+    allWaterTemperatureRecords = snap.docs.map(function(recordDoc) {
+      return {
+        id: recordDoc.id,
+        ...recordDoc.data()
+      };
+    });
+  }
+
+  function drawWaterTemperatureButtons() {
+    const box = document.getElementById("waterTemperatureGrid");
+    const dateLabel = document.getElementById("waterTemperatureDateLabel");
+    const today = getTodayISO();
+
+    if (dateLabel) {
+      dateLabel.innerText = "Date: " + formatDateWithWeekday(today);
+    }
+
+    if (!box) return;
+    box.innerHTML = "";
+
+    waterTemperatureLocations.forEach(function(location) {
+      const record = getWaterTemperatureRecordForLocation(location.locationKey, today);
+      const btn = document.createElement("button");
+      btn.type = "button";
+      btn.className = "water-temperature-button";
+
+      if (record) {
+        btn.classList.add(record.result === "Pass" ? "water-temperature-pass" : "water-temperature-fail");
+      }
+
+      btn.innerHTML =
+        '<strong>' + escapeHtml(location.locationName) + '</strong>' +
+        '<small>' + escapeHtml(record ? (record.result + " - " + record.temperature + "°") : "Not checked") + '</small>';
+
+      btn.onclick = function() {
+        openWaterTemperatureInput(location);
+      };
+
+      box.appendChild(btn);
+    });
+
+    if (box.innerHTML === "") {
+      const empty = document.createElement("h3");
+      empty.innerText = "No rooms found.";
+      box.appendChild(empty);
+    }
+  }
+
+  function getWaterTemperatureRecordForLocation(locationKey, workDateISO) {
+    return allWaterTemperatureRecords.find(function(record) {
+      return String(record.locationKey || "") === String(locationKey || "") &&
+        String(record.workDateISO || "") === String(workDateISO || "");
+    }) || null;
+  }
+
+  function openWaterTemperatureInput(location) {
+    showAppInputConfirmMessage(
+      "Enter temperature for " + location.locationName + ". Passing range is 105 to 118.",
+      async function(value) {
+        await saveWaterTemperatureRecord(location, value);
+      },
+      function() {
+        showAdminView("waterTemperatureView");
+      },
+      "Water Temperature"
+    );
+
+    const input = document.getElementById("appMessageInput");
+    if (input) {
+      input.placeholder = "Temperature";
+      input.setAttribute("inputmode", "decimal");
+      input.setAttribute("maxlength", "5");
+      input.removeAttribute("pattern");
+      input.oninput = function() { limitTemperatureInput(this); };
+    }
+  }
+
+  function limitTemperatureInput(input) {
+    input.value = String(input.value || "")
+      .replace(/[^0-9.]/g, "")
+      .replace(/(\..*)\./g, "$1")
+      .slice(0, 5);
+  }
+
+  async function saveWaterTemperatureRecord(location, value) {
+    const temperature = Number(String(value || "").trim());
+
+    if (!Number.isFinite(temperature)) {
+      showAppMessage("Enter temperature.", "Water Temperature");
+      return;
+    }
+
+    const today = getTodayISO();
+    const result = temperature >= 105 && temperature <= 118 ? "Pass" : "Fail";
+    const recordId = makeId(today + "_" + location.locationKey);
+
+    showLoading();
+
+    await setDoc(doc(db, "water_temperature_records", recordId), {
+      locationKey: location.locationKey,
+      locationName: location.locationName,
+      locationType: location.locationType,
+      temperature: temperature,
+      result: result,
+      workDateISO: today,
+      employeeId: sessionData.employeeId || sessionData.id || "",
+      employeeName: sessionData.employeeName || sessionData.name || "",
+      updatedAt: serverTimestamp()
+    }, { merge: true });
+
+    await loadWaterTemperatureRecords();
+    drawWaterTemperatureButtons();
+
+    hideLoading();
+    showAdminView("waterTemperatureView");
+  }
+
+  async function confirmDeleteWaterTemperatureRecords() {
+    const ok = await showAppConfirmMessage(
+      "Are you sure you want to delete previous water temperature records?",
+      "Confirm Delete"
+    );
+
+    if (!ok) {
+      await loadWaterTemperatureView();
+      return;
+    }
+
+    await deleteAllWaterTemperatureRecords();
+    await loadWaterTemperatureView();
+  }
+
+  async function deleteAllWaterTemperatureRecords() {
+    showLoading();
+
+    const snap = await getDocs(collection(db, "water_temperature_records"));
+    let batch = writeBatch(db);
+    let count = 0;
+
+    for (let i = 0; i < snap.docs.length; i++) {
+      batch.delete(doc(db, "water_temperature_records", snap.docs[i].id));
+      count++;
+
+      if (count % 450 === 0) {
+        await batch.commit();
+        batch = writeBatch(db);
+      }
+    }
+
+    await batch.commit();
+    allWaterTemperatureRecords = [];
+
+    hideLoading();
   }
 
   function openWeeklySchedulesFromEmployeeDashboard() {
@@ -2988,6 +3315,11 @@ async function startAdmin() {
 
     if (input) {
       input.value = "";
+      input.placeholder = "Room number";
+      input.setAttribute("inputmode", "numeric");
+      input.setAttribute("maxlength", "3");
+      input.setAttribute("pattern", "[0-9]*");
+      input.oninput = function() { limitRoomInput(this); };
       input.classList.add("hidden");
     }
 
@@ -3006,6 +3338,11 @@ async function startAdmin() {
 
     if (input) {
       input.value = "";
+      input.placeholder = "Room number";
+      input.setAttribute("inputmode", "numeric");
+      input.setAttribute("maxlength", "3");
+      input.setAttribute("pattern", "[0-9]*");
+      input.oninput = function() { limitRoomInput(this); };
       input.classList.remove("hidden");
       setTimeout(function() { input.focus(); }, 50);
     }
@@ -3024,6 +3361,11 @@ async function startAdmin() {
 
     if (input) {
       input.value = "";
+      input.placeholder = "Room number";
+      input.setAttribute("inputmode", "numeric");
+      input.setAttribute("maxlength", "3");
+      input.setAttribute("pattern", "[0-9]*");
+      input.oninput = function() { limitRoomInput(this); };
       input.classList.remove("hidden");
       setTimeout(function() { input.focus(); }, 50);
     }
@@ -3039,6 +3381,11 @@ async function startAdmin() {
 
     if (input) {
       input.value = "";
+      input.placeholder = "Room number";
+      input.setAttribute("inputmode", "numeric");
+      input.setAttribute("maxlength", "3");
+      input.setAttribute("pattern", "[0-9]*");
+      input.oninput = function() { limitRoomInput(this); };
       input.classList.add("hidden");
     }
 
@@ -3098,6 +3445,11 @@ async function startAdmin() {
 
     if (input) {
       input.value = "";
+      input.placeholder = "Room number";
+      input.setAttribute("inputmode", "numeric");
+      input.setAttribute("maxlength", "3");
+      input.setAttribute("pattern", "[0-9]*");
+      input.oninput = function() { limitRoomInput(this); };
       input.classList.add("hidden");
     }
 
@@ -3115,6 +3467,7 @@ async function startAdmin() {
     [
       "adminView2",
       "employeeAccessDashboardView",
+      "waterTemperatureView",
       "adminAreaView",
       "adminEditView",
       "adminAreaTaskView",
@@ -10862,9 +11215,13 @@ async function startAdmin() {
   ========================== */
 
   window.openEmployeeAccessDashboard = openEmployeeAccessDashboard;
-  window.openWaterTemperatureComingSoon = openWaterTemperatureComingSoon;
+  window.openWaterTemperatureView = openWaterTemperatureView;
+  window.loadWaterTemperatureView = loadWaterTemperatureView;
+  window.confirmDeleteWaterTemperatureRecords = confirmDeleteWaterTemperatureRecords;
   window.openWeeklySchedulesFromEmployeeDashboard = openWeeklySchedulesFromEmployeeDashboard;
   window.openPtacFromEmployeeDashboard = openPtacFromEmployeeDashboard;
+
+  window.openWaterTemperatureComingSoon = openWaterTemperatureView;
 
   window.logout = logout;
 
