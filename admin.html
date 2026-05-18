@@ -1090,6 +1090,11 @@
       color: white !important;
     }
 
+    .water-temperature-low {
+      background: #1976d2 !important;
+      color: white !important;
+    }
+
     .water-temperature-fail {
       background: #c62828 !important;
       color: white !important;
@@ -1321,7 +1326,7 @@
 
     <div id="adminCategoryButtons" class="rooms-grid"></div>
 
-    <div class="app-version-label">Updated: 2026-05-18 7:01 PM</div>
+    <div class="app-version-label">Updated: 2026-05-18 7:35 PM | admin.html</div>
 
   </div>
 
@@ -1342,7 +1347,7 @@
       <button class="back" type="button" onclick="logout()">LOGOUT</button>
     </div>
 
-    <div class="app-version-label">Updated: 2026-05-18 7:01 PM</div>
+    <div class="app-version-label">Updated: 2026-05-18 7:35 PM | admin.html</div>
 
   </div>
 
@@ -1365,7 +1370,7 @@
 
     <button class="back" type="button" onclick="openEmployeeAccessDashboard()">BACK</button>
 
-    <div class="app-version-label">Updated: 2026-05-18 7:01 PM</div>
+    <div class="app-version-label">Updated: 2026-05-18 7:35 PM | admin.html</div>
 
   </div>
 
@@ -3136,17 +3141,22 @@ async function startAdmin() {
 
     waterTemperatureLocations.forEach(function(location) {
       const record = getWaterTemperatureRecordForLocation(location.locationKey, today);
+
+      if (!record && isWaterTemperatureLocationInRotation(location.locationKey, today)) {
+        return;
+      }
+
       const btn = document.createElement("button");
       btn.type = "button";
       btn.className = "water-temperature-button";
 
       if (record) {
-        btn.classList.add(record.result === "Pass" ? "water-temperature-pass" : "water-temperature-fail");
+        btn.classList.add(getWaterTemperatureButtonClass(record));
       }
 
       btn.innerHTML =
         '<strong>' + escapeHtml(location.locationName) + '</strong>' +
-        '<small>' + escapeHtml(record ? (record.result + " - " + record.temperature + "°") : "Not checked") + '</small>';
+        '<small>' + escapeHtml(record ? getWaterTemperatureRecordLabel(record) : "Not checked") + '</small>';
 
       btn.onclick = function() {
         openWaterTemperatureInput(location);
@@ -3157,10 +3167,11 @@ async function startAdmin() {
 
     if (box.innerHTML === "") {
       const empty = document.createElement("h3");
-      empty.innerText = "No rooms found.";
+      empty.innerText = "No rooms available in rotation.";
       box.appendChild(empty);
     }
   }
+
 
   function getWaterTemperatureRecordForLocation(locationKey, workDateISO) {
     return allWaterTemperatureRecords.find(function(record) {
@@ -3168,6 +3179,67 @@ async function startAdmin() {
         String(record.workDateISO || "") === String(workDateISO || "");
     }) || null;
   }
+
+  function getWaterTemperatureButtonClass(record) {
+    const temperature = Number(record.temperature);
+
+    if (Number.isFinite(temperature) && temperature < 105) {
+      return "water-temperature-low";
+    }
+
+    if (String(record.result || "") === "Pass") {
+      return "water-temperature-pass";
+    }
+
+    return "water-temperature-fail";
+  }
+
+  function getWaterTemperatureRecordLabel(record) {
+    const temperature = Number(record.temperature);
+
+    if (Number.isFinite(temperature) && temperature < 105) {
+      return "LOW - " + temperature + "°";
+    }
+
+    if (String(record.result || "") === "Pass") {
+      return "PASS - " + temperature + "°";
+    }
+
+    return "FAIL - " + temperature + "°";
+  }
+
+  function isWaterTemperatureLocationInRotation(locationKey, todayISO) {
+    const todayTime = getISODateTime(todayISO);
+
+    return allWaterTemperatureRecords.some(function(record) {
+      const recordDate = String(record.workDateISO || "").slice(0, 10);
+      if (!recordDate || recordDate === todayISO) return false;
+      if (String(record.locationKey || "") !== String(locationKey || "")) return false;
+
+      const recordTime = getISODateTime(recordDate);
+      if (!recordTime || !todayTime) return false;
+
+      const daysSinceChecked = Math.floor((todayTime - recordTime) / 86400000);
+      return daysSinceChecked > 0 && daysSinceChecked <= 14;
+    });
+  }
+
+  function getISODateTime(isoDate) {
+    const cleanDate = String(isoDate || "").slice(0, 10);
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(cleanDate)) return 0;
+    return new Date(cleanDate + "T00:00:00").getTime();
+  }
+
+  function addDaysToISO(isoDate, days) {
+    const cleanDate = String(isoDate || "").slice(0, 10);
+    const date = new Date(cleanDate + "T00:00:00");
+    date.setDate(date.getDate() + Number(days || 0));
+    const yyyy = date.getFullYear();
+    const mm = String(date.getMonth() + 1).padStart(2, "0");
+    const dd = String(date.getDate()).padStart(2, "0");
+    return yyyy + "-" + mm + "-" + dd;
+  }
+
 
   function openWaterTemperatureInput(location) {
     showAppInputConfirmMessage(
@@ -3207,7 +3279,8 @@ async function startAdmin() {
     }
 
     const today = getTodayISO();
-    const result = temperature >= 105 && temperature <= 118 ? "Pass" : "Fail";
+    const result = temperature < 105 ? "Low" : (temperature <= 118 ? "Pass" : "Fail");
+    const availableAgainDateISO = addDaysToISO(today, 15);
     const recordId = makeId(today + "_" + location.locationKey);
 
     showLoading();
@@ -3219,6 +3292,8 @@ async function startAdmin() {
       temperature: temperature,
       result: result,
       workDateISO: today,
+      rotationDays: 14,
+      availableAgainDateISO: availableAgainDateISO,
       employeeId: sessionData.employeeId || sessionData.id || "",
       employeeName: sessionData.employeeName || sessionData.name || "",
       updatedAt: serverTimestamp()
