@@ -1174,10 +1174,6 @@
 
     <div class="admin-dashboard-title">Admin Dashboard</div>
 
-    <div class="admin-report-button-row">
-      <button type="button" class="yellow" style="background:#f9a825 !important; color:black !important;" onclick="window.location.href='schedule.html'">User View</button>
-    </div>
-
     <div id="adminReportSectionTitle" class="admin-dashboard-subtitle">Create report</div>
     <div id="adminReportSection" class="admin-report-button-row">
       <button type="button" onclick="openReportChooser()">Room / Area Report</button>
@@ -1204,7 +1200,7 @@
 
     <div id="adminCategoryButtons" class="rooms-grid"></div>
 
-    <div class="app-version-label">Updated: 2026-05-18 12:20 PM</div>
+    <div class="app-version-label">Updated: 2026-05-18 1:38 PM</div>
 
   </div>
 
@@ -3467,7 +3463,7 @@ async function startAdmin() {
     if (topBox) topBox.innerHTML = "";
     if (scheduleBox) scheduleBox.innerHTML = "";
 
-    const topButtons = ["Dehumidifier", "Daily Status", "Issues", "Issue Reasons", "Maintenance Inspection", "PTAC", "Logout"];
+    const topButtons = ["User View", "Dehumidifier", "Daily Status", "Issues", "Issue Reasons", "Maintenance Inspection", "PTAC", "Logout"];
 
     let scheduleButtons = [];
 
@@ -3504,7 +3500,9 @@ async function startAdmin() {
     } else {
       btn.className = "yellow";
 
-      if (item === "Employees") {
+      if (item === "User View") {
+        btn.onclick = function() { window.location.href = "schedule.html"; };
+      } else if (item === "Employees") {
         btn.onclick = openEmployees;
       } else if (item === "Issues") {
         btn.onclick = openIssues;
