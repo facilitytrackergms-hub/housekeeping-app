@@ -1200,7 +1200,7 @@
 
     <div id="adminCategoryButtons" class="rooms-grid"></div>
 
-    <div class="app-version-label">Updated: 2026-05-17 8:26 PM</div>
+    <div class="app-version-label">Updated: 2026-05-17 8:36 PM</div>
 
   </div>
 
@@ -2685,7 +2685,12 @@
      15 - ADMIN STARTUP
   ========================== */
 
-  startAdmin();
+  startAdmin().catch(function(error) {
+    console.error("Admin startup failed", error);
+    hideLoading();
+    showAdminView("adminView2");
+    showAppMessage("Admin could not finish loading. Please refresh and try again.");
+  });
 
 async function startAdmin() {
   await loadAdminModeOnly();
@@ -3005,6 +3010,12 @@ async function startAdmin() {
       "adminMaintenanceInspectionView",
       "adminMaintenanceReportView",
       "adminMaintenanceMaterialsView",
+      "adminPtacDashboardView",
+      "adminPtacRoomsView",
+      "adminPtacRoomView",
+      "adminPtacHistoryView",
+      "adminPtacNotesView",
+      "adminPtacQueueView",
       "adminEmployeeEditView",
       "adminReassignmentView",
       "adminLaundryScheduleView",
@@ -3033,6 +3044,12 @@ async function startAdmin() {
       "adminMaintenanceInspectionAssignmentTitle",
       "adminMaintenanceReportAssignmentTitle",
       "adminMaintenanceMaterialsAssignmentTitle",
+      "adminPtacDashboardAssignmentTitle",
+      "adminPtacRoomsAssignmentTitle",
+      "adminPtacRoomAssignmentTitle",
+      "adminPtacHistoryAssignmentTitle",
+      "adminPtacNotesAssignmentTitle",
+      "adminPtacQueueAssignmentTitle",
       "adminEmployeeEditAssignmentTitle"
     ].forEach(function(id) {
       const el = document.getElementById(id);
